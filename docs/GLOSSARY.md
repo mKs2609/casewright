@@ -1,0 +1,85 @@
+# Glossary
+
+Plain-language meanings of the terms used in this project.
+
+## Security terms
+
+| Term | Meaning |
+|---|---|
+| **SOC** | Security Operations Centre. The team that watches for and responds to attacks. |
+| **Incident** | One suspicious event that needs investigating. |
+| **Indicator / IOC** | A concrete clue such as an IP address, domain, email address or phone number. IOC = indicator of compromise. |
+| **Verdict** | The conclusion: benign (safe), suspicious, or malicious. |
+| **Phishing** | A fake message that tricks someone into giving up a password or clicking a bad link. |
+| **Vishing** | Phishing by phone call. |
+| **Credential stuffing** | Trying many stolen username/password pairs against many accounts. |
+| **Brute force** | Guessing one account's password over and over. |
+| **Account takeover** | An attacker successfully logging in as someone else. |
+| **Impossible travel** | The same account used in two places too far apart for the time between them. |
+| **Look-alike domain** | A web address made to resemble a real one, such as `paypa1.com`. |
+| **Baseline** | A record of someone's normal behaviour, used to spot unusual activity. |
+| **MITRE ATT&CK** | A public catalogue of attacker techniques, each with an ID like `T1566`. |
+| **MITRE ATLAS** | The same idea for attacks on AI systems, with IDs like `AML.T0051`. |
+| **Prompt injection** | Text written by an attacker that tries to give instructions to an AI. |
+| **Human-in-the-loop** | A person must approve before the system acts. |
+| **Audit log** | A permanent record of who did what and when. |
+| **Hash chain** | A log where each entry includes a fingerprint of the previous one, so edits are detectable. |
+| **HMAC** | A fingerprint that can only be produced with a secret key. |
+| **STRIDE** | A checklist of threat types: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege. |
+| **Threat model** | A structured list of what could go wrong and how we prevent it. |
+| **Least privilege** | Giving each part only the access it needs. |
+| **Defence in depth** | Several independent protections, so one failing is not fatal. |
+
+## Web and authentication terms
+
+| Term | Meaning |
+|---|---|
+| **Gateway** | The service that receives all requests from the browser. |
+| **Endpoint** | One URL the server responds to, such as `/api/health`. |
+| **Hashing (passwords)** | Storing a one-way fingerprint of a password, never the password itself. |
+| **Argon2** | A modern password-hashing algorithm that is deliberately slow and memory-hungry. |
+| **JWT** | JSON Web Token. A signed piece of data that proves who you are. |
+| **Access token** | A short-lived token sent with each request. |
+| **Refresh token** | A longer-lived token used only to get a new access token. |
+| **Rotation** | Replacing a refresh token with a new one each time it is used. |
+| **Cookie flags** | `HttpOnly` (JavaScript can't read it), `Secure` (HTTPS only), `SameSite` (not sent from other sites). |
+| **CSRF** | Cross-site request forgery. Another website tricking your browser into sending a request. |
+| **XSS** | Cross-site scripting. Attacker-supplied text running as code in your page. |
+| **CSP** | Content Security Policy. A header telling the browser which scripts may run. |
+| **Rate limiting** | Capping how many requests one client can make in a period. |
+| **Exponential backoff** | Making each retry wait longer than the last. |
+| **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
+| **WebSocket** | A connection that stays open so the server can push updates. |
+| **TLS / HTTPS** | Encryption for data in transit. |
+
+## AI terms
+
+| Term | Meaning |
+|---|---|
+| **LLM** | Large language model, such as Claude. |
+| **Agent** | An LLM that works in a loop, choosing tools to call until it finishes a task. |
+| **Tool / function calling** | The LLM asking our code to run a specific function with specific arguments. |
+| **Allow-list** | A fixed list of what is permitted; everything else is refused. |
+| **Guardrail** | A check in code that blocks something the AI should not do. |
+| **Evidence chain** | The ordered list of everything the agent checked and found. |
+| **Signal** | One finding, with a weight saying how suspicious it is. |
+| **Noisy-OR** | A way to combine several independent signals into one score that never passes 100. |
+| **Counterfactual** | A statement of what would have changed the result. |
+| **Schema validation** | Checking that data has exactly the expected shape before using it. |
+| **Red team** | Deliberately attacking your own system to find weaknesses. |
+
+## Project and tooling terms
+
+| Term | Meaning |
+|---|---|
+| **Spring Boot** | A Java framework for building web services. |
+| **Maven / `mvnw`** | The Java build tool, and the wrapper script that downloads it for you. |
+| **`pom.xml`** | The file listing a Java project's libraries and settings. |
+| **Controller** | The class that handles requests for a set of URLs. |
+| **DTO** | Data transfer object. A small class describing the shape of a request or response. |
+| **Migration** | A versioned SQL script that changes the database schema. |
+| **Flyway** | The tool that runs migrations in order. |
+| **FastAPI** | A Python framework for building web services. |
+| **CI** | Continuous integration. Automated checks that run on every push. |
+| **ADR** | Architecture decision record. A short note on why a choice was made. |
+| **PRD** | Product requirements document. What we are building and why. |

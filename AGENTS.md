@@ -1,0 +1,70 @@
+# AGENTS.md
+
+Instructions for AI coding assistants working in this repository.
+(The design of the product's own AI agent is in [`docs/AGENT_DESIGN.md`](docs/AGENT_DESIGN.md).)
+
+## Read first, every session
+
+1. `docs/MEMORY.md`: current state, machine setup, known gotchas. **Local only** (git-ignored, never published): it exists on Mohit's machine but not in the GitHub repository. Never copy machine details or personal notes from it into a committed file.
+2. [`docs/TASKS.md`](docs/TASKS.md): what is in progress right now
+3. [`docs/RULES.md`](docs/RULES.md): how we work, security rules, definition of done
+
+Then, as needed: [`PRD`](docs/PRD.md) · [`ARCHITECTURE`](docs/ARCHITECTURE.md) · [`DESIGN_SYSTEM`](docs/DESIGN_SYSTEM.md) · [`THREAT_MODEL`](docs/THREAT_MODEL.md) · [`ROADMAP`](docs/ROADMAP.md) · [`DECISIONS`](docs/DECISIONS.md) · [`GLOSSARY`](docs/GLOSSARY.md)
+
+## What this project is
+
+An agentic AI security analyst: it investigates a suspicious event with tools, explains its verdict for experts and for non-experts from one evidence chain, and requires human approval for risky actions. Java Spring Boot gateway, Python agent service, React dashboard, PostgreSQL.
+
+## The rules that matter most
+
+- **One step at a time.** Work only on the current step in `docs/TASKS.md`.
+- **Never run `git add`, `git commit`, `git push`, `git merge` or anything that changes history.** Mohit does all git operations. Read-only commands (`git status`, `git diff`, `git log`) are fine for checking.
+- **Follow [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md).** At the start of a step, give Mohit the branch name and the commands to create it from an up-to-date `main`. At the end, give the commit message(s), PR title and PR description. Before Mohit's first commit of a step, check the staged files for secrets.
+- **Narrate as you go.** Before each piece of work, tell Mohit what is about to be built and why; flag surprises when they happen.
+- **Explain what you built** in plain language at the end of every step. Mohit is learning; assume terms need defining.
+- **Test before calling it done**: automated tests and a real run. Report failures honestly.
+- **The product is called Casewright, but the name stays out of code.** Code uses `com.securityanalyst`, `gateway`, `agent`, `dashboard`; the name appears only in docs, the README and user-facing text (ADR-30).
+- **No secrets in code.** Environment variables only.
+- **Never weaken a security control to make something pass.**
+- **Update the docs in the same step**: `TASKS.md`, `ROADMAP.md`, `MEMORY.md`, `SECURITY.md`, and `DECISIONS.md` when a decision is made.
+- **Write a handbook chapter for every finished step** in `handbook/` (format in `handbook/README.md`). The handbook is Mohit's personal learning material: it is git-ignored, never committed, and product docs must not link to it. Study notes on a single technology go in `handbook/notes/`.
+
+## Commands
+
+| Task | Command (from repo root, Windows) |
+|---|---|
+| One-time database setup | `powershell -ExecutionPolicy Bypass -File scripts\setup-db.ps1` (Mohit runs this; it asks for the `postgres` password) |
+| Add missing application secrets to `.env` | `powershell -ExecutionPolicy Bypass -File scripts\setup-secrets.ps1` (safe to re-run; never prints values) |
+| Make a user an admin | `powershell -ExecutionPolicy Bypass -File scripts\set-role.ps1 -Username <name> -Role ADMIN` |
+| Walk through a login session | `powershell -ExecutionPolicy Bypass -File scripts\try-auth.ps1 -Username <name>` |
+| Gateway tests | `cd gateway; .\mvnw.cmd test` (uses its own embedded PostgreSQL; needs no setup) |
+| Run gateway | `cd gateway; .\mvnw.cmd spring-boot:run` (http://localhost:8080/api/health) |
+| Agent tests | `cd agent; pytest` (from Step 8) |
+| Run agent | `cd agent; uvicorn app.main:app --port 8001` (from Step 8) |
+| Dashboard | `cd dashboard; npm run dev` (from Step 16) |
+
+Maven is not installed globally; always use the wrapper `mvnw.cmd`.
+
+## Layout
+
+```
+gateway/     Spring Boot 4.1 (Java 25). Package root: com.securityanalyst.gateway, organised by feature.
+agent/       Python FastAPI service (not created yet)
+dashboard/   React + TypeScript (not created yet)
+docs/        All project documents
+```
+
+## Conventions
+
+- Spring Boot **4**: test annotations live in `org.springframework.boot.webmvc.test.autoconfigure`; the web starter is `spring-boot-starter-webmvc`. Check the installed jars rather than relying on Boot 2/3 examples.
+- Java: constructor injection, records for DTOs, Bean Validation on every request body. Request records that hold a secret override `toString()` to hide it.
+- Errors shown to callers are thrown as `ApiException(status, message)`; `ApiExceptionHandler` turns them into `{"error": ...}`. Never echo a rejected value back.
+- Security is deny-by-default: a new URL needs a login unless it is added to the public list in `SecurityConfig`. Security filters are created inside `SecurityConfig`, never as `@Component` (that would register them twice).
+- A new required secret goes in four places: `application.properties`, `RequiredSettingsCheck`, `.env.example`, and `scripts/setup-secrets.ps1`; tests get their own value in `PostgresIntegrationTest`.
+- A service method that writes something and then throws to refuse the request needs `@Transactional(noRollbackFor = ApiException.class)`, or the write is undone.
+- JPA entities must match the Flyway schema exactly (`ddl-auto=validate`). Change the migration first, then the entity.
+- Database changes only through Flyway migrations (`gateway/src/main/resources/db/migration`). Never edit a migration that has already run; add a new one.
+- Tests that need a database extend `PostgresIntegrationTest`.
+- Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output.
+- React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens.
+- A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.

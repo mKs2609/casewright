@@ -1,0 +1,33 @@
+# Personal files: stay on this machine, never published.
+# (Git has no end-of-line comments, so each note sits on its own line.)
+# Learning handbook:
+/handbook/
+# Working diary for AI-assisted sessions (machine setup, session log):
+/docs/MEMORY.md
+
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Build output
+target/
+build/
+dist/
+node_modules/
+__pycache__/
+.venv/
+
+# Local databases / logs
+*.db
+*.log
+
+# Editors & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
