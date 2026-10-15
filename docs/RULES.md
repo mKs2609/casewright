@@ -8,7 +8,7 @@ These rules apply to everyone working on this repo, human or AI. If a rule needs
 
 1. **One feature at a time.** Work only on the current step in `TASKS.md`. Don't start the next step early, and don't add things "while we're here".
 2. **Every step follows the same cycle:** Mohit creates a branch → build → explain → test → Mohit reviews → Mohit commits, pushes and merges through a pull request → next step. The details are in [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md).
-3. **Mohit owns git.** The assistant gives the branch name at the start of a step, and the commit message, PR title and PR description at the end. Only Mohit runs `git add`, `git commit` and `git push`. Assistants never commit or push, and never rewrite history.
+3. **Mohit owns git.** The assistant gives the branch name at the start of a step, and the commit message, PR title and PR description at the end. **Every git or GitHub term is explained as it comes up**: what it does and how, in plain words. Only Mohit runs `git add`, `git commit` and `git push`. Assistants never commit or push, and never rewrite history.
 4. **Narrate while building, not only at the end.** Before each piece of work, say in a sentence or two what is about to be built and why. When something unexpected happens (an error, a surprise in a test), say what it was and what it means.
 5. **Explain as you build.** Every step ends with a plain-language explanation of what each new file does and the two or three ideas worth learning. Mohit should be able to explain the step to someone else before committing.
 6. **Nothing is done until it's tested.** Automated tests pass, and the feature has been run for real at least once.

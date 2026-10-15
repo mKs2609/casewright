@@ -128,7 +128,7 @@ Incident status: `queued → investigating → awaiting_approval | needs_review 
 
 ### 5.1 Public API (gateway, port 8080)
 
-All responses are JSON. Errors use one shape: `{"error": "...", "traceId": "..."}`.
+All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...}, "traceId": "..."}` (`fields` only for validation errors). Every response carries an `X-Trace-Id` header that matches the `traceId` and the server log lines for that request.
 
 | Method | Path | Role | Purpose |
 |---|---|---|---|

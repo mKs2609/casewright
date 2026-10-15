@@ -165,7 +165,14 @@ class AuthControllerTest extends PostgresIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat(wrongPassword).isEqualTo(unknownUser).contains("Invalid username or password");
+        // Every response carries its own random trace ID, so blank that out; everything
+        // else (message, field names, order) must be byte-for-byte identical.
+        assertThat(withoutTraceId(wrongPassword)).isEqualTo(withoutTraceId(unknownUser))
+                .isEqualTo("{\"error\":\"Invalid username or password\",\"traceId\":\"*\"}");
+    }
+
+    private static String withoutTraceId(String json) {
+        return json.replaceAll("\"traceId\":\"[0-9a-f]{16}\"", "\"traceId\":\"*\"");
     }
 
     @Test

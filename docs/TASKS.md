@@ -9,48 +9,35 @@ Update it at the start and end of every work session.
 
 ## Now
 
-### Step 4: Tokens and roles (built and checked by Mohit; not committed)
-- [x] Spring Security added; every URL needs a login except health, signup, login, refresh, logout
-- [x] Login sets a 15-minute access token (JWT) and a 7-day refresh token in `HttpOnly`, `Secure`, `SameSite=Strict` cookies
-- [x] `refresh_tokens` table (migration V2, fingerprints only); single-use rotation; reuse revokes the whole session; logout revokes
-- [x] `GET /api/me`
-- [x] Admin only: `GET /api/admin/users`, `PUT /api/admin/users/{id}/role`
-- [x] Cross-site request check (`OriginCheckFilter`)
-- [x] `JWT_SIGNING_KEY` is a required secret; `scripts\setup-secrets.ps1` generated it into `.env`
-- [x] `scripts\set-role.ps1` (first admin) and `scripts\try-auth.ps1` (session walkthrough)
-- [x] 20 new tests (53 in total, all passing); one protection deliberately broken to prove its test fails
-- [x] Run for real against the development database; throwaway accounts removed afterwards
-- [x] Docs and handbook chapter updated
-- [x] Mohit restarted the gateway, made `mohit` an `ADMIN` with `set-role.ps1`, and ran `try-auth.ps1`: all seven steps behaved as expected (2026-10-14)
-- [ ] Mohit can explain: access token vs refresh token, what the three cookie flags do, 401 vs 403, why refresh tokens rotate
-- [ ] Included in the initial commit (see below)
-
-### First push to GitHub (in progress)
-- [x] Git workflow written (`docs/GIT_WORKFLOW.md`); study notes in the handbook
-- [x] Name chosen: **Casewright**; repository **public** from the first push (2026-10-14)
-- [x] `docs/MEMORY.md` made local-only (git-ignored) so the working diary is not published
-- [ ] Mohit switches git to GitHub's noreply email
-- [ ] `git init -b main`, `git add .` (assistant checks the staged files for secrets), initial commit
-- [ ] Publish to GitHub; from then on, every step on its own branch
-
-### Still open from earlier steps
-- [ ] Mohit runs `.\mvnw.cmd test` in `gateway\` and sees the tests pass
-- [ ] Mohit reads the docs and flags anything to change
-- [ ] Mohit confirms or changes the **Proposed** decisions in `DECISIONS.md` (ADR-3, 4, 5, 12, 15)
+### Step 5: Errors, trace IDs, security headers (in progress on `feature/error-handling-and-headers`)
+- [x] Catch-all error handler: unexpected errors return a generic message and a trace ID; details stay in the server log
+- [x] Framework errors (404, 405, wrong parameter type...) keep their real status, not 500
+- [x] Trace ID on every response (`X-Trace-Id` header and in error bodies) and in every log line
+- [x] Security headers on every response: CSP, `nosniff`, `X-Frame-Options: DENY`, HSTS (over HTTPS), Referrer-Policy, Permissions-Policy, cross-origin policies
+- [x] Request size limit (413), chunked bodies refused (411)
+- [x] 14 new tests (67 in total, all passing); a deliberate leak was caught by a test; run for real on port 8081
+- [x] `SECURITY.md`, `DECISIONS.md` (ADR-31 to 34), `ARCHITECTURE.md`, `AGENTS.md` updated
+- [x] Handbook chapter
+- [ ] Mohit commits, pushes the branch, opens and merges the first pull request
 
 ## Next
 
-### Step 5: Validation, errors, security headers
-- [ ] Catch-all handler: unexpected errors return a generic message and a trace ID; details stay in the server log
-- [ ] Trace ID on every response and in every log line
-- [ ] Security headers on every response: CSP, `nosniff`, `X-Frame-Options: DENY`, HSTS, Referrer-Policy
-- [ ] Request size limit
-- [ ] HTTPS for local development (self-signed certificate)
-- [ ] Tests for each; update `SECURITY.md` sections A and D
+### Step 5a: Automated checks (CI)
+Brought forward at Mohit's request, so every pull request from now on is tested automatically.
+- [ ] GitHub Actions workflow: on every push and pull request, set up Java and run `.\mvnw test` (Linux runner)
+- [ ] Status check visible on the pull request
+- [ ] Branch protection on `main`: merging requires the check to pass
+- [ ] Badge in the README
+
+### Step 5b: Local HTTPS
+Split out of step 5: it needs a development certificate and a decision by Mohit about trusting it on this machine.
+
+### Step 6: Rate limiting
+Needs ADR-12 confirmed (in-memory Bucket4j).
 
 ## Later
 
-See `ROADMAP.md` steps 6–18.
+See `ROADMAP.md` steps 7–18.
 
 ## Open questions
 
@@ -63,4 +50,4 @@ See `ROADMAP.md` steps 6–18.
 
 ## Done
 
-Nothing committed yet. Steps 0 to 4 are built and waiting for review.
+- **2026-10-15:** Steps 0 to 4 committed (`b9c2883`) and published to https://github.com/mKs2609/casewright.
