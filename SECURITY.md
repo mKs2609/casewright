@@ -59,5 +59,5 @@ Each item is ticked only when it is implemented **and** covered by a test.
 ## G. Operational
 | Item | Status | Notes |
 |---|---|---|
-| CI: tests + dependency audit + static analysis on every push | ⬜ | |
+| CI: tests + dependency audit + static analysis on every push | 🟡 | GitHub Actions runs the full test suite on every pull request and every push to `main`; `main` is protected so a pull request cannot merge while it fails. Least-privilege token (`contents: read`), actions pinned to exact commits. Dependency audit and static analysis come in step 18. |
 | This file kept current | 🟡 | |

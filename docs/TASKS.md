@@ -9,25 +9,15 @@ Update it at the start and end of every work session.
 
 ## Now
 
-### Step 5: Errors, trace IDs, security headers (in progress on `feature/error-handling-and-headers`)
-- [x] Catch-all error handler: unexpected errors return a generic message and a trace ID; details stay in the server log
-- [x] Framework errors (404, 405, wrong parameter type...) keep their real status, not 500
-- [x] Trace ID on every response (`X-Trace-Id` header and in error bodies) and in every log line
-- [x] Security headers on every response: CSP, `nosniff`, `X-Frame-Options: DENY`, HSTS (over HTTPS), Referrer-Policy, Permissions-Policy, cross-origin policies
-- [x] Request size limit (413), chunked bodies refused (411)
-- [x] 14 new tests (67 in total, all passing); a deliberate leak was caught by a test; run for real on port 8081
-- [x] `SECURITY.md`, `DECISIONS.md` (ADR-31 to 34), `ARCHITECTURE.md`, `AGENTS.md` updated
-- [x] Handbook chapter
-- [ ] Mohit commits, pushes the branch, opens and merges the first pull request
-
-## Next
-
-### Step 5a: Automated checks (CI)
+### Step 5a: Automated checks (CI) (in progress on `chore/ci-workflow`)
 Brought forward at Mohit's request, so every pull request from now on is tested automatically.
-- [ ] GitHub Actions workflow: on every push and pull request, set up Java and run `.\mvnw test` (Linux runner)
+- [x] GitHub Actions workflow (`.github/workflows/ci.yml`): on every pull request and push to `main`, set up Java 25 and run the tests on Linux; read-only token; actions pinned to commit SHAs
+- [x] `mvnw` marked executable in git (needed on Linux)
 - [ ] Status check visible on the pull request
 - [ ] Branch protection on `main`: merging requires the check to pass
-- [ ] Badge in the README
+- [x] Badge in the README
+
+## Next
 
 ### Step 5b: Local HTTPS
 Split out of step 5: it needs a development certificate and a decision by Mohit about trusting it on this machine.
@@ -50,4 +40,5 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-16:** Step 5 (errors, trace IDs, security headers, size limit) merged: PR #1.
 - **2026-10-15:** Steps 0 to 4 committed (`b9c2883`) and published to https://github.com/mKs2609/casewright.

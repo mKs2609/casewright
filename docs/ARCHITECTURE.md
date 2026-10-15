@@ -215,4 +215,4 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Red-team suite | pytest | Injection payloads never cause an unauthorised tool call or action |
 | Dashboard | Vitest + Testing Library | Components render untrusted text safely |
 | End to end | Script against running services | Submit → investigate → approve → audit verifies |
-| CI | GitHub Actions | All of the above, plus dependency audit and static analysis |
+| CI | GitHub Actions (`.github/workflows/ci.yml`) | Gateway tests on every pull request and push to `main` (since step 5a); more suites, dependency audit and static analysis added as they arrive |

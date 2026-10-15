@@ -1,5 +1,7 @@
 # Casewright
 
+[![CI](https://github.com/mKs2609/casewright/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mKs2609/casewright/actions/workflows/ci.yml)
+
 **An AI security analyst that builds its case from evidence.**
 
 > An AI security analyst that investigates threats like a human would, explains itself to experts and non-experts at the same time, and never acts alone on anything risky.
@@ -56,7 +58,7 @@ cd gateway
 
 Then open http://localhost:8080/api/health. You should see `{"status":"UP","database":"UP", ...}`.
 
-Run the tests (they start their own throwaway PostgreSQL, so they need no setup):
+Run the tests (they start their own throwaway PostgreSQL, so they need no setup). GitHub also runs them on every pull request:
 
 ```bash
 cd gateway

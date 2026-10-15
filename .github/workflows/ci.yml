@@ -1,0 +1,55 @@
+# Continuous integration: GitHub runs the test suite on a fresh Linux machine
+# for every pull request and every push to main, and reports pass or fail.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:    # adds a "Run workflow" button on the Actions tab
+
+# The workflow may only read the repository. It cannot push, comment or change
+# settings, so even a malicious change to a pull request cannot misuse it.
+permissions:
+  contents: read
+
+# If a newer commit is pushed to the same branch, cancel the run still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gateway-tests:
+    name: Gateway tests          # the name branch protection asks for
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      # Actions are pinned to an exact commit (the long hex) rather than a movable
+      # tag such as v7, so a compromised or re-tagged action cannot change what runs
+      # here. The comment says which release that commit is.
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false   # don't leave the access token on the machine
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven                 # reuse downloaded libraries between runs
+
+      - name: Run all tests
+        run: ./mvnw --batch-mode --no-transfer-progress test
+
+      - name: Keep the test reports if something failed
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gateway-test-reports
+          path: gateway/target/surefire-reports/
+          retention-days: 7

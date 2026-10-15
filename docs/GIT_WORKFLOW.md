@@ -6,7 +6,7 @@ How work moves from an idea to the `main` branch on GitHub. We use **GitHub flow
 
 ## The rules
 
-1. **`main` is always working and tested.** Nothing is committed to `main` directly (except the very first commit).
+1. **`main` is always working and tested.** Nothing is committed to `main` directly (except the very first commit). GitHub enforces this: `main` only accepts changes through a pull request whose tests pass.
 2. **One branch per piece of work**: one roadmap step, one fix, or one docs change.
 3. **Every branch reaches `main` through a pull request (PR)**, which is where the change is read once more before it lands.
 4. **Start every piece of work from an up-to-date `main`.**
@@ -84,8 +84,10 @@ On GitHub, a yellow banner offers **Compare & pull request**. Use it. Or: **Pull
 - **Description**: what, why, how it was tested (the assistant drafts this).
 - Read the **Files changed** tab once yourself. That is the review.
 
-### 7. Merge
-Click **Merge pull request → Create a merge commit → Confirm**, then **Delete branch**.
+### 7. Wait for the checks, then merge
+GitHub runs the tests automatically (the **Checks** tab, and a yellow dot / green tick / red cross next to each commit). `main` is protected: the **Merge** button stays disabled until the `Gateway tests` check passes. If it fails, open the check to read why, fix it on the same branch, commit and `git push`; the checks run again.
+
+When it is green: **Merge pull request → Create a merge commit → Confirm**, then **Delete branch**.
 
 ### 8. Tidy up locally
 ```powershell

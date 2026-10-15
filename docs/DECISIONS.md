@@ -194,3 +194,10 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 **Status:** Accepted (2026-10-15)
 **Decision:** HTTPS for local development moves from step 5 to a new step 5b.
 **Why:** It needs a development certificate and a decision by Mohit about trusting it on his machine, which is a separate topic from error handling and headers.
+
+## ADR-35: Continuous integration on GitHub Actions, with a protected main
+**Status:** Accepted (2026-10-16). Brought forward from step 18 at Mohit's request.
+**Decision:** A GitHub Actions workflow runs the gateway test suite on a fresh Ubuntu machine for every pull request and every push to `main`. A ruleset on `main` requires a pull request, requires the `Gateway tests` check to pass, and blocks force-pushes and deletion. No approving review is required.
+**Why:** Every change is tested in a clean environment, not only on one Windows laptop, and broken code cannot reach `main`. Reviews are not required because the project has one developer and GitHub does not let authors approve their own pull requests.
+**Security choices:** the workflow token is read-only (`contents: read`); actions are pinned to full commit SHAs, so a re-tagged or compromised action cannot change what runs; the checkout does not keep credentials on the runner.
+**Trade-off:** Pinned SHAs must be updated by hand (or by Dependabot, planned for step 18). Each run takes a few minutes.
