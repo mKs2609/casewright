@@ -68,4 +68,5 @@ docs/        All project documents
 - Tests that need a database extend `PostgresIntegrationTest`.
 - Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output.
 - React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens.
+- CI (`.github/workflows/ci.yml`) runs on every pull request and must stay green; a new test suite (agent, dashboard) gets its own job there. Actions are pinned to full commit SHAs with the version in a comment, and the workflow token stays `contents: read`.
 - A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.
