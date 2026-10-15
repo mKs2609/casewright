@@ -8,8 +8,8 @@ import org.springframework.http.MediaType;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Writes the standard {"error": ...} body for requests refused by the security
- * filters, which run before any controller (so ApiExceptionHandler never sees them).
+ * Writes the standard {"error": ..., "traceId": ...} body for requests refused
+ * by filters, which run before any controller (so ApiExceptionHandler never sees them).
  * Messages are fixed text chosen by us; never pass request data in here.
  */
 public final class SecurityErrors {
@@ -21,6 +21,10 @@ public final class SecurityErrors {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"error\":\"" + fixedMessage + "\"}");
+        String traceId = TraceIds.current();
+        String body = "{\"error\":\"" + fixedMessage + "\""
+                + (traceId == null ? "" : ",\"traceId\":\"" + traceId + "\"")
+                + "}";
+        response.getWriter().write(body);
     }
 }

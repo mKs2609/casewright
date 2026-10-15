@@ -171,3 +171,26 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 **Decision:** The product and the GitHub repository are named **Casewright**: the system builds its case from evidence, like a detective. The name appears in the README, the documentation and the user interface. Package names, service names and other code keep the neutral names from ADR-14.
 **Why:** It describes what the product does and is easy to say and spell. A quick search found no clashing product. The candidates containing "Phantom" were rejected because Phantom was a well-known security-operations product (acquired by Splunk, now Splunk SOAR), and "ghost"/"vector" names suggest an offensive tool.
 **Trade-off:** A web search is not a trademark clearance; acceptable for a portfolio project.
+
+## ADR-31: Server-generated trace IDs on every request
+**Status:** Accepted (2026-10-15)
+**Decision:** A filter that runs before everything else gives each request a random 16-character ID. It is returned in the `X-Trace-Id` header and in every error body, and printed on every log line for that request. An ID sent by the caller is ignored.
+**Why:** A user can report "trace ID 3f9a…" and the exact log lines can be found, without the error message itself revealing anything. Accepting caller-chosen IDs would let anyone plant misleading entries in the logs.
+**Trade-off:** IDs do not follow a request across services yet. When the agent service arrives, the gateway will pass its ID along.
+
+## ADR-32: Strict headers for a JSON-only API
+**Status:** Accepted (2026-10-15)
+**Decision:** `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'` plus `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a `Permissions-Policy` denying device access, `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`, and HSTS for a year (HTTPS only).
+**Why:** The gateway never serves pages, so it can forbid everything. The dashboard will set its own, looser policy for the page itself.
+**Trade-off:** If the gateway ever serves HTML, the policy must be relaxed for those responses.
+
+## ADR-33: Request bodies are limited to 256 KB; chunked bodies are refused
+**Status:** Accepted (2026-10-15)
+**Decision:** A filter refuses bodies whose stated length exceeds `security.max-request-size` (256 KB) with 413, and bodies sent without a stated length (chunked) with 411.
+**Why:** Without a limit, Tomcat accepts JSON bodies of any size, and each one costs memory and CPU (and password hashing at login). A body's size can only be checked before reading it if the length is stated.
+**Trade-off:** Clients must send `Content-Length`, which browsers and normal HTTP clients do. Incident uploads (later) must fit within the limit or get their own, explicitly larger one.
+
+## ADR-34: Local HTTPS is its own step
+**Status:** Accepted (2026-10-15)
+**Decision:** HTTPS for local development moves from step 5 to a new step 5b.
+**Why:** It needs a development certificate and a decision by Mohit about trusting it on his machine, which is a separate topic from error handling and headers.

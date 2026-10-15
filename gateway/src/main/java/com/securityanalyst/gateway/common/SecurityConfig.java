@@ -13,6 +13,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.HeaderWriterFilter;
+import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
+import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.util.unit.DataSize;
 
 import com.securityanalyst.gateway.auth.JwtAuthenticationFilter;
 import com.securityanalyst.gateway.auth.JwtService;
@@ -20,18 +25,31 @@ import com.securityanalyst.gateway.auth.JwtService;
 import jakarta.servlet.DispatcherType;
 
 /**
- * The one place that says who may call what.
+ * The one place that says who may call what, and which protective headers
+ * every response carries.
  * Default: everything needs a logged-in user. Exceptions are listed explicitly.
  */
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * This server only ever returns JSON, never pages, so the browser is told
+     * to load and run nothing at all from our responses.
+     */
+    static final String CONTENT_SECURITY_POLICY =
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
+    static final String PERMISSIONS_POLICY =
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
-            @Value("${security.allowed-origins}") Set<String> allowedOrigins) throws Exception {
+            @Value("${security.allowed-origins}") Set<String> allowedOrigins,
+            @Value("${security.max-request-size}") DataSize maxRequestSize) throws Exception {
 
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService);
         OriginCheckFilter originFilter = new OriginCheckFilter(allowedOrigins);
+        RequestSizeLimitFilter sizeLimitFilter = new RequestSizeLimitFilter(maxRequestSize.toBytes());
 
         http
             // No server-side HTTP session: every request proves itself with its access token.
@@ -45,6 +63,19 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
             .logout(logout -> logout.disable())
+
+            // Protective headers on every response. Spring Security already sends
+            // X-Content-Type-Options: nosniff and Cache-Control: no-store by default.
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+                .frameOptions(frame -> frame.deny())
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+                .permissionsPolicyHeader(permissions -> permissions.policy(PERMISSIONS_POLICY))
+                .crossOriginOpenerPolicy(coop -> coop.policy(CrossOriginOpenerPolicy.SAME_ORIGIN))
+                .crossOriginResourcePolicy(corp -> corp.policy(CrossOriginResourcePolicy.SAME_ORIGIN))
+                // HSTS: "only ever use HTTPS for this site, for a year". Browsers ignore it over
+                // plain HTTP, so Spring sends it on HTTPS responses only.
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
 
             .authorizeHttpRequests(auth -> auth
                 // Lets Spring's internal error handling finish, so a 404 stays a 404.
@@ -66,6 +97,9 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, e) ->
                         SecurityErrors.write(response, HttpStatus.FORBIDDEN, "You do not have permission to do this")))
 
+            // Order inside the security chain: headers are prepared first, then the
+            // size check, then the cross-site check, then the token check.
+            .addFilterAfter(sizeLimitFilter, HeaderWriterFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(originFilter, JwtAuthenticationFilter.class);
 
