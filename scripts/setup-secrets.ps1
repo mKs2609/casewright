@@ -12,7 +12,8 @@ $envFile = Join-Path $root ".env"
 
 # name -> number of random bytes
 $secrets = [ordered]@{
-    "JWT_SIGNING_KEY" = 48   # signs access tokens (HMAC-SHA256 needs at least 32 bytes)
+    "JWT_SIGNING_KEY" = 48         # signs access tokens (HMAC-SHA256 needs at least 32 bytes)
+    "SSL_KEYSTORE_PASSWORD" = 24   # protects the HTTPS keystore made by setup-https.ps1
 }
 
 $lines = @()

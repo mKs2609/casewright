@@ -126,7 +126,7 @@ Incident status: `queued → investigating → awaiting_approval | needs_review 
 
 ## 5. API surface
 
-### 5.1 Public API (gateway, port 8080)
+### 5.1 Public API (gateway, HTTPS on port 8443)
 
 All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...}, "traceId": "..."}` (`fields` only for validation errors). Every response carries an `X-Trace-Id` header that matches the `traceId` and the server log lines for that request.
 
@@ -199,7 +199,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 
 | Service | Port | Start command |
 |---|---|---|
-| Gateway | 8080 | `cd gateway && ./mvnw spring-boot:run` |
+| Gateway | 8443 (HTTPS only) | `cd gateway && ./mvnw spring-boot:run`. Needs the certificate from `scripts\setup-https.ps1` |
 | Agent | 8001 | `cd agent && uvicorn app.main:app --port 8001` |
 | Dashboard | 5173 | `cd dashboard && npm run dev` |
 | PostgreSQL | 5432 | Windows service `postgresql-x64-16`. Database `secanalyst`, role `secanalyst_app`, created once by `scripts\setup-db.ps1` |

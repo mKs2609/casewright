@@ -4,6 +4,8 @@
 /handbook/
 # Working diary for AI-assisted sessions (machine setup, session log):
 /docs/MEMORY.md
+# Local HTTPS certificate and its private key (scripts/setup-https.ps1 makes them):
+/certs/
 
 # Secrets: never commit these
 .env
