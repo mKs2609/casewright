@@ -193,7 +193,7 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 ## ADR-34: Local HTTPS is its own step
 **Status:** Accepted (2026-10-15)
 **Decision:** HTTPS for local development moves from step 5 to a new step 5b.
-**Why:** It needs a development certificate and a decision by Mohit about trusting it on his machine, which is a separate topic from error handling and headers.
+**Why:** It needs a development certificate and a decision by Mohit about trusting it on this machine, which is a separate topic from error handling and headers.
 
 ## ADR-35: Continuous integration on GitHub Actions, with a protected main
 **Status:** Accepted (2026-10-16). Brought forward from step 18 at Mohit's request.
@@ -201,3 +201,10 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 **Why:** Every change is tested in a clean environment, not only on one Windows laptop, and broken code cannot reach `main`. Reviews are not required because the project has one developer and GitHub does not let authors approve their own pull requests.
 **Security choices:** the workflow token is read-only (`contents: read`); actions are pinned to full commit SHAs, so a re-tagged or compromised action cannot change what runs; the checkout does not keep credentials on the runner.
 **Trade-off:** Pinned SHAs must be updated by hand (or by Dependabot, planned for step 18). Each run takes a few minutes.
+
+## ADR-36: Local HTTPS with a self-signed, localhost-only certificate
+**Status:** Accepted (2026-10-17)
+**Decision:** The gateway serves HTTPS only, on port 8443, with TLS 1.3 and 1.2. `scripts/setup-https.ps1` makes the certificate with the JDK's `keytool`: self-signed, valid one year, only for `localhost`, `127.0.0.1` and `::1`, marked "not a certificate authority", and limited to server authentication. The certificate and its private key live in `certs/gateway-dev.p12` (git-ignored), protected by `SSL_KEYSTORE_PASSWORD` from `.env`. Trusting the certificate is a separate, opt-in action (`-Trust`) that adds it to the current Windows user's trusted list, never the whole machine's.
+**Why:** Cookies are marked `Secure` and the gateway sends HSTS, so local development should use HTTPS like production does. `keytool` ships with Java, so nothing extra has to be downloaded.
+**Alternatives considered:** *mkcert* (popular, but it installs a local certificate authority: if that CA's key ever leaked, it could vouch for any website on this machine; our certificate can only ever vouch for `localhost`). *Plain HTTP for local work* (the browser exception for `localhost` hides problems that only show up over real HTTPS).
+**Consequences:** Plain HTTP to port 8443 gets `400`. The script `try-auth.ps1` accepts the development certificate even if it is not trusted, but only that exact certificate. HSTS applies to a host name, not a port, so once a browser has seen it for `localhost`, the dashboard's development server (step 16) must use HTTPS too; the allowed origins already expect `https://localhost:5173`. The certificate expires after a year; `setup-https.ps1 -Force` replaces it.

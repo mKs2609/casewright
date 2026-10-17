@@ -49,6 +49,22 @@ One-time database setup (creates the database, a limited database user, and your
 powershell -ExecutionPolicy Bypass -File scripts\setup-db.ps1
 ```
 
+Generate the application's secrets, then the development certificate the gateway uses for HTTPS (both are safe to re-run, and nothing they create is committed):
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\setup-secrets.ps1
+```
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\setup-https.ps1
+```
+
+Optionally, trust that certificate for your Windows account so browsers stop warning about it (Windows asks you to confirm; `-Untrust` removes it again):
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\setup-https.ps1 -Trust
+```
+
 Then start the gateway:
 
 ```bash
@@ -56,7 +72,7 @@ cd gateway
 ./mvnw spring-boot:run
 ```
 
-Then open http://localhost:8080/api/health. You should see `{"status":"UP","database":"UP", ...}`.
+Then open https://localhost:8443/api/health. The gateway only speaks HTTPS. You should see `{"status":"UP","database":"UP", ...}`.
 
 Run the tests (they start their own throwaway PostgreSQL, so they need no setup). GitHub also runs them on every pull request:
 

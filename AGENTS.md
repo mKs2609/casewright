@@ -20,6 +20,7 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 - **One step at a time.** Work only on the current step in `docs/TASKS.md`.
 - **Never run `git add`, `git commit`, `git push`, `git merge` or anything that changes history.** Mohit does all git operations. Read-only commands (`git status`, `git diff`, `git log`) are fine for checking.
 - **Follow [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md).** At the start of a step, give Mohit the branch name and the commands to create it from an up-to-date `main`. At the end, give the commit message(s), PR title and PR description. Before Mohit's first commit of a step, check the staged files for secrets. Explain every git/GitHub term and command as it is used (what it does and how); Mohit is learning git alongside the project.
+- **Commit messages and PR descriptions are written in Mohit's own voice**: plain, short, saying what changed and why. No AI attribution of any kind (no `Co-Authored-By` lines for an AI, no "Generated with" footers, no mention of an assistant).
 - **Narrate as you go.** Before each piece of work, tell Mohit what is about to be built and why; flag surprises when they happen.
 - **Explain what you built** in plain language at the end of every step. Mohit is learning; assume terms need defining.
 - **Test before calling it done**: automated tests and a real run. Report failures honestly.
@@ -35,10 +36,11 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 |---|---|
 | One-time database setup | `powershell -ExecutionPolicy Bypass -File scripts\setup-db.ps1` (Mohit runs this; it asks for the `postgres` password) |
 | Add missing application secrets to `.env` | `powershell -ExecutionPolicy Bypass -File scripts\setup-secrets.ps1` (safe to re-run; never prints values) |
+| Create the local HTTPS certificate | `powershell -ExecutionPolicy Bypass -File scripts\setup-https.ps1` (once; `-Trust` / `-Untrust` change the Windows trust list, so only Mohit runs those) |
 | Make a user an admin | `powershell -ExecutionPolicy Bypass -File scripts\set-role.ps1 -Username <name> -Role ADMIN` |
 | Walk through a login session | `powershell -ExecutionPolicy Bypass -File scripts\try-auth.ps1 -Username <name>` |
 | Gateway tests | `cd gateway; .\mvnw.cmd test` (uses its own embedded PostgreSQL; needs no setup) |
-| Run gateway | `cd gateway; .\mvnw.cmd spring-boot:run` (http://localhost:8080/api/health) |
+| Run gateway | `cd gateway; .\mvnw.cmd spring-boot:run` (https://localhost:8443/api/health) |
 | Agent tests | `cd agent; pytest` (from Step 8) |
 | Run agent | `cd agent; uvicorn app.main:app --port 8001` (from Step 8) |
 | Dashboard | `cd dashboard; npm run dev` (from Step 16) |
@@ -61,6 +63,7 @@ docs/        All project documents
 - Errors shown to callers are thrown as `ApiException(status, message)`; `ApiExceptionHandler` turns them into `{"error": ...}`. Never echo a rejected value back.
 - Security is deny-by-default: a new URL needs a login unless it is added to the public list in `SecurityConfig`. Security filters are created inside `SecurityConfig`; filters that must run before security (the trace ID) are registered in `WebFilterConfig`. Never make a filter a `@Component` (that registers it twice).
 - Every error body is built with `ApiError.of(...)` / `SecurityErrors.write(...)`, which add the trace ID. Unexpected errors are logged once, in `ApiExceptionHandler`; do not catch-and-log elsewhere.
+- The gateway serves HTTPS only (port 8443). Tests that need the real server use `@SpringBootTest(webEnvironment = RANDOM_PORT)` and make a throwaway certificate, as `HttpsServerTest` does; MockMvc tests need no certificate.
 - A new required secret goes in four places: `application.properties`, `RequiredSettingsCheck`, `.env.example`, and `scripts/setup-secrets.ps1`; tests get their own value in `PostgresIntegrationTest`.
 - A service method that writes something and then throws to refuse the request needs `@Transactional(noRollbackFor = ApiException.class)`, or the write is undone.
 - JPA entities must match the Flyway schema exactly (`ddl-auto=validate`). Change the migration first, then the entity.

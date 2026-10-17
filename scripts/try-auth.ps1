@@ -3,13 +3,13 @@
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\try-auth.ps1 -Username mohit
 #
-# Why this script exists: our cookies are marked "Secure" (HTTPS only). Browsers
-# make an exception for http://localhost, but PowerShell does not, so plain
-# Invoke-RestMethod silently drops them. This script carries the cookies by hand.
+# The gateway speaks HTTPS only. If you have not run "setup-https.ps1 -Trust", Windows does not
+# trust its self-signed certificate yet; this script then accepts that one certificate (from
+# certs\gateway-dev.crt) and nothing else. Every other certificate is still checked as normal.
 
 param(
     [Parameter(Mandatory = $true)][string]$Username,
-    [string]$BaseUrl = "http://localhost:8080"
+    [string]$BaseUrl = "https://localhost:8443"
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,27 +20,49 @@ if ($env:TRY_AUTH_PASSWORD) {
     $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
 }
 
-$cookies = @{}   # name -> value, as a browser would remember them
+$devCert = Join-Path (Split-Path -Parent $PSScriptRoot) "certs\gateway-dev.crt"
+if (Test-Path $devCert) {
+    # Written in C# because .NET runs this check on a background thread, where a PowerShell
+    # script block cannot run.
+    Add-Type -TypeDefinition @"
+using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+public static class DevCertificate {
+    static string thumbprint;
+    public static void AcceptOnly(string expectedThumbprint) {
+        thumbprint = expectedThumbprint;
+        ServicePointManager.ServerCertificateValidationCallback = Check;
+    }
+    static bool Check(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors) {
+        if (errors == SslPolicyErrors.None) return true;   // trusted by Windows
+        // Only "nobody vouches for it" is forgiven, and only for our exact certificate.
+        // A wrong host name or any other problem still fails.
+        return errors == SslPolicyErrors.RemoteCertificateChainErrors
+            && string.Equals(new X509Certificate2(certificate).Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase);
+    }
+}
+"@
+    [DevCertificate]::AcceptOnly((New-Object Security.Cryptography.X509Certificates.X509Certificate2($devCert)).Thumbprint)
+}
+
+# One cookie jar for the whole walkthrough, as a browser would keep. Over HTTPS, PowerShell
+# stores the Secure cookies, sends the refresh cookie only to /api/auth (its Path), and forgets
+# a cookie when the server sends it back expired.
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
 function Call($method, $path, $body) {
-    $uri = [uri]"$BaseUrl$path"
-    # Hand PowerShell our cookies as ordinary (non-Secure) copies so it will send them over http.
-    # The refresh cookie has Path=/api/auth, so (like a browser) only send it there.
-    $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-    foreach ($name in @($cookies.Keys)) {
-        if ($name -eq "refresh_token" -and -not $path.StartsWith("/api/auth")) { continue }
-        $session.Cookies.Add((New-Object System.Net.Cookie($name, $cookies[$name], "/", $uri.Host)))
-    }
-    $req = @{ Method = $method; Uri = $uri; UseBasicParsing = $true; WebSession = $session }
+    $req = @{ Method = $method; Uri = "$BaseUrl$path"; UseBasicParsing = $true; WebSession = $session }
     if ($body) { $req["Body"] = $body; $req["ContentType"] = "application/json" }
     try {
         $r = Invoke-WebRequest @req
-        $status = [int]$r.StatusCode; $setCookie = [string]$r.Headers["Set-Cookie"]
+        $status = [int]$r.StatusCode
         $text = if ($r.Content -is [string]) { $r.Content } else { "" }
     } catch {
         $resp = $_.Exception.Response
-        if (-not $resp) { throw "Could not reach $BaseUrl. Is the gateway running?" }
-        $status = [int]$resp.StatusCode; $setCookie = [string]$resp.Headers["Set-Cookie"]
+        if (-not $resp) { throw "Could not reach $BaseUrl ($($_.Exception.Message)). Is the gateway running?" }
+        $status = [int]$resp.StatusCode
         $text = $_.ErrorDetails.Message
         if (-not $text) {
             $stream = $resp.GetResponseStream()
@@ -48,22 +70,20 @@ function Call($method, $path, $body) {
             $text = (New-Object IO.StreamReader($stream)).ReadToEnd()
         }
     }
-    # A cookie sent back empty means "delete it", exactly as a browser would.
-    foreach ($name in @("access_token", "refresh_token")) {
-        if ($setCookie -match "(^|[,\s])$name=;") { $cookies.Remove($name) }
-    }
-    # Remember the cookies the server just set. They are the Secure ones; asking with an
-    # https address makes PowerShell hand them over.
-    foreach ($p in @("/", "/api/auth/")) {
-        foreach ($c in $session.Cookies.GetCookies([uri]("https://" + $uri.Authority + $p))) {
-            if ($c.Secure -and $c.Value) { $cookies[$c.Name] = $c.Value }
-        }
-    }
     "{0,-4} {1,-18} -> {2}  {3}" -f $method, $path, $status, $text
 }
 
+function Get-CookieValue($name) {
+    # The refresh cookie only exists under /api/auth/, so look there as well as at /.
+    foreach ($p in @("/", "/api/auth/")) {
+        $c = $session.Cookies.GetCookies([uri]"$BaseUrl$p")[$name]
+        if ($c -and $c.Value -and -not $c.Expired) { return $c.Value }
+    }
+    return $null
+}
+
 function Show($name) {
-    $v = $cookies[$name]
+    $v = Get-CookieValue $name
     if ($v) { "       cookie {0,-14} {1}... ({2} characters)" -f $name, $v.Substring(0, [Math]::Min(16, $v.Length)), $v.Length }
     else { "       cookie {0,-14} (none)" -f $name }
 }
@@ -75,7 +95,7 @@ Call GET "/api/me"
 Call POST "/api/auth/login" (@{ username = $Username; password = $plain } | ConvertTo-Json)
 $plain = $null
 Show access_token; Show refresh_token
-$firstRefresh = $cookies["refresh_token"]
+$firstRefresh = Get-CookieValue "refresh_token"
 
 "`n3. With the access-token cookie, the protected URL now knows who we are:"
 Call GET "/api/me"
@@ -86,7 +106,7 @@ Call GET "/api/admin/users"
 "`n5. Refresh: swap the refresh token for a brand-new pair:"
 Call POST "/api/auth/refresh"
 Show access_token; Show refresh_token
-"       refresh token changed: " + ($cookies["refresh_token"] -ne $firstRefresh)
+"       refresh token changed: " + ((Get-CookieValue "refresh_token") -ne $firstRefresh)
 
 "`n6. Log out. The server cancels the session and empties the cookies:"
 Call POST "/api/auth/logout"

@@ -346,7 +346,7 @@ class SessionAndRolesTest extends PostgresIntegrationTest {
         String body = "{\"username\":\"asha.rao\",\"password\":\"" + PASSWORD + "\"}";
 
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body)
-                .header("Origin", "http://localhost:5173").header("Sec-Fetch-Site", "same-site"))
+                .header("Origin", "https://localhost:5173").header("Sec-Fetch-Site", "same-site"))
                 .andExpect(status().isOk());
     }
 }

@@ -50,7 +50,15 @@ Plain-language meanings of the terms used in this project.
 | **Exponential backoff** | Making each retry wait longer than the last. |
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A connection that stays open so the server can push updates. |
-| **TLS / HTTPS** | Encryption for data in transit. |
+| **TLS / HTTPS** | Encryption for data in transit. HTTPS is ordinary HTTP sent inside a TLS connection. |
+| **TLS handshake** | The first moments of a TLS connection: the two sides agree a version and cipher, the server proves its identity with its certificate, and they agree the keys for the session. |
+| **Certificate** | A public document that says "this public key belongs to `localhost`" (or to a website), signed by someone who vouches for it. |
+| **Private key** | The secret half of the key pair. Whoever holds it can pose as the server, so it never leaves the server. |
+| **Certificate authority (CA)** | An organisation, or a certificate, that browsers trust to vouch for other certificates. |
+| **Self-signed certificate** | A certificate that vouches for itself. Fine for development once you trust it deliberately; browsers warn about it otherwise. |
+| **Keystore (PKCS12, `.p12`)** | A password-protected file holding a certificate together with its private key. |
+| **SAN (Subject Alternative Name)** | The list of names a certificate is valid for, such as `localhost` and `127.0.0.1`. Browsers check the address against it. |
+| **HSTS** | A header telling the browser "only ever use HTTPS for this host". It applies to the host name, not the port. |
 
 ## AI terms
 

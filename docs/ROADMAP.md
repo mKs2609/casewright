@@ -1,9 +1,9 @@
 # Roadmap
 
-**Last updated:** 2026-10-02
+**Last updated:** 2026-10-17
 
 One feature at a time. A step is finished only when it is **built, explained, tested, and committed by Mohit**.
-Pushing to GitHub waits until the project is demo-ready and named (around step 16–17).
+The code is public on GitHub; every step reaches `main` through a pull request (see [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md)).
 The checklist for the step currently in progress lives in [`TASKS.md`](TASKS.md).
 
 Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not started
@@ -16,8 +16,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 3 | **Signup and login** | Password hashing with Argon2, DTO validation | A user can sign up and log in; the stored password is a hash; wrong password gives a generic error | ✅ |
 | 4 | **Tokens and roles** | JWT, refresh rotation, secure cookies, Spring Security filters | Protected endpoints need a valid token; `VIEWER` is refused where `ANALYST` is required; refresh rotates; logout revokes | ✅ |
 | 5 | **Errors, trace IDs, security headers** | Global exception handling, request tracing, browser security headers, request size limits | Unexpected errors return a generic message and a trace ID; every response carries a trace ID and the security headers; oversized bodies are refused; tests prove each | ✅ |
-| 5a | **Automated checks (CI)** | GitHub Actions, workflows, status checks, branch protection | Every push and pull request runs the full test suite on GitHub; a pull request shows a green tick or red cross; `main` cannot be merged into while tests fail | 🟡 |
-| 5b | **Local HTTPS** | Certificates, TLS, keystores, trusting a development certificate | The gateway serves HTTPS locally; cookies and HSTS work over it; the scripts use it | ⬜ |
+| 5a | **Automated checks (CI)** | GitHub Actions, workflows, status checks, branch protection | Every push and pull request runs the full test suite on GitHub; a pull request shows a green tick or red cross; `main` cannot be merged into while tests fail | ✅ |
+| 5b | **Local HTTPS** | Certificates, TLS, keystores, trusting a development certificate | The gateway serves HTTPS locally; cookies and HSTS work over it; the scripts use it | 🟡 |
 | 6 | **Rate limiting** | Token buckets, backoff, config-driven limits | Login is limited per IP and per account with backoff; limits come from config; tests prove it | ⬜ |
 | 7 | **Incident ingestion** | Polymorphic request validation, JSON columns, baselines | The three incident kinds can be submitted, listed and fetched; baselines seeded and encrypted | ⬜ |
 | 8 | **Agent service + secure connection** | FastAPI, service-to-service auth, streaming responses | Gateway calls the Python agent with a service token; calls without the token are refused; agent returns a stub result | ⬜ |
