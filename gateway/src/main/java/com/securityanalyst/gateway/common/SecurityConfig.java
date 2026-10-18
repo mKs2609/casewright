@@ -3,6 +3,7 @@ package com.securityanalyst.gateway.common;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,7 @@ import jakarta.servlet.DispatcherType;
  * Default: everything needs a logged-in user. Exceptions are listed explicitly.
  */
 @Configuration
+@EnableConfigurationProperties(RateLimitProperties.class)
 public class SecurityConfig {
 
     /**
@@ -45,11 +47,15 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
             @Value("${security.allowed-origins}") Set<String> allowedOrigins,
-            @Value("${security.max-request-size}") DataSize maxRequestSize) throws Exception {
+            @Value("${security.max-request-size}") DataSize maxRequestSize,
+            RateLimitProperties limits) throws Exception {
 
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService);
         OriginCheckFilter originFilter = new OriginCheckFilter(allowedOrigins);
         RequestSizeLimitFilter sizeLimitFilter = new RequestSizeLimitFilter(maxRequestSize.toBytes());
+        RateLimitFilter rateLimitFilter = new RateLimitFilter(
+                new KeyedRateLimiter(limits.requestsPerMinute(), limits.maxTrackedClients()),
+                new KeyedRateLimiter(limits.credentialRequestsPerMinute(), limits.maxTrackedClients()));
 
         http
             // No server-side HTTP session: every request proves itself with its access token.
@@ -97,9 +103,10 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, e) ->
                         SecurityErrors.write(response, HttpStatus.FORBIDDEN, "You do not have permission to do this")))
 
-            // Order inside the security chain: headers are prepared first, then the
-            // size check, then the cross-site check, then the token check.
-            .addFilterAfter(sizeLimitFilter, HeaderWriterFilter.class)
+            // Order inside the security chain: headers are prepared first, then the rate
+            // limits (cheapest refusal), the size check, the cross-site check, the token check.
+            .addFilterAfter(rateLimitFilter, HeaderWriterFilter.class)
+            .addFilterAfter(sizeLimitFilter, RateLimitFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(originFilter, JwtAuthenticationFilter.class);
 

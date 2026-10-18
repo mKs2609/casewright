@@ -1,5 +1,6 @@
 package com.securityanalyst.gateway.auth;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.securityanalyst.gateway.common.ApiException;
+import com.securityanalyst.gateway.common.TooManyRequestsException;
 
 /** The rules for creating an account and for checking a login. */
 @Service
@@ -17,6 +19,7 @@ public class AuthService {
 
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final LoginThrottle loginThrottle;
 
     /**
      * A hash of a random value nobody knows. When a login names a user that
@@ -25,9 +28,10 @@ public class AuthService {
      */
     private final String dummyHash;
 
-    public AuthService(UserRepository users, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, LoginThrottle loginThrottle) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.loginThrottle = loginThrottle;
         this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -52,6 +56,11 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public User login(LoginRequest request) {
+        // Before anything else: while a username has to wait, its password is not even checked.
+        Duration wait = loginThrottle.tryAttempt(request.username());
+        if (!wait.isZero()) {
+            throw new TooManyRequestsException("Too many login attempts. Try again later.", wait);
+        }
         Optional<User> user = users.findByUsername(request.username());
         String hash = user.map(User::getPasswordHash).orElse(dummyHash);
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
@@ -59,6 +68,7 @@ public class AuthService {
             // One message for both cases, so an attacker can't tell them apart.
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
+        loginThrottle.succeeded(request.username());
         return user.get();
     }
 

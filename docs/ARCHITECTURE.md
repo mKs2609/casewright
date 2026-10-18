@@ -193,7 +193,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest |
 | `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls |
 | `ANTHROPIC_API_KEY` | agent | LLM access (optional; without it the rule engine runs) |
-| `RATE_LIMIT_*` | gateway | Rate-limit thresholds |
+| `SECURITY_RATELIMIT_*` (optional) | gateway | Override the rate-limit thresholds set in `application.properties`, e.g. `SECURITY_RATELIMIT_REQUESTSPERMINUTE` |
 
 ## 8. Local development
 

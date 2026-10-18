@@ -111,6 +111,7 @@ flowchart LR
 ## 6. Accepted risks (for a student project)
 
 - Rate limits are held in memory, so they reset on restart and do not work across multiple instances.
+- An attacker who knows a username can slow that user's logins down for up to 15 minutes at a time (the price of having no permanent lockout).
 - Enforcement is simulated.
 - A single shared service token rather than mutual TLS between services.
 - One database role both runs migrations and serves queries (ADR-18). It is not a superuser, but it can alter its own tables.

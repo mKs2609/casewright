@@ -64,6 +64,7 @@ docs/        All project documents
 - Security is deny-by-default: a new URL needs a login unless it is added to the public list in `SecurityConfig`. Security filters are created inside `SecurityConfig`; filters that must run before security (the trace ID) are registered in `WebFilterConfig`. Never make a filter a `@Component` (that registers it twice).
 - Every error body is built with `ApiError.of(...)` / `SecurityErrors.write(...)`, which add the trace ID. Unexpected errors are logged once, in `ApiExceptionHandler`; do not catch-and-log elsewhere.
 - The gateway serves HTTPS only (port 8443). Tests that need the real server use `@SpringBootTest(webEnvironment = RANDOM_PORT)` and make a throwaway certificate, as `HttpsServerTest` does; MockMvc tests need no certificate.
+- Rate limits come from `security.rate-limit.*`. `PostgresIntegrationTest` sets limits ordinary tests can never reach (via `@TestPropertySource`); a test that needs real limits sets them with `@DynamicPropertySource`, as `RateLimitTest` does, and uses its own fake client IPs.
 - A new required secret goes in four places: `application.properties`, `RequiredSettingsCheck`, `.env.example`, and `scripts/setup-secrets.ps1`; tests get their own value in `PostgresIntegrationTest`.
 - A service method that writes something and then throws to refuse the request needs `@Transactional(noRollbackFor = ApiException.class)`, or the write is undone.
 - JPA entities must match the Flyway schema exactly (`ddl-auto=validate`). Change the migration first, then the entity.
