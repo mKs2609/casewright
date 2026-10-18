@@ -67,9 +67,21 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 **Why:** A plain hash chain can be recomputed by anyone who can edit the table. An HMAC cannot without the key.
 
 ## ADR-12: In-memory rate limiting
-**Status:** Proposed
-**Decision:** Bucket4j with in-memory buckets; thresholds from configuration.
+**Status:** Accepted (confirmed by Mohit, 2026-10-18)
+**Decision:** Bucket4j token buckets held in memory; every threshold comes from `security.rate-limit.*` in `application.properties`. Three limits:
+- every request, per client IP address (120 a minute);
+- login and signup, per client IP address (10 a minute), because each runs the deliberately slow password hash;
+- per username on login: 5 free attempts, then each further attempt waits 1 s, 2 s, 4 s ... up to 15 minutes. A correct password resets it. No permanent lockout.
+
+Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** One gateway instance is enough for this project. Redis can be added later without changing the rules.
+**Details that matter:**
+- The per-username check runs before the password is checked, and unknown usernames are treated the same as real ones, so the 429 reveals nothing.
+- An attempt is counted when it starts and cleared on success, so parallel guesses cannot all slip through before the first failure is recorded.
+- The counters sit in a bounded Caffeine cache, so a flood of made-up IPs or usernames cannot exhaust memory.
+- The client IP is the connection's own address. `X-Forwarded-For` is ignored until a trusted proxy exists (step 17), because anyone can forge it.
+
+**Trade-offs:** Counters reset when the gateway restarts and would not be shared between several instances. An attacker can slow down a real user's logins for up to 15 minutes at a time (the price of having no permanent lockout). People sharing one IP address (an office, a university) share the per-IP limits.
 
 ## ADR-13: Enforcement is simulated
 **Status:** Accepted (2026-10-02)

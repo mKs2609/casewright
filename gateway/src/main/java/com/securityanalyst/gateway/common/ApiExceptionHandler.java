@@ -30,6 +30,14 @@ public class ApiExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     /** Errors we raised on purpose, e.g. "username already taken". */
+    /** Rate limits: also tell the caller how long to wait. */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiError> handleTooManyRequests(TooManyRequestsException e) {
+        return ResponseEntity.status(e.getStatus())
+                .header("Retry-After", e.retryAfterHeader())
+                .body(ApiError.of(e.getMessage()));
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException e) {
         return ResponseEntity.status(e.getStatus()).body(ApiError.of(e.getMessage()));

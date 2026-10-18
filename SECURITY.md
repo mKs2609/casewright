@@ -7,7 +7,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 ## A. Perimeter / API
 | Item | Status | Notes |
 |---|---|---|
-| Rate limiting: strict on `/auth/*` (per-IP + per-account, exponential backoff, no hard lockout), moderate elsewhere; thresholds in config | ⬜ | |
+| Rate limiting: strict on `/auth/*` (per-IP + per-account, exponential backoff, no hard lockout), moderate elsewhere; thresholds in config | ✅ | Every request: 120/min per IP. Login and signup: 10/min per IP. Login per username: 5 free attempts, then waits doubling from 1 s to 15 min, checked before the password and identical for unknown usernames; a correct password resets it. `429` with `Retry-After`. Bounded in-memory counters (ADR-12); `X-Forwarded-For` not trusted. Tests: `RateLimitTest`, `LoginThrottleTest`, `KeyedRateLimiterTest`. |
 | Strict input validation (type, length, format); reject, never "clean" | 🟡 | Done for signup and login: format and length rules, unknown JSON fields rejected, rejected values never echoed back. To be repeated for every new endpoint. |
 | Security headers: CSP, `nosniff`, `X-Frame-Options: DENY`, HSTS | ✅ | Every response, including refusals: `Content-Security-Policy` (nothing may load or run), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, cross-origin opener/resource policies, `Cache-Control: no-store`; HSTS on HTTPS responses only (as the standard requires). No `Server` header. Tests: `ErrorHandlingAndHeadersTest`. |
 | Request size limit | ✅ | Bodies over 256 KB refused with 413 before being read; chunked bodies without a length refused with 411; limit in config (`aBodyOverTheLimitIsRefusedBeforeItIsRead`). |

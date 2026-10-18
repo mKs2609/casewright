@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<bouncycastle.version>1.86</bouncycastle.version>
+		<bucket4j.version>8.21.0</bucket4j.version>
 		<embedded-postgres.version>2.2.2</embedded-postgres.version>
 		<embedded-postgres-binaries.version>16.15.0</embedded-postgres-binaries.version>
 	</properties>
@@ -74,6 +75,17 @@
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
 			<version>${bouncycastle.version}</version>
+		</dependency>
+		<!-- Rate limiting: token buckets (ADR-12) -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>${bucket4j.version}</version>
+		</dependency>
+		<!-- Bounded in-memory cache that holds the rate-limit counters (version managed by Spring Boot) -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
 		</dependency>
 		<!-- Versioned SQL migrations, applied at startup -->
 		<dependency>

@@ -48,6 +48,9 @@ Plain-language meanings of the terms used in this project.
 | **CSP** | Content Security Policy. A header telling the browser which scripts may run. |
 | **Rate limiting** | Capping how many requests one client can make in a period. |
 | **Exponential backoff** | Making each retry wait longer than the last. |
+| **Token bucket** | A rate-limiting method: a bucket holds up to N tokens, each request takes one, and tokens flow back at a steady rate. Short bursts are fine; a sustained flood runs it dry. |
+| **429 Too Many Requests** | The HTTP status for "slow down". Usually sent with a `Retry-After` header saying how many seconds to wait. |
+| **Account lockout** | Disabling an account after too many wrong passwords. We use backoff instead, so an attacker cannot lock a real user out. |
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A connection that stays open so the server can push updates. |
 | **TLS / HTTPS** | Encryption for data in transit. HTTPS is ordinary HTTP sent inside a TLS connection. |
