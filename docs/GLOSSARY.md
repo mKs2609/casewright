@@ -35,6 +35,9 @@ Plain-language meanings of the terms used in this project.
 | Term | Meaning |
 |---|---|
 | **Gateway** | The service that receives all requests from the browser. |
+| **Discriminator** | A field (here `kind`) whose value decides which shape the rest of a JSON body must have. |
+| **JSONB** | PostgreSQL's binary JSON column type: it checks the JSON is valid and can be queried. |
+| **202 Accepted** | "Received, will be processed later": used when work, such as an investigation, has only been queued. |
 | **Endpoint** | One URL the server responds to, such as `/api/health`. |
 | **Hashing (passwords)** | Storing a one-way fingerprint of a password, never the password itself. |
 | **Argon2** | A modern password-hashing algorithm that is deliberately slow and memory-hungry. |
@@ -50,6 +53,10 @@ Plain-language meanings of the terms used in this project.
 | **Exponential backoff** | Making each retry wait longer than the last. |
 | **Token bucket** | A rate-limiting method: a bucket holds up to N tokens, each request takes one, and tokens flow back at a steady rate. Short bursts are fine; a sustained flood runs it dry. |
 | **429 Too Many Requests** | The HTTP status for "slow down". Usually sent with a `Retry-After` header saying how many seconds to wait. |
+| **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
+| **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |
+| **Nonce** | A "number used once": a random value mixed into each encryption so the same data never encrypts to the same bytes. Must never repeat with the same key. |
+| **Associated data** | Extra context (here, the employee's identity) that is checked during decryption but not hidden. Decryption fails if it doesn't match. |
 | **Account lockout** | Disabling an account after too many wrong passwords. We use backoff instead, so an attacker cannot lock a real user out. |
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A connection that stays open so the server can push updates. |

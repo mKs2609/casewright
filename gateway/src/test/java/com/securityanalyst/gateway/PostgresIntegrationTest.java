@@ -32,6 +32,9 @@ public abstract class PostgresIntegrationTest {
     /** A fresh random signing key for each test run. */
     protected static final String TEST_JWT_KEY = randomKey();
 
+    /** A fresh random baseline encryption key for each test run. */
+    protected static final String TEST_BASELINE_KEY = randomKey();
+
     private static EmbeddedPostgres start() {
         try {
             return EmbeddedPostgres.builder().start();
@@ -52,5 +55,6 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.username", () -> "postgres");
         registry.add("spring.datasource.password", () -> "");
         registry.add("security.jwt.signing-key", () -> TEST_JWT_KEY);
+        registry.add("security.baseline.encryption-key", () -> TEST_BASELINE_KEY);
     }
 }
