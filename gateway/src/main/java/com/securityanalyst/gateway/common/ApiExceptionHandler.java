@@ -18,6 +18,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import tools.jackson.databind.exc.InvalidTypeIdException;
+
 /**
  * Turns exceptions into consistent JSON error responses.
  * Rules: say WHICH field is wrong and WHY, but never repeat the value that was
@@ -56,6 +58,14 @@ public class ApiExceptionHandler {
     /** The body was not valid JSON, had the wrong types, or contained unknown fields. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException e) {
+        // A body whose "kind" field is missing or not one we know (e.g. POST /api/incidents).
+        // The message is fixed text: the rejected value is never echoed back.
+        for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof InvalidTypeIdException) {
+                return ResponseEntity.badRequest().body(
+                        ApiError.withFields("Validation failed", Map.of("kind", "is missing or not a known kind")));
+            }
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiError.of("Request body is missing, malformed, or contains unknown fields"));
     }

@@ -18,7 +18,8 @@ import org.springframework.core.env.Environment;
 public class RequiredSettingsCheck implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
 
     static final List<String> REQUIRED =
-            List.of("DB_URL", "DB_USER", "DB_PASSWORD", "JWT_SIGNING_KEY", "SSL_KEYSTORE_PASSWORD");
+            List.of("DB_URL", "DB_USER", "DB_PASSWORD", "JWT_SIGNING_KEY", "SSL_KEYSTORE_PASSWORD",
+                    "BASELINE_ENCRYPTION_KEY");
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {

@@ -114,8 +114,8 @@ erDiagram
 |---|---|---|
 | `app_users` | People who log in to the product (analysts). | `id`, `username` (unique), `password_hash`, `role`, `created_at` |
 | `refresh_tokens` | Rotating refresh tokens. Only a hash is stored. | `token_hash`, `user_id`, `expires_at`, `revoked_at`, `replaced_by` |
-| `monitored_identities` | Employees the product protects, with their baseline. **Not** the same as `app_users`. | `id`, `display_name`, `baseline` (encrypted JSON) |
-| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSON), `indicators` (JSON), `status`, `source`, `engine`, `created_by`, `created_at` |
+| `monitored_identities` | Employees the product protects, with their baseline. **Not** the same as `app_users`. | `identity` (e.g. `priya.sharma`), `display_name`, `baseline` (AES-256-GCM encrypted bytes, ADR-37), `created_at` |
+| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `indicators` (step 9), `engine` (step 12) |
 | `evidence` | One row per agent tool call. | `id`, `incident_id`, `label` (E1, E2…), `tool`, `args`, `result`, `status` (`ok`/`rejected`), `created_at` |
 | `verdicts` | Final outcome of an investigation. | `incident_id`, `verdict`, `attack_type`, `risk_score`, `engine`, `disagreement`, `soc_report`, `plain_report` |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
@@ -140,7 +140,7 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | GET | `/api/me` | any | Current user |
 | GET | `/api/admin/users` | ADMIN | List users |
 | PUT | `/api/admin/users/{id}/role` | ADMIN | Change a user's role (never one's own) |
-| POST | `/api/incidents` | ANALYST+ | Submit an incident |
+| POST | `/api/incidents` | ANALYST+ | Submit an incident (`202 Accepted`, investigation queued) |
 | GET | `/api/incidents` | any | List incidents |
 | GET | `/api/incidents/{id}` | any | Incident + evidence + verdict + actions |
 | POST | `/api/actions/{id}/decision` | ANALYST+ | Approve or reject |
@@ -190,7 +190,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | `DB_URL`, `DB_USER`, `DB_PASSWORD` | gateway | PostgreSQL connection |
 | `JWT_SIGNING_KEY` | gateway | Signs access tokens (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
 | `AUDIT_HMAC_KEY` | gateway | Keys the audit chain |
-| `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest |
+| `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest (exactly 32 random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
 | `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls |
 | `ANTHROPIC_API_KEY` | agent | LLM access (optional; without it the rule engine runs) |
 | `SECURITY_RATELIMIT_*` (optional) | gateway | Override the rate-limit thresholds set in `application.properties`, e.g. `SECURITY_RATELIMIT_REQUESTSPERMINUTE` |

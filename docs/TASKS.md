@@ -3,26 +3,26 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
 ## Now
 
-### Step 6: Rate limiting (on `feature/rate-limiting`)
-- [x] Every request: 120 a minute per client IP address
-- [x] Login and signup: 10 a minute per client IP address
-- [x] Login per username: 5 free attempts, then waits doubling from 1 s to 15 minutes; checked before the password; unknown usernames treated the same; a correct password resets it
-- [x] `429` with `Retry-After`, in the usual error shape, with the security headers
-- [x] Thresholds in `application.properties` (`security.rate-limit.*`), checked at startup
-- [x] Counters in a bounded in-memory cache; `X-Forwarded-For` not trusted
-- [x] Tests: `RateLimitTest`, `LoginThrottleTest`, `KeyedRateLimiterTest`
+### Step 7: Incident ingestion (on `feature/incident-ingestion`)
+- [x] Migration V3: `monitored_identities` (encrypted baseline) and `incidents` (JSONB payload)
+- [x] Baselines encrypted with AES-256-GCM (`BaselineCipher`, ADR-37); new secret `BASELINE_ENCRYPTION_KEY`
+- [x] Three fictional demo employees added at startup (`demo.seed-identities`)
+- [x] `POST /api/incidents` (ANALYST/ADMIN, `202`), `GET /api/incidents`, `GET /api/incidents/{id}`
+- [x] `email` and `login` kinds with strict validation; unknown kinds and fields refused; strict IP parsing
+- [x] `call_transcript` kind: validation rules and tests
+- [x] Tests: `IncidentApiTest`, `BaselineCipherTest`, `MonitoredIdentitiesTest`
 - [ ] Merged
 
 ## Next
 
-### Step 7: Incident ingestion
-See `ROADMAP.md`.
+### Step 8: Agent service and secure connection
+Needs ADR-3, ADR-4 and ADR-5 confirmed.
 
 ## Later
 
@@ -38,6 +38,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-19:** Step 6 (rate limiting) merged: PR #4.
 - **2026-10-18:** Step 5b (local HTTPS) merged: PR #3.
 - **2026-10-16:** Step 5a (CI on GitHub Actions, protected `main`) merged: PR #2.
 - **2026-10-16:** Step 5 (errors, trace IDs, security headers, size limit) merged: PR #1.
