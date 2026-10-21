@@ -1,5 +1,7 @@
 package com.securityanalyst.gateway.auth;
 
+import static com.securityanalyst.gateway.NoEcho.doesNotEcho;
+import static com.securityanalyst.gateway.NoEcho.withoutTraceId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -19,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.securityanalyst.gateway.PostgresIntegrationTest;
 
 /**
@@ -107,7 +108,7 @@ class AuthControllerTest extends PostgresIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Validation failed"))
                 .andExpect(jsonPath("$.fields.username").exists())
-                .andExpect(content().string(not(containsString(badUsername))));
+                .andExpect(doesNotEcho(badUsername));
     }
 
     @Test
@@ -115,7 +116,7 @@ class AuthControllerTest extends PostgresIntegrationTest {
         postJson("/api/auth/signup", credentials("asha.rao", "short-pw"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fields.password").value("must be 12-128 characters"))
-                .andExpect(content().string(not(containsString("short-pw"))));
+                .andExpect(doesNotEcho("short-pw"));
     }
 
     @Test
@@ -169,10 +170,6 @@ class AuthControllerTest extends PostgresIntegrationTest {
         // else (message, field names, order) must be byte-for-byte identical.
         assertThat(withoutTraceId(wrongPassword)).isEqualTo(withoutTraceId(unknownUser))
                 .isEqualTo("{\"error\":\"Invalid username or password\",\"traceId\":\"*\"}");
-    }
-
-    private static String withoutTraceId(String json) {
-        return json.replaceAll("\"traceId\":\"[0-9a-f]{16}\"", "\"traceId\":\"*\"");
     }
 
     @Test

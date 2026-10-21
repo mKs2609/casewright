@@ -1,5 +1,6 @@
 package com.securityanalyst.gateway.common;
 
+import static com.securityanalyst.gateway.NoEcho.withoutTraceId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -19,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.securityanalyst.gateway.PostgresIntegrationTest;
 import com.securityanalyst.gateway.auth.Role;
 import com.securityanalyst.gateway.auth.User;
@@ -153,9 +153,5 @@ class RateLimitTest extends PostgresIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"forged.user5\",\"password\":\"some wrong password\"}"))
                 .andExpect(status().isTooManyRequests());
-    }
-
-    private static String withoutTraceId(String json) {
-        return json.replaceAll("\"traceId\":\"[0-9a-f]{16}\"", "\"traceId\":\"*\"");
     }
 }
