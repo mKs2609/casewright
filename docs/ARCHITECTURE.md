@@ -167,6 +167,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | `agent.step` | A completed tool call (an evidence item) plus the running risk score |
 | `agent.guardrail` | A tool call or action that was **blocked**, with the reason |
 | `verdict` | Final verdict available |
+| `investigation.complete` | (agent → gateway) Last line of every investigation; carries the status the incident moves to. Step 8 sends `needs_review` with engine `stub`. |
 | `action.decided` | A human approved or rejected an action |
 
 ## 6. Security architecture (summary)
@@ -191,7 +192,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | `JWT_SIGNING_KEY` | gateway | Signs access tokens (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
 | `AUDIT_HMAC_KEY` | gateway | Keys the audit chain |
 | `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest (exactly 32 random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
-| `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls |
+| `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`; both read it from `.env`) |
 | `ANTHROPIC_API_KEY` | agent | LLM access (optional; without it the rule engine runs) |
 | `SECURITY_RATELIMIT_*` (optional) | gateway | Override the rate-limit thresholds set in `application.properties`, e.g. `SECURITY_RATELIMIT_REQUESTSPERMINUTE` |
 
@@ -200,7 +201,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Service | Port | Start command |
 |---|---|---|
 | Gateway | 8443 (HTTPS only) | `cd gateway && ./mvnw spring-boot:run`. Needs the certificate from `scripts\setup-https.ps1` |
-| Agent | 8001 | `cd agent && uvicorn app.main:app --port 8001` |
+| Agent | 8001 (127.0.0.1 only) | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
 | Dashboard | 5173 | `cd dashboard && npm run dev` |
 | PostgreSQL | 5432 | Windows service `postgresql-x64-16`. Database `secanalyst`, role `secanalyst_app`, created once by `scripts\setup-db.ps1` |
 

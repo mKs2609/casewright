@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-21
 
 One feature at a time. A step is finished only when it is **built, explained, tested, and committed by Mohit**.
 The code is public on GitHub; every step reaches `main` through a pull request (see [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md)).
@@ -19,8 +19,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 5a | **Automated checks (CI)** | GitHub Actions, workflows, status checks, branch protection | Every push and pull request runs the full test suite on GitHub; a pull request shows a green tick or red cross; `main` cannot be merged into while tests fail | ✅ |
 | 5b | **Local HTTPS** | Certificates, TLS, keystores, trusting a development certificate | The gateway serves HTTPS locally; cookies and HSTS work over it; the scripts use it | ✅ |
 | 6 | **Rate limiting** | Token buckets, backoff, config-driven limits | Login is limited per IP and per account with backoff; limits come from config; tests prove it | ✅ |
-| 7 | **Incident ingestion** | Polymorphic request validation, JSON columns, baselines | The three incident kinds can be submitted, listed and fetched; baselines seeded and encrypted | 🟡 |
-| 8 | **Agent service + secure connection** | FastAPI, service-to-service auth, streaming responses | Gateway calls the Python agent with a service token; calls without the token are refused; agent returns a stub result | ⬜ |
+| 7 | **Incident ingestion** | Polymorphic request validation, JSON columns, baselines | The three incident kinds can be submitted, listed and fetched; baselines seeded and encrypted | ✅ |
+| 8 | **Agent service + secure connection** | FastAPI, service-to-service auth, streaming responses | Gateway calls the Python agent with a service token; calls without the token are refused; agent returns a stub result | 🟡 |
 | 9 | **Tool 1: reputation lookup + evidence chain** | Tool design, argument guardrails, evidence records | An incident produces evidence `E1`; lookups outside the incident are rejected and logged | ⬜ |
 | 10 | **Tools 2–4** | Baseline comparison, pattern matching, correlation | Each tool has tests; credential stuffing and impossible travel are detected | ⬜ |
 | 11 | **Risk score, verdict, rule engine** | Combining evidence, deterministic verdicts | All six scenarios reach the expected verdict with no LLM | ⬜ |

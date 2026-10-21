@@ -2,6 +2,7 @@ package com.securityanalyst.gateway.incident;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +23,15 @@ public class IncidentService {
     private final MonitoredIdentityService identities;
     private final UserRepository users;
     private final JsonMapper json;
+    private final ApplicationEventPublisher events;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
-            JsonMapper json) {
+            JsonMapper json, ApplicationEventPublisher events) {
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
         this.json = json;
+        this.events = events;
     }
 
     @Transactional
@@ -47,12 +50,33 @@ public class IncidentService {
         String payload = json.writerFor(IncidentRequest.class).writeValueAsString(request);
         Incident incident = new Incident(kind, subject, payload, Incident.SOURCE_API,
                 users.getReferenceById(submittedBy.id()));
-        return IncidentResponses.Detail.from(incidents.saveAndFlush(incident), json);
+        Incident saved = incidents.saveAndFlush(incident);
+        // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
+        events.publishEvent(new IncidentSubmitted(saved.getId()));
+        return IncidentResponses.Detail.from(saved, json);
     }
 
     @Transactional(readOnly = true)
     public List<IncidentResponses.Summary> latest() {
         return incidents.findTop100ByOrderByCreatedAtDescIdDesc().stream().map(IncidentResponses.Summary::from).toList();
+    }
+
+    /** What an investigation needs to know about one incident. */
+    public record InvestigationInput(Long id, String kind, String subjectIdentity, String payloadJson) {
+    }
+
+    @Transactional(readOnly = true)
+    public InvestigationInput investigationInput(Long id) {
+        Incident incident = incidents.findWithDetailsById(id)
+                .orElseThrow(() -> new IllegalStateException("Incident " + id + " does not exist"));
+        return new InvestigationInput(incident.getId(), incident.getKind(), incident.getSubject().getIdentity(),
+                incident.getPayload());
+    }
+
+    /** Moves an incident to a new status. The database refuses any status not in its list. */
+    @Transactional
+    public void updateStatus(Long id, String status) {
+        incidents.updateStatus(id, status);
     }
 
     @Transactional(readOnly = true)

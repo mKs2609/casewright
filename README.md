@@ -80,3 +80,29 @@ Run the tests (they start their own throwaway PostgreSQL, so they need no setup)
 cd gateway
 ./mvnw test
 ```
+
+## Running the agent
+
+The agent is a separate Python service (3.14) that the gateway calls to investigate each incident. It listens on this machine only and accepts calls only from the gateway, which proves itself with `AGENT_SERVICE_TOKEN` from `.env` (created by `setup-secrets.ps1`).
+
+One-time setup, from the `agent` folder:
+
+```bash
+python -m venv .venv
+```
+
+```bash
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
+Start it (keep it running alongside the gateway):
+
+```bash
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header
+```
+
+Run its tests:
+
+```bash
+.\.venv\Scripts\python.exe -m pytest
+```

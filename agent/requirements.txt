@@ -1,0 +1,19 @@
+# What the agent needs to run. Every package is pinned to an exact version
+# (including the ones pulled in indirectly), so every install is identical.
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic==2.13.5
+
+# Pulled in by the packages above:
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+click==8.5.0
+colorama==0.4.6 ; sys_platform == "win32"
+h11==0.16.0
+idna==3.20
+opentelemetry-api==1.45.1
+pydantic_core==2.46.5
+starlette==1.7.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0

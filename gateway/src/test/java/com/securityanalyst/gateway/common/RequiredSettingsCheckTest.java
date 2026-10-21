@@ -21,7 +21,8 @@ class RequiredSettingsCheckTest {
                 .withProperty("DB_PASSWORD", "x")
                 .withProperty("JWT_SIGNING_KEY", "x")
                 .withProperty("SSL_KEYSTORE_PASSWORD", "x")
-                .withProperty("BASELINE_ENCRYPTION_KEY", "x");
+                .withProperty("BASELINE_ENCRYPTION_KEY", "x")
+                .withProperty("AGENT_SERVICE_TOKEN", "x");
 
         assertThat(RequiredSettingsCheck.missingSettings(env)).isEmpty();
     }
@@ -33,7 +34,7 @@ class RequiredSettingsCheckTest {
                 .withProperty("DB_PASSWORD", "   ");
 
         assertThat(RequiredSettingsCheck.missingSettings(env)).containsExactly("DB_USER", "DB_PASSWORD", "JWT_SIGNING_KEY", "SSL_KEYSTORE_PASSWORD",
-                "BASELINE_ENCRYPTION_KEY");
+                "BASELINE_ENCRYPTION_KEY", "AGENT_SERVICE_TOKEN");
     }
 
     @Test

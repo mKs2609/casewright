@@ -39,10 +39,12 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 | Create the local HTTPS certificate | `powershell -ExecutionPolicy Bypass -File scripts\setup-https.ps1` (once; `-Trust` / `-Untrust` change the Windows trust list, so only Mohit runs those) |
 | Make a user an admin | `powershell -ExecutionPolicy Bypass -File scripts\set-role.ps1 -Username <name> -Role ADMIN` |
 | Walk through a login session | `powershell -ExecutionPolicy Bypass -File scripts\try-auth.ps1 -Username <name>` |
+| Submit a sample incident and watch its status | `powershell -ExecutionPolicy Bypass -File scripts\try-incident.ps1 -Username <name>` (needs the gateway and the agent running) |
 | Gateway tests | `cd gateway; .\mvnw.cmd test` (uses its own embedded PostgreSQL; needs no setup) |
 | Run gateway | `cd gateway; .\mvnw.cmd spring-boot:run` (https://localhost:8443/api/health) |
-| Agent tests | `cd agent; pytest` (from Step 8) |
-| Run agent | `cd agent; uvicorn app.main:app --port 8001` (from Step 8) |
+| Agent: one-time setup | `cd agent; python -m venv .venv; .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt` |
+| Agent tests | `cd agent; .\.venv\Scripts\python.exe -m pytest` |
+| Run agent | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
 | Dashboard | `cd dashboard; npm run dev` (from Step 16) |
 
 Maven is not installed globally; always use the wrapper `mvnw.cmd`.
@@ -51,7 +53,7 @@ Maven is not installed globally; always use the wrapper `mvnw.cmd`.
 
 ```
 gateway/     Spring Boot 4.1 (Java 25). Package root: com.securityanalyst.gateway, organised by feature.
-agent/       Python FastAPI service (not created yet)
+agent/       Python 3.14 FastAPI service (app/, tests/). Called only by the gateway; no database access.
 dashboard/   React + TypeScript (not created yet)
 docs/        All project documents
 ```
@@ -72,7 +74,9 @@ docs/        All project documents
 - JPA entities must match the Flyway schema exactly (`ddl-auto=validate`). Change the migration first, then the entity.
 - Database changes only through Flyway migrations (`gateway/src/main/resources/db/migration`). Never edit a migration that has already run; add a new one.
 - Tests that need a database extend `PostgresIntegrationTest`.
-- Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output.
+- Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output (the `Strict` base class in `agent/app/models.py`; JSON names are camelCase). Packages are pinned to exact versions, including indirect ones, in `agent/requirements*.txt`; choose releases at least two weeks old.
+- A new agent event type needs: a Pydantic model in `agent/app/models.py`, a record in the gateway's `AgentEvent` (with its own validation rules), and handling in `InvestigationRunner`. The gateway never trusts the agent's output (ADR-5).
+- Tests that need the agent use a fake one (see `InvestigationTest`); `PostgresIntegrationTest` points `agent.base-url` at port 1 so no test reaches a real agent by accident.
 - React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens.
 - CI (`.github/workflows/ci.yml`) runs on every pull request and must stay green; a new test suite (agent, dashboard) gets its own job there. Actions are pinned to full commit SHAs with the version in a comment, and the workflow token stays `contents: read`.
 - A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.

@@ -16,6 +16,7 @@ $secrets = [ordered]@{
     "JWT_SIGNING_KEY" = 48         # signs access tokens (HMAC-SHA256 needs at least 32 bytes)
     "SSL_KEYSTORE_PASSWORD" = 24   # protects the HTTPS keystore made by setup-https.ps1
     "BASELINE_ENCRYPTION_KEY" = 32 # encrypts employee baselines (AES-256 needs exactly 32 bytes)
+    "AGENT_SERVICE_TOKEN" = 32     # the gateway proves itself to the agent service with this
 }
 
 $lines = @()

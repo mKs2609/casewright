@@ -19,21 +19,24 @@ Status: **Accepted** · **Proposed** (needs Mohit's confirmation before the step
 **Why:** The goal is to understand the system, not only to have it.
 
 ## ADR-3: The gateway owns the database; the agent is stateless
-**Status:** Proposed
+**Status:** Accepted (confirmed by Mohit, 2026-10-21)
 **Decision:** Only the gateway connects to PostgreSQL. The gateway sends the agent everything it needs (incident, baselines, recent indicators) and stores what comes back.
 **Why:** The agent is the component exposed to attacker-written text and an LLM. With no database credentials and no state, a manipulated agent can only return a bad answer, which the gateway validates.
 **Trade-off:** Requests to the agent are larger; the gateway must assemble the context.
+**In practice (step 8):** each call carries the incident and the subject's baseline, decrypted by the gateway. The agent has no database driver at all.
 
 ## ADR-4: Gateway ↔ agent over localhost HTTP with a service token
-**Status:** Proposed
+**Status:** Accepted (confirmed by Mohit, 2026-10-21)
 **Decision:** The agent binds to `127.0.0.1` and requires a bearer service token. Results are streamed back as newline-delimited JSON.
 **Why:** Simple to build and explain; no extra infrastructure (no Redis, no message queue).
 **Trade-off:** Mutual TLS would be stronger. Listed as an accepted risk in the threat model.
+**In practice (step 8):** every request, even for an address that does not exist, needs `Authorization: Bearer <AGENT_SERVICE_TOKEN>`; the token is compared in constant time (`hmac.compare_digest`). FastAPI's `/docs`, `/redoc` and `/openapi.json` are switched off. Request bodies must state their length and stay under 1 MB. Validation errors name the field without echoing the value.
 
 ## ADR-5: The gateway re-validates everything the agent returns
-**Status:** Proposed
+**Status:** Accepted (confirmed by Mohit, 2026-10-21)
 **Decision:** Agent output is parsed against a schema and proposed actions are checked against the allow-list again in Java.
 **Why:** Defence in depth. The agent is treated as untrusted from the gateway's point of view.
+**In practice (step 8):** every line of the agent's answer must be a known event type with exactly the expected fields (unknown or repeated fields refused), within length limits and without control characters. The status the agent may choose is an allow-list (`needs_review` for now). Lines are capped at 64 KB, answers at 1000 events, and the whole investigation at 2 minutes; `investigation.complete` must come last, exactly once. Anything else marks the incident `error`.
 
 ## ADR-6: Access token (JWT) + rotating refresh token, both in cookies
 **Status:** Accepted (confirmed by Mohit, 2026-10-13)
@@ -234,3 +237,9 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Details:** An incident must name an existing monitored identity (foreign key). Any logged-in user may read every incident (one team, one tool); only ANALYST and ADMIN may submit. IPv4 addresses must be in the plain four-number form, because shorthand forms (`185.220.101`, `3232235777`, `010.0.0.1`) are read differently by different tools. Extracting indicators from incidents is left to step 9, where the tools that use them arrive.
 **Why:** One endpoint and one table keep listing and the investigation pipeline simple, while each kind still gets strict, kind-specific validation. JSONB keeps the original evidence intact and queryable.
 **Trade-offs:** The payload's inner structure is checked by the Java records, not by database constraints. A 500-event login batch with very long user agents can exceed the 256 KB request limit (ADR-33) and get `413`.
+
+## ADR-39: Investigations run in the background, after the incident is committed
+**Status:** Accepted (2026-10-21)
+**Decision:** Submitting an incident publishes an event; a listener runs the investigation on a background thread (`@Async`) only after the database transaction has committed (`@TransactionalEventListener(AFTER_COMMIT)`). Status goes `queued → investigating →` the agent's result, or `error` if the agent is unreachable, refuses, or answers with anything invalid. The request's trace ID is carried onto the background thread, so all of an investigation's log lines share it.
+**Why:** The analyst gets `202 Accepted` at once instead of waiting for the agent. Running only after commit means the agent never investigates an incident that was then rolled back.
+**Trade-off:** If the gateway stops in the middle, an incident can stay `investigating`; picking those up again belongs with the audit and approval work. Python dependencies are pinned to exact versions, including indirect ones, in `agent/requirements*.txt` (hash pinning and auditing come in step 18).

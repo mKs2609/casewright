@@ -32,7 +32,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | All secrets in env vars, never in code | 🟡 | `.gitignore` blocks `.env`, keys and certs. Database credentials and the token-signing key come from `.env` / environment only; the gateway refuses to start if any is missing, or if the signing key is shorter than 32 bytes. Tests use their own random key. More secrets arrive in later steps. |
 | Pre-commit secret scanning | ⬜ | |
 | Nothing sensitive in the frontend bundle | ⬜ | |
-| Dependency audit (Maven, pip, npm) with findings table | ⬜ | |
+| Dependency audit (Maven, pip, npm) with findings table | ⬜ | Python packages are pinned to exact versions, including indirect ones (`agent/requirements*.txt`). Audit and hash pinning in step 18. |
 
 ## D. Error handling & data protection
 | Item | Status | Notes |
@@ -54,6 +54,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Incident text passed to the LLM as fenced data, never instructions | ⬜ | |
 | Fixed tool allow-list; arguments validated against the incident | ⬜ | |
 | Every agent tool call logged | ⬜ | |
+| Agent service isolated and treated as untrusted | ✅ | Listens on `127.0.0.1` only; every request needs the service token (constant-time comparison); no database access and no state (ADR-3, ADR-4); API docs pages off; 1 MB body limit. The gateway re-validates every event it returns: known types and fields only, allow-listed statuses, size and time limits (ADR-5). Tests: `agent/tests`, `InvestigationTest`. |
 | LLM output validated against a schema before use | ⬜ | |
 
 ## G. Operational
