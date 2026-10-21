@@ -38,6 +38,13 @@ Plain-language meanings of the terms used in this project.
 | **Discriminator** | A field (here `kind`) whose value decides which shape the rest of a JSON body must have. |
 | **JSONB** | PostgreSQL's binary JSON column type: it checks the JSON is valid and can be queried. |
 | **202 Accepted** | "Received, will be processed later": used when work, such as an investigation, has only been queued. |
+| **Service-to-service authentication** | One program proving its identity to another; here the gateway sends a shared secret token to the agent. |
+| **Bearer token** | A secret sent in the `Authorization: Bearer ...` header; whoever holds ("bears") it is let in. |
+| **Constant-time comparison** | Comparing secrets in a way that takes the same time however much matches, so timing reveals nothing. |
+| **Stateless service** | A service that remembers nothing between requests; everything it needs comes with each request. |
+| **NDJSON** | Newline-delimited JSON: one JSON object per line, so a long answer can be read and acted on line by line. |
+| **Stub** | A stand-in that gives a fixed, simple answer until the real thing is built. |
+| **Defence in depth** | Several independent protections, so one failing doesn't expose everything. |
 | **Endpoint** | One URL the server responds to, such as `/api/health`. |
 | **Hashing (passwords)** | Storing a one-way fingerprint of a password, never the password itself. |
 | **Argon2** | A modern password-hashing algorithm that is deliberately slow and memory-hungry. |
@@ -53,6 +60,9 @@ Plain-language meanings of the terms used in this project.
 | **Exponential backoff** | Making each retry wait longer than the last. |
 | **Token bucket** | A rate-limiting method: a bucket holds up to N tokens, each request takes one, and tokens flow back at a steady rate. Short bursts are fine; a sustained flood runs it dry. |
 | **429 Too Many Requests** | The HTTP status for "slow down". Usually sent with a `Retry-After` header saying how many seconds to wait. |
+| **Virtual environment (Python)** | A private folder of libraries for one project (`agent/.venv`), so nothing is installed system-wide. |
+| **Transitive dependency** | A library your libraries need. Pinned too, so every install is identical. |
+| **Asynchronous / background work** | Work handed to another thread so the current request can answer straight away. |
 | **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
 | **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |
 | **Nonce** | A "number used once": a random value mixed into each encryption so the same data never encrypts to the same bytes. Must never repeat with the same key. |

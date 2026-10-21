@@ -24,7 +24,9 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 @TestPropertySource(properties = {
         "security.rate-limit.requests-per-minute=1000000",
         "security.rate-limit.credential-requests-per-minute=1000000",
-        "security.rate-limit.free-login-attempts=1000000" })
+        "security.rate-limit.free-login-attempts=1000000",
+        // No agent runs during tests: port 1 refuses at once. InvestigationTest starts a fake one.
+        "agent.base-url=http://127.0.0.1:1" })
 public abstract class PostgresIntegrationTest {
 
     private static final EmbeddedPostgres POSTGRES = start();
@@ -34,6 +36,9 @@ public abstract class PostgresIntegrationTest {
 
     /** A fresh random baseline encryption key for each test run. */
     protected static final String TEST_BASELINE_KEY = randomKey();
+
+    /** A fresh random agent service token for each test run. */
+    protected static final String TEST_AGENT_TOKEN = randomKey();
 
     private static EmbeddedPostgres start() {
         try {
@@ -56,5 +61,6 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.password", () -> "");
         registry.add("security.jwt.signing-key", () -> TEST_JWT_KEY);
         registry.add("security.baseline.encryption-key", () -> TEST_BASELINE_KEY);
+        registry.add("agent.service-token", () -> TEST_AGENT_TOKEN);
     }
 }

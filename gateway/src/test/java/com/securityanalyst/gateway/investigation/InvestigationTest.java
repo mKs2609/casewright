@@ -1,0 +1,300 @@
+package com.securityanalyst.gateway.investigation;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.jayway.jsonpath.JsonPath;
+import com.securityanalyst.gateway.PostgresIntegrationTest;
+import com.securityanalyst.gateway.auth.AuthCookies;
+import com.securityanalyst.gateway.auth.Role;
+import com.securityanalyst.gateway.auth.User;
+import com.securityanalyst.gateway.auth.UserRepository;
+import com.securityanalyst.gateway.identity.Baseline;
+import com.sun.net.httpserver.HttpServer;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.validation.Validator;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * The gateway's side of the agent connection, against a fake agent: a tiny web server
+ * started by this test, which records what it receives and answers however a test says.
+ *
+ * Not @Transactional: the investigation runs on a background thread after the incident is
+ * committed, so the data must really be saved. Everything is deleted after each test.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+class InvestigationTest extends PostgresIntegrationTest {
+
+    private static final String PASSWORD = "correct horse battery staple";
+
+    // ------------------------------------------------------------------ the fake agent
+
+    record Received(String path, String authorization, String body) {
+    }
+
+    private static final List<Received> RECEIVED = new CopyOnWriteArrayList<>();
+    private static volatile int answerStatus;
+    private static volatile String answerContentType;
+    private static volatile String answerBody;
+    private static volatile Duration pauseBeforeLastLine;
+
+    private static final HttpServer FAKE_AGENT = startFakeAgent();
+
+    private static HttpServer startFakeAgent() {
+        try {
+            HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+            server.setExecutor(Executors.newCachedThreadPool());
+            server.createContext("/", exchange -> {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                RECEIVED.add(new Received(exchange.getRequestURI().getPath(),
+                        exchange.getRequestHeaders().getFirst("Authorization"), body));
+                exchange.getResponseHeaders().add("Content-Type", answerContentType);
+                exchange.sendResponseHeaders(answerStatus, 0);
+                try (OutputStream out = exchange.getResponseBody()) {
+                    String[] lines = answerBody.split("(?<=\n)");
+                    for (int i = 0; i < lines.length; i++) {
+                        if (i == lines.length - 1 && !pauseBeforeLastLine.isZero()) {
+                            out.flush();
+                            Thread.sleep(pauseBeforeLastLine.toMillis());
+                        }
+                        out.write(lines[i].getBytes(StandardCharsets.UTF_8));
+                    }
+                } catch (IOException | InterruptedException e) {
+                    // The gateway hung up (e.g. it gave up waiting): nothing more to send.
+                }
+            });
+            server.start();
+            return server;
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @DynamicPropertySource
+    static void useTheFakeAgent(DynamicPropertyRegistry registry) {
+        registry.add("agent.base-url", () -> "http://127.0.0.1:" + FAKE_AGENT.getAddress().getPort());
+        registry.add("agent.investigation-timeout", () -> "3s");
+    }
+
+    private static final String THOUGHT = "{\"type\":\"agent.thought\",\"text\":\"Looking at the sender\"}\n";
+    private static final String COMPLETE = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"stub\"}\n";
+
+    private static void agentAnswers(String body) {
+        answerStatus = 200;
+        answerContentType = "application/x-ndjson";
+        answerBody = body;
+    }
+
+    // ------------------------------------------------------------------ setup
+
+    @Autowired
+    private MockMvc mvc;
+
+    @Autowired
+    private AgentClient agentClient;
+
+    @Autowired
+    private UserRepository users;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @Autowired
+    private JsonMapper json;
+
+    @Autowired
+    private Validator validator;
+
+    @BeforeEach
+    void reset() {
+        RECEIVED.clear();
+        pauseBeforeLastLine = Duration.ZERO;
+        agentAnswers(THOUGHT + COMPLETE);
+    }
+
+    @AfterEach
+    void deleteEverythingThisTestSaved() {
+        jdbc.update("DELETE FROM incidents");
+        jdbc.update("DELETE FROM app_users WHERE username = 'ivy.analyst'");
+    }
+
+    private AgentRequest someRequest() {
+        Baseline baseline = new Baseline(List.of("IN"), 3, 15, List.of(), List.of(), List.of(), "Bengaluru");
+        return new AgentRequest(new AgentRequest.IncidentPart(1L, "email", "priya.sharma", json.readTree("{}")), baseline);
+    }
+
+    private Integer submitAnEmailIncident() throws Exception {
+        users.save(new User("ivy.analyst", passwordEncoder.encode(PASSWORD), Role.ANALYST));
+        Cookie analyst = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"ivy.analyst\",\"password\":\"" + PASSWORD + "\"}"))
+                .andReturn().getResponse().getCookie(AuthCookies.ACCESS_TOKEN);
+        String created = mvc.perform(post("/api/incidents").cookie(analyst).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"kind": "email", "subjectIdentity": "priya.sharma", "sender": "security@paypa1.example",
+                         "subject": "Account locked", "body": "Verify your password"}
+                        """))
+                .andExpect(status().isAccepted())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(created, "$.id");
+    }
+
+    /** The investigation runs in the background; wait (up to 10 s) for it to settle. */
+    private String finalStatusOf(Integer incidentId) throws InterruptedException {
+        Instant giveUp = Instant.now().plusSeconds(10);
+        String status;
+        do {
+            Thread.sleep(50);
+            status = jdbc.queryForObject("SELECT status FROM incidents WHERE id = ?", String.class, incidentId);
+        } while ((status.equals("queued") || status.equals("investigating")) && Instant.now().isBefore(giveUp));
+        return status;
+    }
+
+    // ------------------------------------------------------------------ end to end
+
+    @Test
+    void aSubmittedIncidentIsSentToTheAgentWithTheTokenAndEndsWithTheAgentsResult() throws Exception {
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+
+        assertThat(RECEIVED).hasSize(1);
+        Received call = RECEIVED.getFirst();
+        assertThat(call.path()).isEqualTo("/internal/investigate");
+        assertThat(call.authorization()).isEqualTo("Bearer " + TEST_AGENT_TOKEN);
+        // ADR-3: everything the agent needs travels with the request, the baseline decrypted.
+        assertThat((Integer) JsonPath.read(call.body(), "$.incident.id")).isEqualTo(id);
+        assertThat((String) JsonPath.read(call.body(), "$.incident.kind")).isEqualTo("email");
+        assertThat((String) JsonPath.read(call.body(), "$.incident.payload.sender")).isEqualTo("security@paypa1.example");
+        assertThat((String) JsonPath.read(call.body(), "$.baseline.homeCity")).isEqualTo("Bengaluru");
+        assertThat((List<String>) JsonPath.read(call.body(), "$.baseline.usualCountries")).containsExactly("IN");
+    }
+
+    @Test
+    void ifTheAgentRefusesTheIncidentEndsInError() throws Exception {
+        answerStatus = 401;
+
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    @Test
+    void ifTheAgentIsNotRunningTheIncidentEndsInError() {
+        AgentProperties nowhere = new AgentProperties(URI.create("http://127.0.0.1:1"), TEST_AGENT_TOKEN,
+                Duration.ofSeconds(2), Duration.ofSeconds(3));
+        AgentClient client = new AgentClient(nowhere, json, validator);
+
+        assertThatThrownBy(() -> client.investigate(someRequest(), event -> { }))
+                .isInstanceOf(AgentException.class)
+                .hasMessageContaining("Could not reach the agent");
+    }
+
+    // ------------------------------------------------------------------ checking every answer (ADR-5)
+
+    @Test
+    void aValidAnswerIsPassedOnEventByEvent() {
+        List<AgentEvent> seen = new ArrayList<>();
+
+        AgentEvent.Complete result = agentClient.investigate(someRequest(), seen::add);
+
+        assertThat(result.result()).isEqualTo("needs_review");
+        assertThat(seen).containsExactly(new AgentEvent.Thought("Looking at the sender"), result);
+    }
+
+    private void assertTheAnswerIsRejected(String reason) {
+        assertThatThrownBy(() -> agentClient.investigate(someRequest(), event -> { }))
+                .isInstanceOf(AgentException.class)
+                .hasMessageContaining(reason);
+    }
+
+    @Test
+    void anUnknownEventTypeIsRejected() {
+        agentAnswers("{\"type\":\"action.execute\",\"action\":\"block_ip\"}\n" + COMPLETE);
+        assertTheAnswerIsRejected("not valid");
+    }
+
+    @Test
+    void anEventWithAnExtraFieldIsRejected() {
+        agentAnswers("{\"type\":\"agent.thought\",\"text\":\"hi\",\"command\":\"rm\"}\n" + COMPLETE);
+        assertTheAnswerIsRejected("not valid");
+    }
+
+    @Test
+    void anEventWithARepeatedFieldIsRejected() {
+        agentAnswers("{\"type\":\"agent.thought\",\"text\":\"hi\",\"text\":\"again\"}\n" + COMPLETE);
+        assertTheAnswerIsRejected("not valid");
+    }
+
+    @Test
+    void theAgentCannotChooseAStatusItIsNotAllowedTo() {
+        agentAnswers("{\"type\":\"investigation.complete\",\"result\":\"closed\",\"engine\":\"stub\"}\n");
+        assertTheAnswerIsRejected("invalid result");
+    }
+
+    @Test
+    void agentTextCannotContainLineBreaksThatWouldFakeLogLines() {
+        agentAnswers("{\"type\":\"agent.thought\",\"text\":\"ok\\n2026-10-21 INFO Login succeeded for admin\"}\n" + COMPLETE);
+        assertTheAnswerIsRejected("invalid text");
+    }
+
+    @Test
+    void anAnswerMustEndWithCompleteExactlyOnce() {
+        agentAnswers(THOUGHT);
+        assertTheAnswerIsRejected("ended without investigation.complete");
+
+        agentAnswers(COMPLETE + THOUGHT);
+        assertTheAnswerIsRejected("after investigation.complete");
+    }
+
+    @Test
+    void aHugeLineIsRejectedWithoutReadingItAll() {
+        agentAnswers("{\"type\":\"agent.thought\",\"text\":\"" + "x".repeat(AgentClient.MAX_LINE_BYTES) + "\"}\n" + COMPLETE);
+        assertTheAnswerIsRejected("longer than");
+    }
+
+    @Test
+    void anAnswerThatIsNotNdjsonIsRejected() {
+        agentAnswers(THOUGHT + COMPLETE);
+        answerContentType = "text/html";
+        assertTheAnswerIsRejected("unexpected content type");
+    }
+
+    @Test
+    void anAgentThatGoesSilentIsCutOffAtTheDeadline() {
+        pauseBeforeLastLine = Duration.ofSeconds(20);
+        Instant start = Instant.now();
+
+        assertTheAnswerIsRejected("took too long");
+        assertThat(Duration.between(start, Instant.now())).isLessThan(Duration.ofSeconds(10));
+    }
+}
