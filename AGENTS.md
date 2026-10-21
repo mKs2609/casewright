@@ -74,6 +74,7 @@ docs/        All project documents
 - JPA entities must match the Flyway schema exactly (`ddl-auto=validate`). Change the migration first, then the entity.
 - Database changes only through Flyway migrations (`gateway/src/main/resources/db/migration`). Never edit a migration that has already run; add a new one.
 - Tests that need a database extend `PostgresIntegrationTest`.
+- To check that an error response does not repeat a rejected value, use `NoEcho.doesNotEcho(value)`, never a plain "body does not contain": every error carries a random hex trace ID, which short values can appear in by chance.
 - Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output (the `Strict` base class in `agent/app/models.py`; JSON names are camelCase). Packages are pinned to exact versions, including indirect ones, in `agent/requirements*.txt`; choose releases at least two weeks old.
 - A new agent event type needs: a Pydantic model in `agent/app/models.py`, a record in the gateway's `AgentEvent` (with its own validation rules), and handling in `InvestigationRunner`. The gateway never trusts the agent's output (ADR-5).
 - Tests that need the agent use a fake one (see `InvestigationTest`); `PostgresIntegrationTest` points `agent.base-url` at port 1 so no test reaches a real agent by accident.

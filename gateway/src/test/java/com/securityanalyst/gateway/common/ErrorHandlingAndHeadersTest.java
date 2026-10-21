@@ -1,5 +1,6 @@
 package com.securityanalyst.gateway.common;
 
+import static com.securityanalyst.gateway.NoEcho.doesNotEcho;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -136,7 +137,7 @@ class ErrorHandlingAndHeadersTest {
         mvc.perform(get("/api/test/items/not-a-number"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("A value in the request has the wrong type"))
-                .andExpect(content().string(not(containsString("not-a-number"))));
+                .andExpect(doesNotEcho("not-a-number"));
     }
 
     // ------------------------------------------------------------------ trace IDs

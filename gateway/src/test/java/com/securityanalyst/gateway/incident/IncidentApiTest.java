@@ -1,8 +1,8 @@
 package com.securityanalyst.gateway.incident;
 
+import static com.securityanalyst.gateway.NoEcho.doesNotEcho;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -193,7 +193,7 @@ class IncidentApiTest extends PostgresIntegrationTest {
         submit(analyst, "{\"kind\": \"carrier_pigeon\", \"subjectIdentity\": \"priya.sharma\"}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fields.kind").value("is missing or not a known kind"))
-                .andExpect(content().string(not(containsString("carrier_pigeon"))));
+                .andExpect(doesNotEcho("carrier_pigeon"));
     }
 
     @Test
@@ -314,7 +314,7 @@ class IncidentApiTest extends PostgresIntegrationTest {
         submit(analyst, call(callerNumber, "Hello"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fields.callerNumber").exists())
-                .andExpect(content().string(not(containsString(callerNumber))));
+                .andExpect(doesNotEcho(callerNumber));
     }
 
     @Test
