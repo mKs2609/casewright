@@ -2,7 +2,10 @@ package com.securityanalyst.gateway.investigation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.contains;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -106,7 +110,22 @@ class InvestigationTest extends PostgresIntegrationTest {
     }
 
     private static final String THOUGHT = "{\"type\":\"agent.thought\",\"text\":\"Looking at the sender\"}\n";
-    private static final String COMPLETE = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"stub\"}\n";
+    private static final String COMPLETE = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
+
+    private static String step(String label, String value, String signals) {
+        return "{\"type\":\"agent.step\",\"label\":\"" + label + "\",\"tool\":\"reputation_lookup\","
+                + "\"args\":{\"indicatorType\":\"domain\",\"value\":\"" + value + "\"},"
+                + "\"summary\":\"domain " + value + ": score=96\",\"result\":{\"score\":96},"
+                + "\"signals\":[" + signals + "]}\n";
+    }
+
+    private static final String LOOKALIKE = "{\"id\":\"LOOKALIKE-DOMAIN\",\"label\":\"paypa1.example imitates paypal.com\","
+            + "\"plain\":\"The address is made to look like paypal.com, but it isn't.\",\"weight\":35,"
+            + "\"mitre\":\"T1583.001\",\"indicator\":\"paypa1.example\"}";
+
+    private static final String REFUSED = "{\"type\":\"agent.guardrail\",\"label\":\"R1\",\"tool\":\"reputation_lookup\","
+            + "\"args\":{\"indicatorType\":\"domain\",\"value\":\"attacker-server.example\"},"
+            + "\"reason\":\"This domain does not appear in the incident\"}\n";
 
     private static void agentAnswers(String body) {
         answerStatus = 200;
@@ -155,9 +174,11 @@ class InvestigationTest extends PostgresIntegrationTest {
         return new AgentRequest(new AgentRequest.IncidentPart(1L, "email", "priya.sharma", json.readTree("{}")), baseline);
     }
 
+    private Cookie analyst;
+
     private Integer submitAnEmailIncident() throws Exception {
         users.save(new User("ivy.analyst", passwordEncoder.encode(PASSWORD), Role.ANALYST));
-        Cookie analyst = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+        analyst = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"ivy.analyst\",\"password\":\"" + PASSWORD + "\"}"))
                 .andReturn().getResponse().getCookie(AuthCookies.ACCESS_TOKEN);
         String created = mvc.perform(post("/api/incidents").cookie(analyst).contentType(MediaType.APPLICATION_JSON)
@@ -257,7 +278,8 @@ class InvestigationTest extends PostgresIntegrationTest {
 
     @Test
     void theAgentCannotChooseAStatusItIsNotAllowedTo() {
-        agentAnswers("{\"type\":\"investigation.complete\",\"result\":\"closed\",\"engine\":\"stub\"}\n");
+        // Only "result" is wrong here, so the error can only be about it.
+        agentAnswers("{\"type\":\"investigation.complete\",\"result\":\"closed\",\"engine\":\"rules\"}\n");
         assertTheAnswerIsRejected("invalid result");
     }
 
@@ -287,6 +309,73 @@ class InvestigationTest extends PostgresIntegrationTest {
         agentAnswers(THOUGHT + COMPLETE);
         answerContentType = "text/html";
         assertTheAnswerIsRejected("unexpected content type");
+    }
+
+    // ------------------------------------------------------------------ the evidence chain
+
+    @Test
+    void evidenceIsStoredInOrderAndShownOnTheIncident() throws Exception {
+        agentAnswers(THOUGHT + step("E1", "paypa1.example", LOOKALIKE) + REFUSED + step("E2", "paypal.com", "") + COMPLETE);
+
+        Integer id = submitAnEmailIncident();
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+
+        mvc.perform(get("/api/incidents/" + id).cookie(analyst))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.evidence[*].label").value(contains("E1", "R1", "E2")))
+                .andExpect(jsonPath("$.evidence[0].status").value("ok"))
+                .andExpect(jsonPath("$.evidence[0].args.value").value("paypa1.example"))
+                .andExpect(jsonPath("$.evidence[0].signals[0].id").value("LOOKALIKE-DOMAIN"))
+                .andExpect(jsonPath("$.evidence[0].signals[0].plain").value("The address is made to look like paypal.com, but it isn't."))
+                .andExpect(jsonPath("$.evidence[1].status").value("rejected"))
+                .andExpect(jsonPath("$.evidence[1].reason").value("This domain does not appear in the incident"))
+                .andExpect(jsonPath("$.evidence[1].result").doesNotExist())
+                .andExpect(jsonPath("$.evidence[2].signals").isEmpty());
+    }
+
+    @Test
+    void evidenceOutOfOrderEndsInErrorButWhatCameBeforeIsKept() throws Exception {
+        // E1 is fine; then a repeated E1 (as if rewriting it) must stop the investigation.
+        agentAnswers(step("E1", "paypa1.example", "") + step("E1", "paypal.com", "") + COMPLETE);
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("error");
+        assertThat(jdbc.queryForList("SELECT label FROM evidence WHERE incident_id = ?", String.class, id))
+                .containsExactly("E1");
+    }
+
+    @Test
+    void evidenceThatSkipsANumberEndsInError() throws Exception {
+        agentAnswers(step("E2", "paypa1.example", "") + COMPLETE);
+
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    @Test
+    void aStepMustNameAKnownToolAndSaneSignals() {
+        agentAnswers(step("E1", "paypa1.example", "").replace("reputation_lookup", "delete_mailbox") + COMPLETE);
+        assertTheAnswerIsRejected("invalid tool");
+
+        agentAnswers(step("E1", "paypa1.example", LOOKALIKE.replace("\"weight\":35", "\"weight\":150")) + COMPLETE);
+        assertTheAnswerIsRejected("weight");
+    }
+
+    @Test
+    void aStepWithoutAResultObjectEndsInError() throws Exception {
+        agentAnswers(step("E1", "paypa1.example", "").replace("\"result\":{\"score\":96}", "\"result\":\"fine\"") + COMPLETE);
+
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    @Test
+    void theDatabaseItselfRefusesARefusedCallWithAResult() throws Exception {
+        Integer id = submitAnEmailIncident();
+        finalStatusOf(id);
+
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO evidence (incident_id, label, tool, args, status, reason, result) "
+                + "VALUES (?, 'R9', 'reputation_lookup', '{}', 'rejected', 'no', '{}')", id))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

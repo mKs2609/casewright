@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
 import com.securityanalyst.gateway.incident.IncidentService;
 import com.securityanalyst.gateway.incident.IncidentSubmitted;
@@ -18,6 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
  * their "202 Accepted" at once instead of waiting for the agent.
  *
  * Status: queued -> investigating -> (the agent's result, e.g. needs_review), or error.
+ * Each tool call the agent reports is saved as evidence the moment it arrives.
  */
 @Component
 public class InvestigationRunner {
@@ -27,13 +29,15 @@ public class InvestigationRunner {
     private final IncidentService incidents;
     private final MonitoredIdentityService identities;
     private final AgentClient agent;
+    private final EvidenceService evidence;
     private final JsonMapper json;
 
     public InvestigationRunner(IncidentService incidents, MonitoredIdentityService identities, AgentClient agent,
-            JsonMapper json) {
+            EvidenceService evidence, JsonMapper json) {
         this.incidents = incidents;
         this.identities = identities;
         this.agent = agent;
+        this.evidence = evidence;
         this.json = json;
     }
 
@@ -50,11 +54,8 @@ public class InvestigationRunner {
     void run(Long incidentId) {
         incidents.updateStatus(incidentId, "investigating");
         try {
-            AgentEvent.Complete result = agent.investigate(requestFor(incidentId), event -> {
-                if (event instanceof AgentEvent.Thought thought) {
-                    log.info("Incident {}: agent: {}", incidentId, thought.text());
-                }
-            });
+            EvidenceChain chain = new EvidenceChain(incidentId);
+            AgentEvent.Complete result = agent.investigate(requestFor(incidentId), chain::accept);
             incidents.updateStatus(incidentId, result.result());
             log.info("Incident {}: investigation finished ({}, engine {})", incidentId, result.result(), result.engine());
         } catch (RuntimeException e) {
@@ -65,6 +66,54 @@ public class InvestigationRunner {
                 log.error("Incident {}: investigation failed unexpectedly", incidentId, e);
             }
             incidents.updateStatus(incidentId, "error");
+        }
+    }
+
+    /**
+     * Records the agent's events for one investigation, checking the numbering as it goes:
+     * evidence must arrive as E1, E2, E3, ... and refusals as R1, R2, ..., with no gaps or
+     * repeats (ADR-5: a confused or compromised agent cannot rewrite or skip evidence).
+     */
+    private final class EvidenceChain {
+
+        private final Long incidentId;
+        private int accepted;
+        private int rejected;
+
+        EvidenceChain(Long incidentId) {
+            this.incidentId = incidentId;
+        }
+
+        void accept(AgentEvent event) {
+            switch (event) {
+                case AgentEvent.Thought thought -> log.info("Incident {}: agent: {}", incidentId, thought.text());
+                case AgentEvent.Step step -> {
+                    expect(step.label(), "E" + (accepted + 1));
+                    if (!step.result().isObject()) {
+                        throw new AgentException("The agent sent " + step.label() + " without a result object");
+                    }
+                    evidence.recordAccepted(incidentId, step.label(), step.tool(), step.args(), step.summary(),
+                            step.result(), step.signals());
+                    accepted++;
+                    log.info("Incident {}: {} {}", incidentId, step.label(), step.summary());
+                }
+                case AgentEvent.Guardrail refused -> {
+                    expect(refused.label(), "R" + (rejected + 1));
+                    evidence.recordRejected(incidentId, refused.label(), refused.tool(), refused.args(), refused.reason());
+                    rejected++;
+                    log.warn("Incident {}: {} refused a {} call: {}", incidentId, refused.label(), refused.tool(),
+                            refused.reason());
+                }
+                case AgentEvent.Complete complete -> {
+                    // Handled by the caller once the answer has been read to the end.
+                }
+            }
+        }
+
+        private void expect(String label, String expected) {
+            if (!label.equals(expected)) {
+                throw new AgentException("The agent sent evidence " + label + " where " + expected + " was expected");
+            }
         }
     }
 

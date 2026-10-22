@@ -40,6 +40,8 @@ Limits: at most 8 LLM turns and 120 seconds per investigation. On an API error, 
 
 Before the LLM sees anything, plain code extracts indicators from the incident: IP addresses, domains, email addresses, phone numbers, and the identities involved. These lists are the **only** values tools will accept. The LLM cannot introduce a new one.
 
+Implemented in `agent/app/indicators.py` (step 9): links and addresses count, bare names merely mentioned in the text do not; IPv4 must be the plain four-number form; at most 50 of each type. The mock reputation data (`agent/app/threat_intel.py`) uses only reserved example names (`.example` domains, documentation IP ranges, 555-01xx numbers). The look-alike check ignores the top-level domain, so `weather.example` does not "imitate" `example.com`.
+
 ## 4. Tools (the allow-list)
 
 All tools are read-only.

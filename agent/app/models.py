@@ -61,13 +61,55 @@ class ThoughtEvent(Strict):
     text: Annotated[str, StringConstraints(min_length=1, max_length=500, pattern=r"^[^\x00-\x1f\x7f]*$")]
 
 
+Printable = Annotated[str, StringConstraints(min_length=1, max_length=500, pattern=r"^[^\x00-\x1f\x7f]*$")]
+ShortPrintable = Annotated[str, StringConstraints(min_length=1, max_length=300, pattern=r"^[^\x00-\x1f\x7f]*$")]
+
+
+class Signal(Strict):
+    """One finding. The same finding in two voices: `label` for the security team,
+    `plain` for everyone else. Both reports are later built from these."""
+
+    id: Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9-]{1,39}$")]
+    label: ShortPrintable
+    plain: ShortPrintable
+    weight: Annotated[int, Field(ge=0, le=100)]   # how strongly it points to an attack (risk score, step 11)
+    mitre: Annotated[str, StringConstraints(pattern=r"^(T\d{4}(\.\d{3})?|AML\.T\d{4}(\.\d{3})?)$")] | None = None
+    indicator: ShortText | None = None
+
+
+ToolArgs = Annotated[dict[Annotated[str, StringConstraints(pattern=r"^[a-zA-Z]{1,40}$")], ShortText], Field(max_length=4)]
+
+
+class StepEvent(Strict):
+    """An accepted tool call: one evidence item, labelled E1, E2, ..."""
+
+    type: Literal["agent.step"] = "agent.step"
+    label: Annotated[str, StringConstraints(pattern=r"^E[1-9][0-9]{0,2}$")]
+    tool: Literal["reputation_lookup"]
+    args: ToolArgs
+    summary: Printable
+    result: dict[str, Any]
+    signals: Annotated[list[Signal], Field(max_length=20)]
+
+
+class GuardrailEvent(Strict):
+    """A tool call that was refused, labelled R1, R2, ..., with the reason."""
+
+    type: Literal["agent.guardrail"] = "agent.guardrail"
+    label: Annotated[str, StringConstraints(pattern=r"^R[1-9][0-9]{0,2}$")]
+    tool: Annotated[str, StringConstraints(pattern=r"^[a-z_]{1,40}$")]
+    args: ToolArgs
+    reason: Printable
+
+
 class CompleteEvent(Strict):
     """The last event of every investigation."""
 
     type: Literal["investigation.complete"] = "investigation.complete"
-    # Until the real investigation exists (steps 9-12), every incident goes to a human.
+    # Until the verdict exists (step 11), every incident goes to a human.
     result: Literal["needs_review"]
-    engine: Literal["stub"]
+    # "rules": a fixed plan chose the tool calls (an AI chooses them from step 12).
+    engine: Literal["rules"]
 
 
-Event = ThoughtEvent | CompleteEvent
+Event = ThoughtEvent | StepEvent | GuardrailEvent | CompleteEvent

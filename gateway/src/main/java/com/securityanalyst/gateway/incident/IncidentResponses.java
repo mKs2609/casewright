@@ -1,6 +1,9 @@
 package com.securityanalyst.gateway.incident;
 
 import java.time.Instant;
+import java.util.List;
+
+import com.securityanalyst.gateway.evidence.EvidenceService;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -22,14 +25,17 @@ final class IncidentResponses {
         }
     }
 
-    /** One incident in full, including what was submitted (as a JSON object, not a string). */
+    /**
+     * One incident in full: what was submitted (as a JSON object, not a string) and the
+     * evidence gathered so far, in order (E1, E2, ... and any refused calls R1, R2, ...).
+     */
     record Detail(Long id, String kind, String subjectIdentity, String subjectName, String status,
-            String source, String createdBy, Instant createdAt, JsonNode payload) {
+            String source, String createdBy, Instant createdAt, JsonNode payload, List<EvidenceService.View> evidence) {
 
-        static Detail from(Incident incident, JsonMapper json) {
+        static Detail from(Incident incident, JsonMapper json, List<EvidenceService.View> evidence) {
             Summary s = Summary.from(incident);
             return new Detail(s.id(), s.kind(), s.subjectIdentity(), s.subjectName(), s.status(), s.source(),
-                    s.createdBy(), s.createdAt(), json.readTree(incident.getPayload()));
+                    s.createdBy(), s.createdAt(), json.readTree(incident.getPayload()), evidence);
         }
     }
 }
