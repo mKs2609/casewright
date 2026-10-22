@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.securityanalyst.gateway.auth.AuthenticatedUser;
 import com.securityanalyst.gateway.auth.UserRepository;
 import com.securityanalyst.gateway.common.ApiException;
+import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentity;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
 
@@ -24,14 +25,16 @@ public class IncidentService {
     private final UserRepository users;
     private final JsonMapper json;
     private final ApplicationEventPublisher events;
+    private final EvidenceService evidence;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
-            JsonMapper json, ApplicationEventPublisher events) {
+            JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence) {
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
         this.json = json;
         this.events = events;
+        this.evidence = evidence;
     }
 
     @Transactional
@@ -53,7 +56,7 @@ public class IncidentService {
         Incident saved = incidents.saveAndFlush(incident);
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
-        return IncidentResponses.Detail.from(saved, json);
+        return IncidentResponses.Detail.from(saved, json, List.of());
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +85,7 @@ public class IncidentService {
     @Transactional(readOnly = true)
     public IncidentResponses.Detail get(Long id) {
         return incidents.findWithDetailsById(id)
-                .map(incident -> IncidentResponses.Detail.from(incident, json))
+                .map(incident -> IncidentResponses.Detail.from(incident, json, evidence.forIncident(id)))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Incident not found"));
     }
 }

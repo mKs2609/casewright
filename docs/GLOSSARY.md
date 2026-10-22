@@ -63,6 +63,13 @@ Plain-language meanings of the terms used in this project.
 | **Virtual environment (Python)** | A private folder of libraries for one project (`agent/.venv`), so nothing is installed system-wide. |
 | **Transitive dependency** | A library your libraries need. Pinned too, so every install is identical. |
 | **Asynchronous / background work** | Work handed to another thread so the current request can answer straight away. |
+| **Indicator (IOC)** | A checkable fact in an incident: an IP address, domain, email address or phone number. "Indicator of compromise" when it points to an attack. |
+| **Threat intelligence** | Information about known attackers: bad addresses, phishing sites, scam numbers, with a score and tags. |
+| **Look-alike domain (typosquatting)** | A domain made to resemble a real brand's, like `paypa1` for `paypal`. |
+| **Evidence chain** | The numbered record of every tool call in an investigation (E1, E2, … accepted; R1, R2, … refused), which verdicts and reports cite. |
+| **Signal** | One finding from a tool, with a technical label, a plain-language sentence and a weight. |
+| **Guardrail** | A rule enforced in code that refuses an action, whatever the AI asks for. |
+| **Reserved example names** | Domains like `.example`, IP ranges like `203.0.113.0/24` and 555-01xx numbers, set aside for documentation so examples never point at real people or sites. |
 | **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
 | **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |
 | **Nonce** | A "number used once": a random value mixed into each encryption so the same data never encrypts to the same bytes. Must never repeat with the same key. |

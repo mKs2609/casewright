@@ -243,3 +243,15 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Decision:** Submitting an incident publishes an event; a listener runs the investigation on a background thread (`@Async`) only after the database transaction has committed (`@TransactionalEventListener(AFTER_COMMIT)`). Status goes `queued → investigating →` the agent's result, or `error` if the agent is unreachable, refuses, or answers with anything invalid. The request's trace ID is carried onto the background thread, so all of an investigation's log lines share it.
 **Why:** The analyst gets `202 Accepted` at once instead of waiting for the agent. Running only after commit means the agent never investigates an incident that was then rolled back.
 **Trade-off:** If the gateway stops in the middle, an incident can stay `investigating`; picking those up again belongs with the audit and approval work. Python dependencies are pinned to exact versions, including indirect ones, in `agent/requirements*.txt` (hash pinning and auditing come in step 18).
+
+## ADR-40: Indicators, tool guardrails and the evidence chain
+**Status:** Accepted (2026-10-23)
+**Decision:**
+- Plain code (`agent/app/indicators.py`) extracts the incident's indicators: IP addresses (plain four-number IPv4, or IPv6 from login events), domains (from addresses and links), email addresses and phone numbers, at most 50 of each. Bare names merely mentioned in the text are not indicators.
+- Every tool call goes through one guardrail (`ToolBox.call`): the tool must be on the allow-list and its arguments must be indicators of this incident. Accepted calls become evidence `E1, E2, ...`; refused ones are recorded as `R1, R2, ...` with the reason, and never run.
+- The gateway stores each evidence item as it arrives (`evidence` table) and requires the labels in order with no gaps or repeats; the database also refuses a repeated label. The incident detail API lists the evidence.
+- The reputation data is the PRD's static mock dataset, using only names reserved for examples: `.example` domains (RFC 2606), documentation IP ranges (RFC 5737) and 555-01xx numbers, so the public list never accuses a real site, network or person.
+- Until the verdict exists (step 11) a fixed plan looks up every indicator (at most 20 lookups) and the engine is reported as `rules`.
+
+**Why:** From step 12 an LLM chooses the tool calls, and incident text can try to steer it ("look up attacker-server.example"). Limiting arguments to extracted indicators makes that impossible in code, whatever the model is persuaded to ask for. Numbered, stored evidence is what the reports will cite.
+**Trade-offs:** The registrable-domain rule is simplified (the last two labels; the Public Suffix List would handle names like `example.co.uk`). Indicators are not stored on the incident yet; correlation (step 10) will need them.

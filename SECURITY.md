@@ -52,8 +52,8 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Item | Status | Notes |
 |---|---|---|
 | Incident text passed to the LLM as fenced data, never instructions | ⬜ | |
-| Fixed tool allow-list; arguments validated against the incident | ⬜ | |
-| Every agent tool call logged | ⬜ | |
+| Fixed tool allow-list; arguments validated against the incident | 🟡 | Every tool call passes one guardrail: unknown tools, and arguments that are not indicators extracted from this incident, are refused and recorded as `R1, R2, ...` (ADR-40). Done for tool 1; it will apply unchanged when an LLM picks the calls (step 12). Tests: `agent/tests/test_tools.py`. |
+| Every agent tool call logged | ✅ | Accepted and refused calls are both stored in the `evidence` table (label, tool, arguments, result or reason) and logged with the incident's trace ID. The gateway enforces the numbering and the database refuses repeated labels. Tests: `InvestigationTest`. |
 | Agent service isolated and treated as untrusted | ✅ | Listens on `127.0.0.1` only; every request needs the service token (constant-time comparison); no database access and no state (ADR-3, ADR-4); API docs pages off; 1 MB body limit. The gateway re-validates every event it returns: known types and fields only, allow-listed statuses, size and time limits (ADR-5). Tests: `agent/tests`, `InvestigationTest`. |
 | LLM output validated against a schema before use | ⬜ | |
 

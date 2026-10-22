@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app.models import CompleteEvent, ThoughtEvent
+from app.models import CompleteEvent, StepEvent, ThoughtEvent
 from tests.conftest import AUTH, valid_request
 
 
@@ -19,12 +19,20 @@ def test_an_investigation_streams_events_one_per_line_and_ends_with_complete(cli
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/x-ndjson")
     received = events(response.text)
-    assert [e["type"] for e in received] == ["agent.thought", "agent.thought", "investigation.complete"]
-    assert received[-1] == {"type": "investigation.complete", "result": "needs_review", "engine": "stub"}
+    assert received[-1] == {"type": "investigation.complete", "result": "needs_review", "engine": "rules"}
     # Every line is a valid event, exactly as the gateway will check it.
-    for event in received[:-1]:
-        ThoughtEvent.model_validate(event)
-    CompleteEvent.model_validate(received[-1])
+    shapes = {"agent.thought": ThoughtEvent, "agent.step": StepEvent, "investigation.complete": CompleteEvent}
+    for event in received:
+        shapes[event["type"]].model_validate(event)
+
+
+def test_the_sender_domain_is_looked_up_and_becomes_evidence_e1(client: TestClient) -> None:
+    received = events(client.post("/internal/investigate", json=valid_request(), headers=AUTH).text)
+
+    steps = [e for e in received if e["type"] == "agent.step"]
+    assert [s["label"] for s in steps] == ["E1"]
+    assert steps[0]["args"] == {"indicatorType": "domain", "value": "paypa1.example"}
+    assert [s["id"] for s in steps[0]["signals"]] == ["REP-UNKNOWN", "LOOKALIKE-DOMAIN"]
 
 
 def test_the_attackers_text_is_never_copied_into_the_agents_own_words(client: TestClient) -> None:

@@ -115,8 +115,8 @@ erDiagram
 | `app_users` | People who log in to the product (analysts). | `id`, `username` (unique), `password_hash`, `role`, `created_at` |
 | `refresh_tokens` | Rotating refresh tokens. Only a hash is stored. | `token_hash`, `user_id`, `expires_at`, `revoked_at`, `replaced_by` |
 | `monitored_identities` | Employees the product protects, with their baseline. **Not** the same as `app_users`. | `identity` (e.g. `priya.sharma`), `display_name`, `baseline` (AES-256-GCM encrypted bytes, ADR-37), `created_at` |
-| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `indicators` (step 9), `engine` (step 12) |
-| `evidence` | One row per agent tool call. | `id`, `incident_id`, `label` (E1, E2…), `tool`, `args`, `result`, `status` (`ok`/`rejected`), `created_at` |
+| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `indicators` (step 10, for correlation), `engine` (step 12) |
+| `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
 | `verdicts` | Final outcome of an investigation. | `incident_id`, `verdict`, `attack_type`, `risk_score`, `engine`, `disagreement`, `soc_report`, `plain_report` |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
 | `enforcement` | What the (simulated) enforcement layer has done. | `id`, `action_id`, `action`, `target`, `created_at` |
@@ -142,7 +142,7 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | PUT | `/api/admin/users/{id}/role` | ADMIN | Change a user's role (never one's own) |
 | POST | `/api/incidents` | ANALYST+ | Submit an incident (`202 Accepted`, investigation queued) |
 | GET | `/api/incidents` | any | List incidents |
-| GET | `/api/incidents/{id}` | any | Incident + evidence + verdict + actions |
+| GET | `/api/incidents/{id}` | any | Incident + evidence (since step 9) + verdict + actions |
 | POST | `/api/actions/{id}/decision` | ANALYST+ | Approve or reject |
 | GET | `/api/audit` | any | Recent audit entries |
 | GET | `/api/audit/verify` | any | Check the hash chain |
@@ -164,8 +164,8 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 |---|---|
 | `incident.created` / `incident.status` | Lifecycle changes |
 | `agent.thought` | Short narration of what the agent is about to do |
-| `agent.step` | A completed tool call (an evidence item) plus the running risk score |
-| `agent.guardrail` | A tool call or action that was **blocked**, with the reason |
+| `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
+| `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |
 | `verdict` | Final verdict available |
 | `investigation.complete` | (agent → gateway) Last line of every investigation; carries the status the incident moves to. Step 8 sends `needs_review` with engine `stub`. |
 | `action.decided` | A human approved or rejected an action |
