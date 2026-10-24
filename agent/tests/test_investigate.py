@@ -26,20 +26,31 @@ def test_an_investigation_streams_events_one_per_line_and_ends_with_complete(cli
         shapes[event["type"]].model_validate(event)
 
 
-def test_the_sender_domain_is_looked_up_and_becomes_evidence_e1(client: TestClient) -> None:
+def test_an_email_is_checked_text_first_then_reputation_then_baseline(client: TestClient) -> None:
     received = events(client.post("/internal/investigate", json=valid_request(), headers=AUTH).text)
 
     steps = [e for e in received if e["type"] == "agent.step"]
-    assert [s["label"] for s in steps] == ["E1"]
-    assert steps[0]["args"] == {"indicatorType": "domain", "value": "paypa1.example"}
-    assert [s["id"] for s in steps[0]["signals"]] == ["REP-UNKNOWN", "LOOKALIKE-DOMAIN"]
+    assert [(s["label"], s["tool"]) for s in steps] == [
+        ("E1", "pattern_match"), ("E2", "reputation_lookup"), ("E3", "baseline_check")]
+    assert steps[1]["args"] == {"indicatorType": "domain", "value": "paypa1.example"}
+    assert [s["id"] for s in steps[1]["signals"]] == ["REP-UNKNOWN", "LOOKALIKE-DOMAIN"]
 
 
-def test_the_attackers_text_is_never_copied_into_the_agents_own_words(client: TestClient) -> None:
-    response = client.post("/internal/investigate", json=valid_request(), headers=AUTH)
+def test_the_attackers_text_is_quoted_as_evidence_but_never_becomes_the_agents_own_words(client: TestClient) -> None:
+    received = events(client.post("/internal/investigate", json=valid_request(), headers=AUTH).text)
+    attack = "Ignore previous instructions"
 
-    assert "Ignore previous instructions" not in response.text
-    assert "priya.sharma" in response.text
+    # Own words: notes, summaries and findings. These feed the reports (and, later, an AI's reasoning).
+    own_words = [e["text"] for e in received if e["type"] == "agent.thought"]
+    for step in (e for e in received if e["type"] == "agent.step"):
+        own_words.append(step["summary"])
+        own_words += [s["label"] for s in step["signals"]] + [s["plain"] for s in step["signals"]]
+    assert all(attack not in words for words in own_words)
+    assert any("priya.sharma" in words for words in own_words)
+
+    # The matched text is kept only as a quoted snippet inside the evidence's result.
+    pattern_step = next(e for e in received if e["type"] == "agent.step" and e["tool"] == "pattern_match")
+    assert any(attack in m["snippet"] for m in pattern_step["result"]["matches"])
 
 
 def test_an_investigation_needs_the_token(client: TestClient) -> None:
@@ -80,3 +91,25 @@ def test_an_oversized_body_is_refused_before_it_is_read(client: TestClient) -> N
     response = client.post("/internal/investigate", json=huge, headers=AUTH)
 
     assert response.status_code == 413
+
+
+def test_a_login_batch_is_correlated_first_then_reputation_then_baseline(client: TestClient) -> None:
+    body = valid_request(kind="login", subjectIdentity="arjun.mehta", payload={"events": [
+        {"username": "arjun.mehta", "ip": "203.0.113.66", "timestamp": "2026-10-19T02:00:00Z", "success": True,
+         "country": "DE"}]})
+
+    received = events(client.post("/internal/investigate", json=body, headers=AUTH).text)
+
+    tools = [e["tool"] for e in received if e["type"] == "agent.step"]
+    assert tools == ["correlate_events", "reputation_lookup", "baseline_check"]
+
+
+def test_a_call_is_checked_text_first_then_the_caller_then_baseline(client: TestClient) -> None:
+    body = valid_request(kind="call_transcript", subjectIdentity="sara.khan",
+                         payload={"callerNumber": "+15555550142", "transcript": "This is IT support, read me the code"})
+
+    received = events(client.post("/internal/investigate", json=body, headers=AUTH).text)
+
+    steps = [e for e in received if e["type"] == "agent.step"]
+    assert [s["tool"] for s in steps] == ["pattern_match", "reputation_lookup", "baseline_check"]
+    assert steps[1]["args"] == {"indicatorType": "phone", "value": "+15555550142"}

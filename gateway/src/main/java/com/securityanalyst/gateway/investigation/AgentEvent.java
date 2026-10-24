@@ -32,7 +32,7 @@ public sealed interface AgentEvent {
     String PRINTABLE = "^[^\\p{Cntrl}]*$";
 
     /** The tools the agent may use. A step naming any other tool is refused. */
-    String KNOWN_TOOLS = "^(reputation_lookup)$";
+    String KNOWN_TOOLS = "^(reputation_lookup|baseline_check|pattern_match|correlate_events)$";
 
     /** A short note on what the agent is doing. */
     record Thought(

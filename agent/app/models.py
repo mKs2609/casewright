@@ -85,7 +85,7 @@ class StepEvent(Strict):
 
     type: Literal["agent.step"] = "agent.step"
     label: Annotated[str, StringConstraints(pattern=r"^E[1-9][0-9]{0,2}$")]
-    tool: Literal["reputation_lookup"]
+    tool: Literal["reputation_lookup", "baseline_check", "pattern_match", "correlate_events"]
     args: ToolArgs
     summary: Printable
     result: dict[str, Any]

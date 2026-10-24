@@ -8,13 +8,16 @@ All tools are read-only: they look things up, they never change anything.
 """
 
 import ipaddress
-from typing import Any
 
 from pydantic import ValidationError
 
 from app import threat_intel
-from app.indicators import Indicators, registrable
+from app.baseline_check import baseline_check
+from app.case import Case, ToolRejected, ToolResult, short
+from app.correlation import correlate_events
+from app.indicators import registrable
 from app.models import GuardrailEvent, Signal, StepEvent
+from app.patterns import pattern_match
 
 INDICATOR_TYPES = ("ip", "domain", "email", "phone")
 
@@ -34,15 +37,6 @@ PLAIN_POOR = {
 }
 
 
-class ToolRejected(Exception):
-    """The call is outside the allow-list or outside this incident. Recorded, never run."""
-
-
-def short(value: str, limit: int = 80) -> str:
-    """Long values are shortened inside descriptions, which have a length limit."""
-    return value if len(value) <= limit else value[: limit - 3] + "..."
-
-
 def lookalike_of(domain: str) -> str | None:
     """The real brand domain this one imitates, if any.
 
@@ -58,7 +52,8 @@ def lookalike_of(domain: str) -> str | None:
     return None
 
 
-def reputation_lookup(indicators: Indicators, args: dict[str, str]) -> tuple[str, dict[str, Any], list[Signal]]:
+def reputation_lookup(case: Case, args: dict[str, str]) -> ToolResult:
+    indicators = case.indicators
     indicator_type = args.get("indicatorType")
     value = args.get("value", "")
     if indicator_type not in INDICATOR_TYPES:
@@ -113,14 +108,19 @@ def reputation_lookup(indicators: Indicators, args: dict[str, str]) -> tuple[str
     return summary, {"indicator": value, "type": indicator_type, **record}, signals
 
 
-TOOLS = {"reputation_lookup": reputation_lookup}
+TOOLS = {
+    "reputation_lookup": reputation_lookup,
+    "baseline_check": baseline_check,
+    "pattern_match": pattern_match,
+    "correlate_events": correlate_events,
+}
 
 
 class ToolBox:
-    """The tools for one investigation, limited to that incident's indicators."""
+    """The tools for one investigation, limited to that incident (its indicators, people and text)."""
 
-    def __init__(self, indicators: Indicators) -> None:
-        self.indicators = indicators
+    def __init__(self, case: Case) -> None:
+        self.case = case
         self.accepted = 0
         self.rejected = 0
 
@@ -128,7 +128,7 @@ class ToolBox:
         try:
             if tool not in TOOLS:
                 raise ToolRejected("This tool is not on the allow-list")
-            summary, result, signals = TOOLS[tool](self.indicators, args)
+            summary, result, signals = TOOLS[tool](self.case, args)
         except ToolRejected as refusal:
             self.rejected += 1
             label, name = f"R{self.rejected}", _safe_tool_name(tool)

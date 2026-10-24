@@ -255,3 +255,16 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 
 **Why:** From step 12 an LLM chooses the tool calls, and incident text can try to steer it ("look up attacker-server.example"). Limiting arguments to extracted indicators makes that impossible in code, whatever the model is persuaded to ask for. Numbered, stored evidence is what the reports will cite.
 **Trade-offs:** The registrable-domain rule is simplified (the last two labels; the Public Suffix List would handle names like `example.co.uk`). Indicators are not stored on the incident yet; correlation (step 10) will need them.
+
+## ADR-41: Tools 2-4 (baseline check, pattern match, correlation)
+**Status:** Accepted (2026-10-23)
+**Decision:**
+- Every tool receives one `Case` (the incident, the subject's baseline, the extracted indicators) and nothing else. `baseline_check` accepts only identities in the incident, `pattern_match` only text fields the incident kind has, `correlate_events` no arguments at all.
+- `baseline_check` records only **differences** from normal ("a country this person doesn't normally use"), never the baseline itself: baselines are encrypted at rest (ADR-37), evidence is not.
+- `pattern_match` normalises text before matching (invisible characters removed and reported as their own finding, Unicode NFKC, common Cyrillic/Greek look-alike letters mapped to Latin, whitespace collapsed), so disguised phrases are still found. Prompt-injection phrasing is recorded as evidence of an attack (`SIG-AI-INJECTION`, weight 40); it is never followed. Quoted snippets are kept only inside the evidence result, at most 120 characters, without control characters.
+- `correlate_events` computes per-source login statistics: credential stuffing (8+ accounts, 70%+ failures), brute force (8+ failures on at most 2 accounts), success after 5+ failures, and more than 15 attempts a minute. Results list at most 25 sources and 12 findings.
+- The fixed plan per kind follows AGENT_DESIGN section 12: email and call: pattern match, reputation, baseline; login: correlation, reputation of the 5 busiest source addresses, baseline.
+
+**Why:** These are the checks the verdict (step 11) will combine. Keeping baselines out of evidence keeps personal data encrypted; normalising text defeats the common tricks used to slip injection phrases past filters.
+**Deferred:** "related incidents" (the same indicators in other recent incidents) moves to step 10b, because it needs the gateway to store each incident's indicators and send recent ones to the agent (ADR-3).
+**Trade-offs:** Signature lists catch known phrasing, not every possible wording; the LLM (step 12) and the evaluation suite (step 18) cover the rest. The city list for impossible travel is small and fixed.
