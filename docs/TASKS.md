@@ -9,18 +9,18 @@ Updated at the start and end of every step.
 
 ## Now
 
-### Step 9: Tool 1 (reputation lookup) and the evidence chain (on `feature/reputation-and-evidence`)
-- [x] Indicator extraction in the agent (IPs, domains, email addresses, phone numbers; strict IPv4; capped)
-- [x] Reputation lookup with look-alike and new-domain checks; mock data uses only reserved example names
-- [x] One guardrail for every tool call: unknown tools and arguments not in the incident are refused and recorded as R1, R2, ...
-- [x] Gateway stores evidence as it arrives (migration V4, `evidence` table), enforces E1, E2, ... order; the incident detail API lists it
-- [x] Tests: agent 54, gateway 154; two mutation checks
+### Step 10: Tools 2-4 (on `feature/tools-baseline-pattern-correlation`)
+- [x] `baseline_check`: unusual country, hours, device, impossible travel; new sender, reply-to mismatch, unknown caller. Records differences only, never baseline values
+- [x] `pattern_match`: urgency, credential and one-time-code requests, payment pressure, impersonation, remote-access tools, prompt injection; text normalised first; invisible characters reported
+- [x] `correlate_events`: credential stuffing, brute force, success after failures, automation; bounded results
+- [x] Fixed plan per incident kind; gateway accepts the four tool names
+- [x] Tests: agent 110, gateway 155; two mutation checks. A real run showed the one-time-code check missing "read me the six-digit code"; widened and tested
 - [ ] Merged
 
 ## Next
 
-### Step 10: Tools 2-4 (baseline check, pattern match, correlation)
-See `ROADMAP.md`.
+### Step 10b: Related incidents
+Store each incident's indicators; tell the agent which recent incidents share them.
 
 ## Later
 
@@ -36,6 +36,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-23:** Step 9 (reputation lookup, evidence chain) merged: PR #8.
 - **2026-10-22:** Fixed a flaky test: "not echoed" checks were sometimes fooled by the random trace ID (a short value like `ab` appears in one in about 17 trace IDs). Checks now blank the trace ID first (`NoEcho`).
 - **2026-10-22:** Step 8 (agent service, secure connection) merged: PR #6. "Agent tests" is now a required check on `main`.
 - **2026-10-21:** Step 7 (incident ingestion, encrypted baselines) merged: PR #5.

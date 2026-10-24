@@ -362,6 +362,16 @@ class InvestigationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void allFourToolsAreAcceptedAndNothingElse() {
+        for (String tool : new String[] { "reputation_lookup", "baseline_check", "pattern_match", "correlate_events" }) {
+            agentAnswers(step("E1", "paypa1.example", "").replace("reputation_lookup", tool) + COMPLETE);
+            assertThat(agentClient.investigate(someRequest(), event -> { }).result()).isEqualTo("needs_review");
+        }
+        agentAnswers(step("E1", "paypa1.example", "").replace("reputation_lookup", "send_email") + COMPLETE);
+        assertTheAnswerIsRejected("invalid tool");
+    }
+
+    @Test
     void aStepWithoutAResultObjectEndsInError() throws Exception {
         agentAnswers(step("E1", "paypa1.example", "").replace("\"result\":{\"score\":96}", "\"result\":\"fine\"") + COMPLETE);
 

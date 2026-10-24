@@ -5,10 +5,12 @@ import pytest
 from app.indicators import Indicators
 from app.models import GuardrailEvent, StepEvent
 from app.tools import ToolBox, lookalike_of
+from tests.conftest import make_case
 
 
 def toolbox(**found: set[str]) -> ToolBox:
-    return ToolBox(Indicators(**found))
+    """Tools for an email incident whose indicators are exactly the ones given."""
+    return ToolBox(make_case("email", {"sender": "a@b.example", "subject": "", "body": ""}, indicators=Indicators(**found)))
 
 
 def signal_ids(event: StepEvent | GuardrailEvent) -> list[str]:

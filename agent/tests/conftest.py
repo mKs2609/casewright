@@ -55,3 +55,25 @@ def valid_request(**incident_changes: object) -> dict[str, object]:
             "homeCity": "Bengaluru",
         },
     }
+
+
+DEFAULT_BASELINE = {
+    "usualCountries": ["IN"],
+    "workdayStartUtc": 3,
+    "workdayEndUtc": 15,
+    "knownDevices": ["Windows NT 10.0"],
+    "knownContacts": ["it-support@example.com"],
+    "knownNumbers": ["+15555550100"],
+    "homeCity": "Mumbai",
+}
+
+
+def make_case(kind: str, payload: dict[str, object], subject: str = "priya.sharma",
+              baseline: dict[str, object] | None = None, indicators: object = None) -> "Case":
+    """A case for the tools, as the agent builds it from the gateway's request."""
+    from app.case import Case
+    from app.models import Baseline, Incident
+
+    incident = Incident.model_validate({"id": 1, "kind": kind, "subjectIdentity": subject, "payload": payload})
+    built = Case.of(incident, Baseline.model_validate(baseline or DEFAULT_BASELINE))
+    return built if indicators is None else Case(built.incident, built.baseline, indicators)  # type: ignore[arg-type]
