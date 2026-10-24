@@ -30,14 +30,16 @@ public class InvestigationRunner {
     private final MonitoredIdentityService identities;
     private final AgentClient agent;
     private final EvidenceService evidence;
+    private final IndicatorService indicators;
     private final JsonMapper json;
 
     public InvestigationRunner(IncidentService incidents, MonitoredIdentityService identities, AgentClient agent,
-            EvidenceService evidence, JsonMapper json) {
+            EvidenceService evidence, IndicatorService indicators, JsonMapper json) {
         this.incidents = incidents;
         this.identities = identities;
         this.agent = agent;
         this.evidence = evidence;
+        this.indicators = indicators;
         this.json = json;
     }
 
@@ -79,6 +81,7 @@ public class InvestigationRunner {
         private final Long incidentId;
         private int accepted;
         private int rejected;
+        private boolean indicatorsReported;
 
         EvidenceChain(Long incidentId) {
             this.incidentId = incidentId;
@@ -87,6 +90,15 @@ public class InvestigationRunner {
         void accept(AgentEvent event) {
             switch (event) {
                 case AgentEvent.Thought thought -> log.info("Incident {}: agent: {}", incidentId, thought.text());
+                case AgentEvent.Indicators reported -> {
+                    // Once only: a second report would let the agent rewrite what it said it found.
+                    if (indicatorsReported) {
+                        throw new AgentException("The agent reported the incident's indicators twice");
+                    }
+                    indicatorsReported = true;
+                    indicators.record(incidentId, reported.indicators());
+                    log.info("Incident {}: {} indicator(s) recorded", incidentId, reported.indicators().size());
+                }
                 case AgentEvent.Step step -> {
                     expect(step.label(), "E" + (accepted + 1));
                     if (!step.result().isObject()) {
@@ -117,12 +129,15 @@ public class InvestigationRunner {
         }
     }
 
-    /** Packs up the incident and its subject's decrypted baseline (ADR-3: the agent gets everything it needs). */
+    /**
+     * Packs up the incident, its subject's decrypted baseline and recent incidents' indicators
+     * (ADR-3: the agent gets everything it needs and keeps nothing).
+     */
     AgentRequest requestFor(Long incidentId) {
         IncidentService.InvestigationInput incident = incidents.investigationInput(incidentId);
         var baseline = identities.baselineOf(incident.subjectIdentity())
                 .orElseThrow(() -> new IllegalStateException("No baseline for " + incident.subjectIdentity()));
         return new AgentRequest(new AgentRequest.IncidentPart(incident.id(), incident.kind(), incident.subjectIdentity(),
-                json.readTree(incident.payloadJson())), baseline);
+                json.readTree(incident.payloadJson())), baseline, indicators.recentExcept(incidentId));
     }
 }

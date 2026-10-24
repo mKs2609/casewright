@@ -3,10 +3,13 @@ package com.securityanalyst.gateway.investigation;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.securityanalyst.gateway.common.IpAddress;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +26,7 @@ import tools.jackson.databind.JsonNode;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AgentEvent.Thought.class, name = "agent.thought"),
+        @JsonSubTypes.Type(value = AgentEvent.Indicators.class, name = "incident.indicators"),
         @JsonSubTypes.Type(value = AgentEvent.Step.class, name = "agent.step"),
         @JsonSubTypes.Type(value = AgentEvent.Guardrail.class, name = "agent.guardrail"),
         @JsonSubTypes.Type(value = AgentEvent.Complete.class, name = "investigation.complete") })
@@ -37,6 +41,37 @@ public sealed interface AgentEvent {
     /** A short note on what the agent is doing. */
     record Thought(
             @NotNull @Size(min = 1, max = 500) @Pattern(regexp = PRINTABLE) String text) implements AgentEvent {
+    }
+
+    /** The indicators found in the incident, kept by the gateway for later correlation. */
+    record Indicators(@NotNull @Size(max = 200) List<@NotNull @Valid Indicator> indicators) implements AgentEvent {
+    }
+
+    /** One indicator. Its value must really look like its type (an IP address, a domain, ...). */
+    record Indicator(
+            @NotNull @Pattern(regexp = "^(ip|domain|email|phone)$") String type,
+            @NotNull @Size(min = 1, max = 254) @Pattern(regexp = PRINTABLE) String value) {
+
+        private static final java.util.regex.Pattern DOMAIN = java.util.regex.Pattern.compile(
+                "^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,24}$");
+        private static final java.util.regex.Pattern EMAIL = java.util.regex.Pattern.compile(
+                "^[a-z0-9._%+-]{1,64}@([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,24}$");
+        private static final java.util.regex.Pattern PHONE = java.util.regex.Pattern.compile("^\\+?[0-9]{6,15}$");
+
+        @JsonIgnore
+        @AssertTrue(message = "does not look like its type")
+        public boolean isWellFormed() {
+            if (type == null || value == null) {
+                return true;   // reported by @NotNull instead
+            }
+            return switch (type) {
+                case "ip" -> new IpAddress.Validator().isValid(value, null);
+                case "domain" -> DOMAIN.matcher(value).matches();
+                case "email" -> EMAIL.matcher(value).matches();
+                case "phone" -> PHONE.matcher(value).matches();
+                default -> false;
+            };
+        }
     }
 
     /** One finding, in a technical voice (label) and a plain one (plain). */

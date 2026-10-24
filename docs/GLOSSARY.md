@@ -73,6 +73,8 @@ Plain-language meanings of the terms used in this project.
 | **Unicode normalisation** | Rewriting text into one standard form, e.g. full-width letters into plain ones, so look-alike spellings compare equal. |
 | **Zero-width character** | An invisible character (such as U+200B) that can be hidden inside a word to break a filter: "ign​ore". |
 | **Homoglyph** | A letter that looks like another, such as Cyrillic "і" and Latin "i". |
+| **Campaign** | One attacker targeting several people at once, often reusing the same domain, address or number. |
+| **Correlation window** | How far back earlier incidents are compared with a new one (7 days here). |
 | **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
 | **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |
 | **Nonce** | A "number used once": a random value mixed into each encryption so the same data never encrypts to the same bytes. Must never repeat with the same key. |

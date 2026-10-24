@@ -51,7 +51,7 @@ All tools are read-only.
 | `reputation_lookup` | `indicator_type` (`ip`/`domain`/`email`/`phone`), `value` | Threat-intel score and tags; look-alike and newly registered domains | `value` is not an extracted indicator |
 | `baseline_check` | `identity` | Deviation from the person's normal countries, hours, devices, contacts; impossible travel | `identity` is not part of the incident |
 | `pattern_match` | `target` (`subject`/`body`/`transcript`/`all`) | Known attack language: urgency, credential requests, one-time-code requests, impersonation, remote-access tools, prompt-injection text | `target` doesn't exist for this incident kind |
-| `correlate_events` | none | Per-source login statistics (stuffing, brute force, success after failures, automation); indicators shared with recent incidents (step 10b) | Any argument is given |
+| `correlate_events` | none | Per-source login statistics (stuffing, brute force, success after failures, automation); indicators shared with incidents from the last 7 days, ignoring known-good and internal ones (ADR-42) | Any argument is given |
 | `submit_verdict` | see section 7 | Ends the investigation | Schema invalid or cites unknown evidence |
 
 Any other tool name is rejected.
@@ -171,9 +171,9 @@ A fixed plan per incident kind, using the same tools and the same scoring:
 
 | Kind | Plan |
 |---|---|
-| `email` | pattern match → sender reputation → reply-to and link reputation → baseline → correlation (from step 10b) |
+| `email` | pattern match → sender reputation → reply-to and link reputation → baseline → correlation |
 | `login` | correlation → reputation of top source IPs → baseline of the subject |
-| `call_transcript` | pattern match → caller reputation → baseline → correlation (from step 10b) |
+| `call_transcript` | pattern match → caller reputation → baseline → correlation |
 
 Verdict = evidence band. Attack type and actions are derived from which signals fired.
 

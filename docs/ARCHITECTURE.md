@@ -115,7 +115,8 @@ erDiagram
 | `app_users` | People who log in to the product (analysts). | `id`, `username` (unique), `password_hash`, `role`, `created_at` |
 | `refresh_tokens` | Rotating refresh tokens. Only a hash is stored. | `token_hash`, `user_id`, `expires_at`, `revoked_at`, `replaced_by` |
 | `monitored_identities` | Employees the product protects, with their baseline. **Not** the same as `app_users`. | `identity` (e.g. `priya.sharma`), `display_name`, `baseline` (AES-256-GCM encrypted bytes, ADR-37), `created_at` |
-| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `indicators` (step 10, for correlation), `engine` (step 12) |
+| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `engine` (step 12) |
+| `incident_indicators` | The indicators found in each incident, for correlation across incidents (ADR-42). | `incident_id`, `type` (`ip`/`domain`/`email`/`phone`), `value`; indexed on (`type`, `value`) |
 | `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
 | `verdicts` | Final outcome of an investigation. | `incident_id`, `verdict`, `attack_type`, `risk_score`, `engine`, `disagreement`, `soc_report`, `plain_report` |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
@@ -163,6 +164,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | Event | Meaning |
 |---|---|
 | `incident.created` / `incident.status` | Lifecycle changes |
+| `incident.indicators` | (agent → gateway) The indicators found in the incident, reported once, checked and stored (step 10b) |
 | `agent.thought` | Short narration of what the agent is about to do |
 | `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
 | `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |

@@ -44,9 +44,23 @@ class Incident(Strict):
     payload: dict[str, Any]
 
 
+IndicatorType = Literal["ip", "domain", "email", "phone"]
+
+
+class RecentIndicator(Strict):
+    """An indicator seen in other recent incidents (values and incident numbers only, not who they were about)."""
+
+    type: IndicatorType
+    value: ShortText
+    incident_ids: Annotated[list[Annotated[int, Field(gt=0)]], Field(min_length=1, max_length=20)]
+
+
 class InvestigateRequest(Strict):
     incident: Incident
     baseline: Baseline
+    # From the gateway, which keeps the history (ADR-3): indicators of incidents from the
+    # last few days, so correlation can spot the same attacker in several reports.
+    recent_indicators: Annotated[list[RecentIndicator], Field(max_length=1000)] = []
 
 
 # ---------------------------------------------------------------- what the agent sends back
@@ -112,4 +126,17 @@ class CompleteEvent(Strict):
     engine: Literal["rules"]
 
 
-Event = ThoughtEvent | StepEvent | GuardrailEvent | CompleteEvent
+class IndicatorItem(Strict):
+    type: IndicatorType
+    value: ShortText
+
+
+class IndicatorsEvent(Strict):
+    """The indicators found in this incident, for the gateway to keep (step 10b): later
+    incidents are compared against them."""
+
+    type: Literal["incident.indicators"] = "incident.indicators"
+    indicators: Annotated[list[IndicatorItem], Field(max_length=200)]
+
+
+Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | CompleteEvent

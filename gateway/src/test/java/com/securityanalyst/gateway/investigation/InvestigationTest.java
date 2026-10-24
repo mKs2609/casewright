@@ -171,7 +171,8 @@ class InvestigationTest extends PostgresIntegrationTest {
 
     private AgentRequest someRequest() {
         Baseline baseline = new Baseline(List.of("IN"), 3, 15, List.of(), List.of(), List.of(), "Bengaluru");
-        return new AgentRequest(new AgentRequest.IncidentPart(1L, "email", "priya.sharma", json.readTree("{}")), baseline);
+        return new AgentRequest(new AgentRequest.IncidentPart(1L, "email", "priya.sharma", json.readTree("{}")), baseline,
+                List.of());
     }
 
     private Cookie analyst;
@@ -386,6 +387,88 @@ class InvestigationTest extends PostgresIntegrationTest {
         assertThatThrownBy(() -> jdbc.update("INSERT INTO evidence (incident_id, label, tool, args, status, reason, result) "
                 + "VALUES (?, 'R9', 'reputation_lookup', '{}', 'rejected', 'no', '{}')", id))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    // ------------------------------------------------------------------ related incidents (step 10b)
+
+    private static String indicators(String json) {
+        return "{\"type\":\"incident.indicators\",\"indicators\":[" + json + "]}\n";
+    }
+
+    private static final String PHISHING_DOMAIN = "{\"type\":\"domain\",\"value\":\"paypa1-secure-login.example\"}";
+
+    @Test
+    void theReportedIndicatorsAreStoredWithTheIncident() throws Exception {
+        agentAnswers(indicators(PHISHING_DOMAIN + ",{\"type\":\"ip\",\"value\":\"203.0.113.66\"}") + COMPLETE);
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(jdbc.queryForList("SELECT type || ':' || value FROM incident_indicators WHERE incident_id = ? ORDER BY 1",
+                String.class, id)).containsExactly("domain:paypa1-secure-login.example", "ip:203.0.113.66");
+    }
+
+    @Test
+    void anIndicatorThatDoesNotLookLikeItsTypeIsRejected() {
+        for (String bad : new String[] {
+                "{\"type\":\"ip\",\"value\":\"rm -rf /\"}",
+                "{\"type\":\"ip\",\"value\":\"185.220.101\"}",
+                "{\"type\":\"domain\",\"value\":\"not a domain\"}",
+                "{\"type\":\"phone\",\"value\":\"call me\"}",
+                "{\"type\":\"url\",\"value\":\"https://x.example\"}" }) {
+            agentAnswers(indicators(bad) + COMPLETE);
+            assertTheAnswerIsRejected("invalid");
+        }
+    }
+
+    @Test
+    void indicatorsReportedTwiceEndInError() throws Exception {
+        agentAnswers(indicators(PHISHING_DOMAIN) + indicators(PHISHING_DOMAIN) + COMPLETE);
+
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    @Test
+    void theNextIncidentIsToldWhichRecentIncidentsSharedIndicators() throws Exception {
+        agentAnswers(indicators(PHISHING_DOMAIN) + COMPLETE);
+        Integer first = submitAnEmailIncident();
+        finalStatusOf(first);
+        RECEIVED.clear();
+
+        Integer second = submitAnotherEmailIncident();
+        finalStatusOf(second);
+
+        String sent = RECEIVED.getFirst().body();
+        assertThat((List<String>) JsonPath.read(sent, "$.recentIndicators[*].value"))
+                .containsExactly("paypa1-secure-login.example");
+        assertThat((List<Integer>) JsonPath.read(sent, "$.recentIndicators[0].incidentIds")).containsExactly(first);
+        // Values and incident numbers only: nothing about who the earlier incident was about.
+        assertThat(sent.substring(sent.indexOf("recentIndicators"))).doesNotContain("priya.sharma");
+    }
+
+    @Test
+    void incidentsOlderThanTheWindowAreNotSent() throws Exception {
+        agentAnswers(indicators(PHISHING_DOMAIN) + COMPLETE);
+        Integer first = submitAnEmailIncident();
+        finalStatusOf(first);
+        jdbc.update("UPDATE incidents SET created_at = now() - interval '8 days' WHERE id = ?", first);
+        RECEIVED.clear();
+
+        finalStatusOf(submitAnotherEmailIncident());
+
+        assertThat((List<?>) JsonPath.read(RECEIVED.getFirst().body(), "$.recentIndicators")).isEmpty();
+    }
+
+    /** A second incident by the same analyst (the account already exists). */
+    private Integer submitAnotherEmailIncident() throws Exception {
+        String created = mvc.perform(post("/api/incidents").cookie(analyst).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"kind": "email", "subjectIdentity": "arjun.mehta", "sender": "help@paypa1-secure-login.example",
+                         "subject": "Hello", "body": "Hello again"}
+                        """))
+                .andExpect(status().isAccepted())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(created, "$.id");
     }
 
     @Test

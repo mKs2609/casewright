@@ -8,7 +8,22 @@ accuses a real website, network or person:
 A real feed could replace this later, behind a setting.
 """
 
+import ipaddress
 from typing import Any
+
+from app.indicators import registrable
+
+# Addresses that only exist inside an organisation's own network (or the machine itself).
+# Deliberately narrower than Python's is_private, which also counts the documentation
+# ranges that the mock attackers in this file use.
+INTERNAL_NETWORKS = [ipaddress.ip_network(n) for n in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16",
+    "::1/128", "fc00::/7", "fe80::/10")]
+
+
+def is_internal_address(value: str) -> bool:
+    address = ipaddress.ip_address(value)
+    return any(address.version == net.version and address in net for net in INTERNAL_NETWORKS)
 
 REPUTATION: dict[str, dict[str, dict[str, Any]]] = {
     "ip": {
@@ -32,6 +47,23 @@ REPUTATION: dict[str, dict[str, dict[str, Any]]] = {
         "+15555550100": {"score": 0, "tags": ["internal-helpdesk"]},
     },
 }
+
+
+def is_noise(indicator_type: str, value: str) -> bool:
+    """Indicators that appear in lots of harmless incidents and so must not link them:
+    known-good or internal entries (score 0, e.g. the company's own domain or paypal.com)
+    and internal network addresses. Linking on these would make everything "related"."""
+    if indicator_type == "ip":
+        try:
+            if is_internal_address(value):
+                return True
+        except ValueError:
+            return True
+    domain = value.split("@")[-1] if indicator_type in ("domain", "email") else None
+    record = REPUTATION[indicator_type].get(value) if indicator_type in ("ip", "phone") else (
+        REPUTATION["domain"].get(domain) or REPUTATION["domain"].get(registrable(domain)))
+    return record is not None and record.get("score") == 0
+
 
 # Brands that phishing sites imitate -> the brand's real registrable domain.
 BRANDS: dict[str, str] = {
