@@ -6,14 +6,17 @@
 - success after failures: after many wrong guesses, a login worked, so an account may be taken over;
 - automation: attempts faster than a person can type.
 
-Related incidents (the same attacker details in other recent reports) come in step 10b.
+It also looks across incidents (step 10b): the gateway sends the indicators of recent
+incidents, and any that this incident shares (ignoring known-good and internal ones) mean
+the same attacker may be hitting several people: a campaign.
 """
 
 from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
-from app.case import Case, ToolRejected, ToolResult
+from app import threat_intel
+from app.case import Case, ToolRejected, ToolResult, short
 from app.models import Signal
 
 STUFFING_MIN_ACCOUNTS = 8
@@ -25,14 +28,45 @@ AUTOMATION_PER_MINUTE = 15
 # Bounds, so a 500-event batch from many addresses still gives a small, valid answer.
 MAX_SOURCES_IN_RESULT = 25
 MAX_SIGNALS = 12
+MAX_RELATED_IN_RESULT = 10
+
+
+def related_incidents(case: Case) -> dict[int, list[str]]:
+    """Other recent incidents sharing a meaningful indicator with this one: {incident id: shared values}."""
+    mine = {(t, v) for t, v in case.indicators.items() if not threat_intel.is_noise(t, v)}
+    related: dict[int, list[str]] = {}
+    for seen in case.recent:
+        if (seen.type, seen.value) in mine:
+            for incident_id in seen.incident_ids:
+                if incident_id != case.incident.id:
+                    related.setdefault(incident_id, []).append(seen.value)
+    return related
+
+
+def _related_signal(related: dict[int, list[str]]) -> Signal:
+    ids = sorted(related, reverse=True)
+    shared = sorted({v for values in related.values() for v in values})
+    listed = ", ".join(str(i) for i in ids[:5]) + (f" and {len(ids) - 5} more" if len(ids) > 5 else "")
+    return Signal(id="RELATED-INCIDENTS",
+                  label=f"Shares {short(shared[0], 60)}{f' (+{len(shared) - 1} more)' if len(shared) > 1 else ''} "
+                        f"with recent incident(s) {listed}",
+                  plain="The same attacker details turned up in other recent reports, so this may be part of a "
+                        "wider attack on several people.",
+                  weight=15 if len(ids) >= 2 else 10, mitre="T1583")
 
 
 def correlate_events(case: Case, args: dict[str, str]) -> ToolResult:
     if args:
         raise ToolRejected("correlate_events takes no arguments")
+    related = related_incidents(case)
+    related_part = [{"incidentId": i, "shared": sorted(set(v))[:5]}
+                    for i, v in sorted(related.items(), reverse=True)[:MAX_RELATED_IN_RESULT]]
+    related_signals = [_related_signal(related)] if related else []
+
     events = case.login_events()
     if not events:
-        return "No login events to correlate", {"perSource": {}}, []
+        summary = f"{len(related)} related recent incident(s)"
+        return summary, {"perSource": {}, "relatedIncidents": related_part}, related_signals
 
     per_ip: dict[str, dict[str, Any]] = defaultdict(
         lambda: {"accounts": set(), "failures": 0, "successes": 0, "times": [], "loggedInto": set()})
@@ -82,5 +116,6 @@ def correlate_events(case: Case, args: dict[str, str]) -> ToolResult:
 
     # Strongest first; a flood from many addresses is summarised, not listed one by one.
     signals.sort(key=lambda s: -s.weight)
-    summary = f"{len(per_ip)} source address(es) analysed, {len(signals)} finding(s)"
-    return summary, {"perSource": stats, "sourcesAnalysed": len(per_ip)}, signals[:MAX_SIGNALS]
+    signals = signals[:MAX_SIGNALS - len(related_signals)] + related_signals
+    summary = f"{len(per_ip)} source address(es) analysed, {len(related)} related recent incident(s)"
+    return summary, {"perSource": stats, "sourcesAnalysed": len(per_ip), "relatedIncidents": related_part}, signals

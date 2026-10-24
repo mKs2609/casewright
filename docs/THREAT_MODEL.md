@@ -110,6 +110,8 @@ flowchart LR
 
 ## 6. Accepted risks (for a student project)
 
+- Related-incident matching can link unrelated attackers who share infrastructure (a cloud server, a VPN); the finding's weight is kept low (ADR-42).
+
 - Rate limits are held in memory, so they reset on restart and do not work across multiple instances.
 - An attacker who knows a username can slow that user's logins down for up to 15 minutes at a time (the price of having no permanent lockout).
 - Enforcement is simulated.

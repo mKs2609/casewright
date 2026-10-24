@@ -268,3 +268,14 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** These are the checks the verdict (step 11) will combine. Keeping baselines out of evidence keeps personal data encrypted; normalising text defeats the common tricks used to slip injection phrases past filters.
 **Deferred:** "related incidents" (the same indicators in other recent incidents) moves to step 10b, because it needs the gateway to store each incident's indicators and send recent ones to the agent (ADR-3).
 **Trade-offs:** Signature lists catch known phrasing, not every possible wording; the LLM (step 12) and the evaluation suite (step 18) cover the rest. The city list for impossible travel is small and fixed.
+
+## ADR-42: Related incidents over a 7-day window
+**Status:** Accepted (window chosen by Mohit, 2026-10-24)
+**Decision:**
+- The agent reports each incident's indicators once (`incident.indicators`). The gateway checks every value really looks like its type (an IP address, a domain, an email address, a phone number) and stores them in `incident_indicators`.
+- Each investigation request carries the indicators of other incidents created in the last **7 days** (`agent.related-incident-window`), most recently seen first, at most 1000 of them (`agent.max-recent-indicators`), each with at most 20 incident numbers. Only values and incident numbers are sent, never who those incidents were about.
+- `correlate_events` reports `RELATED-INCIDENTS` (weight 10, or 15 when two or more incidents are linked) for shared indicators, ignoring known-good and internal entries (score 0 in the threat data: the company's own domain, well-known brands, the internal helpdesk) and internal network addresses (10/8, 172.16/12, 192.168/16, loopback, link-local and their IPv6 equivalents). Emails and calls now end with a correlation step.
+
+**Why:** One attacker hitting several people is a strong sign of a campaign. Seven days catches active campaigns and attackers who return within the week, including across weekends, while keeping requests small. The agent stays stateless (ADR-3): the history lives in the gateway.
+**Alternatives considered:** 24 hours (the original design: fewer false links, but misses attackers returning after a day or a weekend); 30 days (catches slow campaigns, but more noise, larger requests and more personal data linked across incidents).
+**Trade-offs:** Unrelated attackers sharing infrastructure (a cheap cloud server, a popular VPN) can be linked; the weight is kept low for that reason. Incidents older than the window are never compared.

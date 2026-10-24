@@ -67,6 +67,10 @@ class Indicators:
         except ValueError:
             pass
 
+    def items(self) -> list[tuple[str, str]]:
+        """Every indicator as (type, value), in a fixed order."""
+        return [(t, v) for t in ("ip", "domain", "email", "phone") for v in sorted(self.of_type(t))]
+
     def count(self) -> int:
         return len(self.ip) + len(self.domain) + len(self.email) + len(self.phone)
 

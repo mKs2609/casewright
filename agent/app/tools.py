@@ -7,8 +7,6 @@ Every tool call goes through `ToolBox.call`, which:
 All tools are read-only: they look things up, they never change anything.
 """
 
-import ipaddress
-
 from pydantic import ValidationError
 
 from app import threat_intel
@@ -67,9 +65,8 @@ def reputation_lookup(case: Case, args: dict[str, str]) -> ToolResult:
         record = threat_intel.REPUTATION["domain"].get(registrable(value))
     if record is None and indicator_type == "email":
         record = threat_intel.REPUTATION["domain"].get(registrable(value.split("@", 1)[1]))
-    # An address on the list wins; otherwise a private one (e.g. 10.x, 192.168.x) is noted as such.
-    # (Python also counts the documentation ranges used in the mock list as "private".)
-    if record is None and indicator_type == "ip" and ipaddress.ip_address(value).is_private:
+    # An address on the list wins; otherwise an internal one (e.g. 10.x, 192.168.x) is noted as such.
+    if record is None and indicator_type == "ip" and threat_intel.is_internal_address(value):
         record = {"score": None, "tags": ["private-address"]}
 
     signals: list[Signal] = []

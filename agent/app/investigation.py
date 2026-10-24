@@ -1,12 +1,12 @@
 """The investigation. For now a fixed plan per incident kind (the "rules" engine, from
 AGENT_DESIGN section 12), using the same tools an AI will choose from in step 12. The
-verdict (step 11) and related incidents (step 10b) build on this."""
+verdict (step 11) builds on this."""
 
 from collections import Counter
 from collections.abc import Iterator
 
 from app.case import Case
-from app.models import CompleteEvent, Event, InvestigateRequest, ThoughtEvent
+from app.models import CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, ThoughtEvent
 from app.tools import ToolBox
 
 KIND_NAMES = {"email": "an email", "login": "a batch of login events", "call_transcript": "a call transcript"}
@@ -29,7 +29,7 @@ def _reputation_plan(case: Case) -> list[tuple[str, str]]:
 
 def investigate(request: InvestigateRequest) -> Iterator[Event]:
     incident = request.incident
-    case = Case.of(incident, request.baseline)
+    case = Case.of(incident, request.baseline, request.recent_indicators)
     tools = ToolBox(case)
     # Only values the gateway has already validated, and counts, go into the agent's own
     # words: never the incident's (attacker-written) text.
@@ -41,6 +41,8 @@ def investigate(request: InvestigateRequest) -> Iterator[Event]:
         text=f"Found {found.count()} indicators: {len(found.ip)} IP addresses, {len(found.domain)} domains, "
         f"{len(found.email)} email addresses, {len(found.phone)} phone numbers."
     )
+    # Reported to the gateway, which keeps them so later incidents can be compared (step 10b).
+    yield IndicatorsEvent(indicators=[IndicatorItem(type=t, value=v) for t, v in found.items()])
 
     if incident.kind == "login":
         yield ThoughtEvent(text="Looking at the login events together, per source address.")
@@ -59,6 +61,10 @@ def investigate(request: InvestigateRequest) -> Iterator[Event]:
 
     yield ThoughtEvent(text=f"Comparing with what is normal for {incident.subject_identity}.")
     yield tools.call("baseline_check", {"identity": incident.subject_identity})
+
+    if incident.kind != "login":
+        yield ThoughtEvent(text="Looking for the same details in other recent incidents.")
+        yield tools.call("correlate_events", {})
 
     yield ThoughtEvent(text="The verdict is not built yet, so this incident goes to a human for review.")
     yield CompleteEvent(result="needs_review", engine="rules")

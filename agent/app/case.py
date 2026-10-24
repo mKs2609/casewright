@@ -4,11 +4,11 @@ Every tool receives the same Case. It holds what the gateway sent (the incident 
 subject's baseline, ADR-3) plus the indicators extracted from the incident.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.indicators import Indicators, extract_indicators
-from app.models import Baseline, Incident, Signal
+from app.models import Baseline, Incident, RecentIndicator, Signal
 
 # What every tool returns: a one-line summary, the raw result, and the findings.
 ToolResult = tuple[str, dict[str, Any], list[Signal]]
@@ -28,10 +28,11 @@ class Case:
     incident: Incident
     baseline: Baseline
     indicators: Indicators
+    recent: list[RecentIndicator] = field(default_factory=list)
 
     @staticmethod
-    def of(incident: Incident, baseline: Baseline) -> "Case":
-        return Case(incident, baseline, extract_indicators(incident))
+    def of(incident: Incident, baseline: Baseline, recent: list[RecentIndicator] | None = None) -> "Case":
+        return Case(incident, baseline, extract_indicators(incident), list(recent or []))
 
     @property
     def identities(self) -> set[str]:

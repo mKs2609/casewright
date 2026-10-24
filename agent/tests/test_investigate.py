@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app.models import CompleteEvent, StepEvent, ThoughtEvent
+from app.models import CompleteEvent, IndicatorsEvent, StepEvent, ThoughtEvent
 from tests.conftest import AUTH, valid_request
 
 
@@ -21,7 +21,8 @@ def test_an_investigation_streams_events_one_per_line_and_ends_with_complete(cli
     received = events(response.text)
     assert received[-1] == {"type": "investigation.complete", "result": "needs_review", "engine": "rules"}
     # Every line is a valid event, exactly as the gateway will check it.
-    shapes = {"agent.thought": ThoughtEvent, "agent.step": StepEvent, "investigation.complete": CompleteEvent}
+    shapes = {"agent.thought": ThoughtEvent, "incident.indicators": IndicatorsEvent, "agent.step": StepEvent,
+              "investigation.complete": CompleteEvent}
     for event in received:
         shapes[event["type"]].model_validate(event)
 
@@ -31,7 +32,7 @@ def test_an_email_is_checked_text_first_then_reputation_then_baseline(client: Te
 
     steps = [e for e in received if e["type"] == "agent.step"]
     assert [(s["label"], s["tool"]) for s in steps] == [
-        ("E1", "pattern_match"), ("E2", "reputation_lookup"), ("E3", "baseline_check")]
+        ("E1", "pattern_match"), ("E2", "reputation_lookup"), ("E3", "baseline_check"), ("E4", "correlate_events")]
     assert steps[1]["args"] == {"indicatorType": "domain", "value": "paypa1.example"}
     assert [s["id"] for s in steps[1]["signals"]] == ["REP-UNKNOWN", "LOOKALIKE-DOMAIN"]
 
@@ -111,5 +112,34 @@ def test_a_call_is_checked_text_first_then_the_caller_then_baseline(client: Test
     received = events(client.post("/internal/investigate", json=body, headers=AUTH).text)
 
     steps = [e for e in received if e["type"] == "agent.step"]
-    assert [s["tool"] for s in steps] == ["pattern_match", "reputation_lookup", "baseline_check"]
+    assert [s["tool"] for s in steps] == ["pattern_match", "reputation_lookup", "baseline_check", "correlate_events"]
     assert steps[1]["args"] == {"indicatorType": "phone", "value": "+15555550142"}
+
+
+def test_the_incidents_indicators_are_reported_before_any_tool_runs(client: TestClient) -> None:
+    received = events(client.post("/internal/investigate", json=valid_request(), headers=AUTH).text)
+
+    types = [e["type"] for e in received]
+    assert types.index("incident.indicators") < types.index("agent.step")
+    reported = next(e for e in received if e["type"] == "incident.indicators")["indicators"]
+    assert {"type": "domain", "value": "paypa1.example"} in reported
+    assert {"type": "email", "value": "security@paypa1.example"} in reported
+
+
+def test_an_incident_sharing_an_indicator_with_a_recent_one_is_linked(client: TestClient) -> None:
+    body = valid_request()
+    body["recentIndicators"] = [{"type": "domain", "value": "paypa1.example", "incidentIds": [3, 5]}]
+
+    received = events(client.post("/internal/investigate", json=body, headers=AUTH).text)
+
+    correlation = next(e for e in received if e["type"] == "agent.step" and e["tool"] == "correlate_events")
+    assert [s["id"] for s in correlation["signals"]] == ["RELATED-INCIDENTS"]
+    assert correlation["result"]["relatedIncidents"] == [
+        {"incidentId": 5, "shared": ["paypa1.example"]}, {"incidentId": 3, "shared": ["paypa1.example"]}]
+
+
+def test_recent_indicators_are_checked_strictly(client: TestClient) -> None:
+    body = valid_request()
+    body["recentIndicators"] = [{"type": "url", "value": "x", "incidentIds": [3]}]
+
+    assert client.post("/internal/investigate", json=body, headers=AUTH).status_code == 400
