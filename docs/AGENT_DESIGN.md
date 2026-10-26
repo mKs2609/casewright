@@ -98,6 +98,8 @@ The score is computed by code from the signals, never taken from the LLM.
 
 Example: weights 50, 45, 25 → `1 − (0.50 × 0.55 × 0.75) = 0.79` → risk 79, malicious.
 
+Details (ADR-43): each weight counts at most 95 (no single finding is proof); findings are multiplied in id order and the result rounded half up, identically in the agent and the gateway, which recomputes the score from stored evidence. Both are checked against `testdata/risk-score-cases.json`.
+
 ## 7. Verdict schema
 
 The LLM's `submit_verdict` call is parsed against this before it is trusted:
@@ -175,7 +177,7 @@ A fixed plan per incident kind, using the same tools and the same scoring:
 | `login` | correlation → reputation of top source IPs → baseline of the subject |
 | `call_transcript` | pattern match → caller reputation → baseline → correlation |
 
-Verdict = evidence band. Attack type and actions are derived from which signals fired.
+Verdict = evidence band. Attack type and actions are derived from which signals fired. Implemented in step 11 (`agent/app/verdict.py`); the six demo scenarios are tests (`agent/tests/scenarios.py`).
 
 ## 13. Evaluation
 

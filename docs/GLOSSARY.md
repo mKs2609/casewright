@@ -75,6 +75,11 @@ Plain-language meanings of the terms used in this project.
 | **Homoglyph** | A letter that looks like another, such as Cyrillic "і" and Latin "i". |
 | **Campaign** | One attacker targeting several people at once, often reusing the same domain, address or number. |
 | **Correlation window** | How far back earlier incidents are compared with a new one (7 days here). |
+| **Noisy-OR** | Combining findings by asking how likely it is that all of them are false alarms: risk = 100 × (1 − product of (1 − weight/100)). Findings compound, and the total never passes 100. |
+| **Risk band** | The verdict a score falls into: 0–29 benign, 30–64 suspicious, 65–100 malicious. |
+| **Score floor** | The rule that a verdict is never lower than its evidence's band, enforced by the gateway. |
+| **Counterfactual** | "What would change the verdict": the strongest finding and the risk without it. |
+| **Golden file** | A file of test cases with known answers, shared by two implementations so they stay identical. |
 | **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
 | **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |
 | **Nonce** | A "number used once": a random value mixed into each encryption so the same data never encrypts to the same bytes. Must never repeat with the same key. |

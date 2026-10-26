@@ -66,3 +66,22 @@ def test_many_related_incidents_give_a_bounded_answer() -> None:
     assert len(result["relatedIncidents"]) == MAX_RELATED_IN_RESULT
     assert len(signals) == 1
     assert "and 15 more" in signals[0].label
+
+
+def test_a_persons_own_home_connection_does_not_link_their_incidents() -> None:
+    # Found in a live run: two of Priya's own logins from her home connection (residential-isp,
+    # score 3) were linked as "related", raising the risk of an unrelated incident.
+    events = [{"username": "priya.sharma", "ip": "198.51.100.7", "timestamp": "2026-10-19T06:00:00Z", "success": True,
+               "country": "IN"}]
+    base = make_case("login", {"events": events}, subject="priya.sharma")
+    case = type(base)(base.incident, base.baseline, base.indicators, [recent("ip", "198.51.100.7", 13)])
+
+    assert related_incidents(case) == {}
+
+
+def test_an_unknown_domain_still_links_incidents() -> None:
+    # Not on any list is not the same as harmless: a brand-new phishing domain must still link.
+    case = email_case("see https://brand-new-scam.example/x", sender="a@brand-new-scam.example",
+                      recent_seen=[recent("domain", "brand-new-scam.example", 9)])
+
+    assert related_incidents(case) == {9: ["brand-new-scam.example"]}

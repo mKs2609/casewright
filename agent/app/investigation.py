@@ -1,12 +1,14 @@
-"""The investigation. For now a fixed plan per incident kind (the "rules" engine, from
-AGENT_DESIGN section 12), using the same tools an AI will choose from in step 12. The
-verdict (step 11) builds on this."""
+"""The investigation: a fixed plan per incident kind (the "rules" engine, from AGENT_DESIGN
+section 12), using the same tools an AI will choose from in step 12, ending in a verdict
+computed by code from the evidence (step 11)."""
 
 from collections import Counter
 from collections.abc import Iterator
 
 from app.case import Case
-from app.models import CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, ThoughtEvent
+from app.models import (CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, ThoughtEvent,
+                        VerdictEvent)
+from app import verdict as decide
 from app.tools import ToolBox
 
 KIND_NAMES = {"email": "an email", "login": "a batch of login events", "call_transcript": "a call transcript"}
@@ -66,5 +68,14 @@ def investigate(request: InvestigateRequest) -> Iterator[Event]:
         yield ThoughtEvent(text="Looking for the same details in other recent incidents.")
         yield tools.call("correlate_events", {})
 
-    yield ThoughtEvent(text="The verdict is not built yet, so this incident goes to a human for review.")
-    yield CompleteEvent(result="needs_review", engine="rules")
+    signals = [s for step in tools.steps for s in step.signals]
+    score = decide.risk_score(signals)
+    verdict = decide.band(score)
+    attack = decide.attack_type(incident.kind, signals) if verdict != "benign" else "none"
+    kinds = len(decide.strongest_per_id(signals))
+    yield ThoughtEvent(text=f"Risk {score}/100 from {kinds} kind(s) of finding: {verdict}.")
+    # Built with the JSON (camelCase) names: the models accept only those, for code and callers alike.
+    yield VerdictEvent.model_validate({
+        "verdict": verdict, "attackType": attack, "riskScore": score,
+        "citedEvidence": decide.cited_evidence(tools.steps), "counterfactual": decide.counterfactual(signals)})
+    yield CompleteEvent(result="closed" if verdict == "benign" else "needs_review", engine="rules")

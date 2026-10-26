@@ -116,12 +116,30 @@ class GuardrailEvent(Strict):
     reason: Printable
 
 
+Verdict = Literal["benign", "suspicious", "malicious"]
+AttackType = Literal["none", "phishing", "credential_stuffing", "brute_force", "account_takeover",
+                     "impossible_travel", "vishing", "prompt_injection", "bec", "other"]
+
+
+class VerdictEvent(Strict):
+    """The decision, computed by code from the evidence (ADR-9). The gateway recomputes the
+    score from the evidence it stored and never lets a verdict fall below it."""
+
+    type: Literal["verdict"] = "verdict"
+    verdict: Verdict
+    attack_type: AttackType
+    risk_score: Annotated[int, Field(ge=0, le=100)]
+    cited_evidence: Annotated[list[Annotated[str, StringConstraints(pattern=r"^E[1-9][0-9]{0,2}$")]],
+                              Field(max_length=30)]
+    counterfactual: Printable
+
+
 class CompleteEvent(Strict):
     """The last event of every investigation."""
 
     type: Literal["investigation.complete"] = "investigation.complete"
-    # Until the verdict exists (step 11), every incident goes to a human.
-    result: Literal["needs_review"]
+    # Benign incidents are closed; anything else goes to a human (the gateway decides finally).
+    result: Literal["needs_review", "closed"]
     # "rules": a fixed plan chose the tool calls (an AI chooses them from step 12).
     engine: Literal["rules"]
 
@@ -139,4 +157,4 @@ class IndicatorsEvent(Strict):
     indicators: Annotated[list[IndicatorItem], Field(max_length=200)]
 
 
-Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | CompleteEvent
+Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | VerdictEvent | CompleteEvent

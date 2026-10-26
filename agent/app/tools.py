@@ -118,6 +118,7 @@ class ToolBox:
 
     def __init__(self, case: Case) -> None:
         self.case = case
+        self.steps: list[StepEvent] = []   # accepted calls, for the verdict to cite
         self.accepted = 0
         self.rejected = 0
 
@@ -135,8 +136,10 @@ class ToolBox:
                 # Arguments too odd to even record (e.g. huge or strangely named): keep the refusal, drop them.
                 return GuardrailEvent(label=label, tool=name, args={}, reason=f"{refusal} (arguments not recordable)")
         self.accepted += 1
-        return StepEvent(label=f"E{self.accepted}", tool=tool, args=args, summary=summary, result=result,
+        step = StepEvent(label=f"E{self.accepted}", tool=tool, args=args, summary=summary, result=result,
                          signals=signals)
+        self.steps.append(step)
+        return step
 
 
 def _safe_tool_name(tool: str) -> str:

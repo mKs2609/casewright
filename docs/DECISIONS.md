@@ -279,3 +279,16 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** One attacker hitting several people is a strong sign of a campaign. Seven days catches active campaigns and attackers who return within the week, including across weekends, while keeping requests small. The agent stays stateless (ADR-3): the history lives in the gateway.
 **Alternatives considered:** 24 hours (the original design: fewer false links, but misses attackers returning after a day or a weekend); 30 days (catches slow campaigns, but more noise, larger requests and more personal data linked across incidents).
 **Trade-offs:** Unrelated attackers sharing infrastructure (a cheap cloud server, a popular VPN) can be linked; the weight is kept low for that reason. Incidents older than the window are never compared.
+
+## ADR-43: Verdicts by code, with the score floor enforced by the gateway
+**Status:** Accepted (benign handling chosen by Mohit, 2026-10-25)
+**Decision:**
+- The agent's rule engine turns evidence into a decision: the risk score (noisy-OR over the strongest finding of each kind, each weight capped at 95), the verdict band (0-29 benign, 30-64 suspicious, 65-100 malicious), the attack type (from which findings fired, most specific first), the cited evidence and a counterfactual ("without the strongest finding the risk would be ..."). It sends a `verdict` event before `investigation.complete`.
+- The gateway recomputes the score from the evidence it stored (`RiskScore`) and applies AGENT_DESIGN section 8: the final verdict is never below the evidence band; a claim of benign against non-benign evidence, or a gap of two levels, is a disagreement and goes to a human. Cited evidence must exist. The gateway, not the agent, decides the status.
+- **Benign incidents are closed automatically**; suspicious, malicious and disagreements go to `needs_review`. Closed incidents stay listed with their verdict and evidence.
+- Both implementations multiply in the same order (sorted by id) and round halves up, and both are checked against one shared golden file (`testdata/risk-score-cases.json`), so they cannot drift apart.
+- Amends ADR-42: entries the threat data knows to be harmless (score below 10, e.g. a residential connection) are noise for related incidents, like score 0. A live run showed a person's own home address linking two of their incidents.
+
+**Why:** ADR-9 says the score comes from code, never from a model. Enforcing it at the trust boundary means even a compromised agent (or, from step 12, a manipulated LLM) cannot talk an incident down. Closing benign incidents spares analysts from reviewing harmless reports (alert fatigue).
+**Alternatives considered:** sending every incident to a human (nothing closed unseen, but real alerts drown in harmless ones); trusting the agent's score (simpler, but a single compromised component could close dangerous incidents).
+**Trade-offs:** a wrongly benign verdict closes an incident without review; the evaluation set (step 18) measures how often. The rules engine's attack type is a heuristic.

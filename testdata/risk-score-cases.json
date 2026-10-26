@@ -1,0 +1,926 @@
+{
+ "about": "Risk-score cases with known answers. Checked by BOTH the agent (tests/test_verdict.py) and the gateway (RiskScoreTest), so the two implementations can never drift apart. Regenerate only together with both implementations.",
+ "cases": [
+  {
+   "why": "nothing found",
+   "findings": [],
+   "score": 0
+  },
+  {
+   "why": "design doc example",
+   "findings": [
+    [
+     "AA",
+     50
+    ],
+    [
+     "BB",
+     45
+    ],
+    [
+     "CC",
+     25
+    ]
+   ],
+   "score": 79
+  },
+  {
+   "why": "exactly 62.5: halves round up",
+   "findings": [
+    [
+     "AA",
+     50
+    ],
+    [
+     "BB",
+     25
+    ]
+   ],
+   "score": 63
+  },
+  {
+   "why": "exactly 87.5: halves round up",
+   "findings": [
+    [
+     "AA",
+     50
+    ],
+    [
+     "BB",
+     50
+    ],
+    [
+     "CC",
+     50
+    ]
+   ],
+   "score": 88
+  },
+  {
+   "why": "looks like 14.5, is 14.500000000000002",
+   "findings": [
+    [
+     "AA",
+     10
+    ],
+    [
+     "BB",
+     5
+    ]
+   ],
+   "score": 15
+  },
+  {
+   "why": "a single finding is capped at 95",
+   "findings": [
+    [
+     "AA",
+     100
+    ]
+   ],
+   "score": 95
+  },
+  {
+   "why": "the same kind counts once, at its strongest",
+   "findings": [
+    [
+     "AA",
+     45
+    ],
+    [
+     "AA",
+     20
+    ],
+    [
+     "AA",
+     45
+    ]
+   ],
+   "score": 45
+  },
+  {
+   "why": "random case 1",
+   "findings": [
+    [
+     "REP-UNKNOWN",
+     40
+    ],
+    [
+     "CRED-STUFFING",
+     45
+    ],
+    [
+     "SIG-URGENCY",
+     15
+    ],
+    [
+     "NEW-DOMAIN",
+     45
+    ]
+   ],
+   "score": 85
+  },
+  {
+   "why": "random case 2",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     10
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     40
+    ],
+    [
+     "SIG-AI-INJECTION",
+     10
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     45
+    ]
+   ],
+   "score": 55
+  },
+  {
+   "why": "random case 3",
+   "findings": [
+    [
+     "REP-MALICIOUS",
+     50
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     40
+    ],
+    [
+     "SIG-URGENCY",
+     95
+    ],
+    [
+     "NEW-DOMAIN",
+     50
+    ],
+    [
+     "REP-MALICIOUS",
+     45
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     5
+    ],
+    [
+     "REP-MALICIOUS",
+     15
+    ]
+   ],
+   "score": 99
+  },
+  {
+   "why": "random case 4",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     5
+    ],
+    [
+     "CRED-STUFFING",
+     25
+    ]
+   ],
+   "score": 29
+  },
+  {
+   "why": "random case 5",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     15
+    ],
+    [
+     "REP-UNKNOWN",
+     15
+    ],
+    [
+     "SIG-AI-INJECTION",
+     40
+    ],
+    [
+     "REP-MALICIOUS",
+     95
+    ]
+   ],
+   "score": 98
+  },
+  {
+   "why": "random case 6",
+   "findings": [
+    [
+     "CRED-STUFFING",
+     95
+    ]
+   ],
+   "score": 95
+  },
+  {
+   "why": "random case 7",
+   "findings": [
+    [
+     "IMPOSSIBLE-TRAVEL",
+     45
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     100
+    ],
+    [
+     "SIG-AI-INJECTION",
+     25
+    ]
+   ],
+   "score": 98
+  },
+  {
+   "why": "random case 8",
+   "findings": [
+    [
+     "SIG-OTP-REQ",
+     45
+    ],
+    [
+     "SIG-AI-INJECTION",
+     5
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     50
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     35
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     20
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     8
+    ],
+    [
+     "REP-MALICIOUS",
+     95
+    ]
+   ],
+   "score": 99
+  },
+  {
+   "why": "random case 9",
+   "findings": [
+    [
+     "SIG-OTP-REQ",
+     15
+    ]
+   ],
+   "score": 15
+  },
+  {
+   "why": "random case 10",
+   "findings": [
+    [
+     "CRED-STUFFING",
+     35
+    ]
+   ],
+   "score": 35
+  },
+  {
+   "why": "random case 11",
+   "findings": [
+    [
+     "IMPOSSIBLE-TRAVEL",
+     35
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     50
+    ],
+    [
+     "SIG-OTP-REQ",
+     95
+    ],
+    [
+     "SIG-AI-INJECTION",
+     25
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     20
+    ],
+    [
+     "BASELINE-GEO",
+     5
+    ]
+   ],
+   "score": 99
+  },
+  {
+   "why": "random case 12",
+   "findings": [
+    [
+     "LOOKALIKE-DOMAIN",
+     10
+    ],
+    [
+     "SIG-OTP-REQ",
+     100
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     5
+    ],
+    [
+     "REP-MALICIOUS",
+     40
+    ]
+   ],
+   "score": 97
+  },
+  {
+   "why": "random case 13",
+   "findings": [
+    [
+     "CRED-STUFFING",
+     10
+    ],
+    [
+     "REP-UNKNOWN",
+     15
+    ],
+    [
+     "CRED-STUFFING",
+     45
+    ],
+    [
+     "SIG-OTP-REQ",
+     100
+    ],
+    [
+     "NEW-DOMAIN",
+     35
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     8
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     35
+    ]
+   ],
+   "score": 99
+  },
+  {
+   "why": "random case 14",
+   "findings": [
+    [
+     "REP-MALICIOUS",
+     20
+    ],
+    [
+     "SIG-URGENCY",
+     20
+    ]
+   ],
+   "score": 36
+  },
+  {
+   "why": "random case 15",
+   "findings": [
+    [
+     "SIG-OTP-REQ",
+     10
+    ]
+   ],
+   "score": 10
+  },
+  {
+   "why": "random case 16",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     95
+    ],
+    [
+     "SIG-URGENCY",
+     8
+    ],
+    [
+     "REP-MALICIOUS",
+     10
+    ],
+    [
+     "SIG-OTP-REQ",
+     40
+    ]
+   ],
+   "score": 97
+  },
+  {
+   "why": "random case 17",
+   "findings": [
+    [
+     "REP-MALICIOUS",
+     50
+    ],
+    [
+     "BASELINE-GEO",
+     20
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     8
+    ]
+   ],
+   "score": 63
+  },
+  {
+   "why": "random case 18",
+   "findings": [
+    [
+     "LOOKALIKE-DOMAIN",
+     15
+    ]
+   ],
+   "score": 15
+  },
+  {
+   "why": "random case 19",
+   "findings": [
+    [
+     "SIG-OTP-REQ",
+     5
+    ],
+    [
+     "SIG-URGENCY",
+     25
+    ],
+    [
+     "BASELINE-GEO",
+     50
+    ],
+    [
+     "CRED-STUFFING",
+     10
+    ],
+    [
+     "SIG-URGENCY",
+     40
+    ]
+   ],
+   "score": 74
+  },
+  {
+   "why": "random case 20",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     10
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     10
+    ],
+    [
+     "NEW-DOMAIN",
+     20
+    ],
+    [
+     "SIG-OTP-REQ",
+     50
+    ],
+    [
+     "SIG-OTP-REQ",
+     100
+    ],
+    [
+     "SIG-OTP-REQ",
+     10
+    ],
+    [
+     "REP-UNKNOWN",
+     15
+    ]
+   ],
+   "score": 97
+  },
+  {
+   "why": "random case 21",
+   "findings": [
+    [
+     "IMPOSSIBLE-TRAVEL",
+     40
+    ],
+    [
+     "SIG-URGENCY",
+     8
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     5
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     8
+    ],
+    [
+     "REP-MALICIOUS",
+     45
+    ],
+    [
+     "SIG-AI-INJECTION",
+     15
+    ]
+   ],
+   "score": 76
+  },
+  {
+   "why": "random case 22",
+   "findings": [
+    [
+     "IMPOSSIBLE-TRAVEL",
+     20
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     50
+    ],
+    [
+     "CRED-STUFFING",
+     20
+    ],
+    [
+     "REP-UNKNOWN",
+     10
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     10
+    ],
+    [
+     "SIG-OTP-REQ",
+     40
+    ]
+   ],
+   "score": 81
+  },
+  {
+   "why": "random case 23",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     50
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     20
+    ],
+    [
+     "SIG-OTP-REQ",
+     15
+    ],
+    [
+     "REP-MALICIOUS",
+     8
+    ],
+    [
+     "SIG-AI-INJECTION",
+     35
+    ]
+   ],
+   "score": 80
+  },
+  {
+   "why": "random case 24",
+   "findings": [
+    [
+     "SIG-OTP-REQ",
+     5
+    ],
+    [
+     "REP-MALICIOUS",
+     10
+    ],
+    [
+     "SIG-AI-INJECTION",
+     25
+    ],
+    [
+     "REP-UNKNOWN",
+     50
+    ]
+   ],
+   "score": 68
+  },
+  {
+   "why": "random case 25",
+   "findings": [
+    [
+     "LOOKALIKE-DOMAIN",
+     25
+    ],
+    [
+     "NEW-DOMAIN",
+     40
+    ]
+   ],
+   "score": 55
+  },
+  {
+   "why": "random case 26",
+   "findings": [
+    [
+     "REP-UNKNOWN",
+     50
+    ],
+    [
+     "NEW-DOMAIN",
+     50
+    ],
+    [
+     "REP-MALICIOUS",
+     5
+    ]
+   ],
+   "score": 76
+  },
+  {
+   "why": "random case 27",
+   "findings": [
+    [
+     "BASELINE-GEO",
+     100
+    ],
+    [
+     "SIG-AI-INJECTION",
+     5
+    ],
+    [
+     "REP-MALICIOUS",
+     50
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     40
+    ]
+   ],
+   "score": 99
+  },
+  {
+   "why": "random case 28",
+   "findings": [
+    [
+     "SIG-AI-INJECTION",
+     25
+    ]
+   ],
+   "score": 25
+  },
+  {
+   "why": "random case 29",
+   "findings": [
+    [
+     "LOOKALIKE-DOMAIN",
+     8
+    ],
+    [
+     "CRED-STUFFING",
+     45
+    ]
+   ],
+   "score": 49
+  },
+  {
+   "why": "random case 30",
+   "findings": [
+    [
+     "REP-MALICIOUS",
+     100
+    ],
+    [
+     "NEW-DOMAIN",
+     25
+    ],
+    [
+     "BASELINE-GEO",
+     8
+    ]
+   ],
+   "score": 97
+  },
+  {
+   "why": "random case 31",
+   "findings": [
+    [
+     "CRED-STUFFING",
+     8
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     5
+    ],
+    [
+     "CRED-STUFFING",
+     50
+    ],
+    [
+     "REP-MALICIOUS",
+     50
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     35
+    ],
+    [
+     "SIG-URGENCY",
+     5
+    ]
+   ],
+   "score": 85
+  },
+  {
+   "why": "random case 32",
+   "findings": [
+    [
+     "LOOKALIKE-DOMAIN",
+     8
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     95
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     20
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     100
+    ],
+    [
+     "BASELINE-GEO",
+     35
+    ]
+   ],
+   "score": 100
+  },
+  {
+   "why": "random case 33",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     40
+    ],
+    [
+     "CRED-STUFFING",
+     40
+    ],
+    [
+     "REP-UNKNOWN",
+     8
+    ],
+    [
+     "REP-UNKNOWN",
+     45
+    ],
+    [
+     "REP-MALICIOUS",
+     20
+    ],
+    [
+     "SIG-URGENCY",
+     8
+    ]
+   ],
+   "score": 84
+  },
+  {
+   "why": "random case 34",
+   "findings": [
+    [
+     "REP-MALICIOUS",
+     15
+    ],
+    [
+     "LOOKALIKE-DOMAIN",
+     40
+    ],
+    [
+     "SIG-URGENCY",
+     95
+    ],
+    [
+     "CRED-STUFFING",
+     20
+    ]
+   ],
+   "score": 98
+  },
+  {
+   "why": "random case 35",
+   "findings": [
+    [
+     "BASELINE-GEO",
+     20
+    ]
+   ],
+   "score": 20
+  },
+  {
+   "why": "random case 36",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     15
+    ],
+    [
+     "REP-UNKNOWN",
+     10
+    ]
+   ],
+   "score": 24
+  },
+  {
+   "why": "random case 37",
+   "findings": [
+    [
+     "BASELINE-GEO",
+     95
+    ],
+    [
+     "CRED-STUFFING",
+     40
+    ],
+    [
+     "SIG-OTP-REQ",
+     25
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     95
+    ],
+    [
+     "SIG-AI-INJECTION",
+     15
+    ],
+    [
+     "IMPOSSIBLE-TRAVEL",
+     15
+    ],
+    [
+     "SIG-OTP-REQ",
+     35
+    ]
+   ],
+   "score": 100
+  },
+  {
+   "why": "random case 38",
+   "findings": [
+    [
+     "SIG-URGENCY",
+     25
+    ],
+    [
+     "SIG-OTP-REQ",
+     10
+    ]
+   ],
+   "score": 32
+  },
+  {
+   "why": "random case 39",
+   "findings": [
+    [
+     "CRED-STUFFING",
+     25
+    ],
+    [
+     "REP-MALICIOUS",
+     100
+    ]
+   ],
+   "score": 96
+  },
+  {
+   "why": "random case 40",
+   "findings": [
+    [
+     "SIG-AI-INJECTION",
+     10
+    ]
+   ],
+   "score": 10
+  }
+ ]
+}

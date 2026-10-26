@@ -49,10 +49,16 @@ REPUTATION: dict[str, dict[str, dict[str, Any]]] = {
 }
 
 
+# Entries scored below this are known to be harmless (e.g. residential-isp scores 3).
+HARMLESS_BELOW = 10
+
+
 def is_noise(indicator_type: str, value: str) -> bool:
-    """Indicators that appear in lots of harmless incidents and so must not link them:
-    known-good or internal entries (score 0, e.g. the company's own domain or paypal.com)
-    and internal network addresses. Linking on these would make everything "related"."""
+    """Indicators that appear in lots of harmless incidents and so must not link them: entries
+    the threat list knows to be harmless (score below 10: the company's own domain, paypal.com,
+    an ordinary home internet connection) and internal network addresses. Linking on these would
+    make everything "related"; a person's own home address showing up twice proves nothing.
+    Unknown indicators still count: a new phishing domain on no list should link incidents."""
     if indicator_type == "ip":
         try:
             if is_internal_address(value):
@@ -62,7 +68,7 @@ def is_noise(indicator_type: str, value: str) -> bool:
     domain = value.split("@")[-1] if indicator_type in ("domain", "email") else None
     record = REPUTATION[indicator_type].get(value) if indicator_type in ("ip", "phone") else (
         REPUTATION["domain"].get(domain) or REPUTATION["domain"].get(registrable(domain)))
-    return record is not None and record.get("score") == 0
+    return record is not None and record.get("score") is not None and record["score"] < HARMLESS_BELOW
 
 
 # Brands that phishing sites imitate -> the brand's real registrable domain.
