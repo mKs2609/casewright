@@ -118,12 +118,12 @@ erDiagram
 | `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `engine` (step 12) |
 | `incident_indicators` | The indicators found in each incident, for correlation across incidents (ADR-42). | `incident_id`, `type` (`ip`/`domain`/`email`/`phone`), `value`; indexed on (`type`, `value`) |
 | `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
-| `verdicts` | Final outcome of an investigation. | `incident_id`, `verdict`, `attack_type`, `risk_score`, `engine`, `disagreement`, `soc_report`, `plain_report` |
+| `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `created_at`. Planned: `soc_report`, `plain_report` (step 13) |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
 | `enforcement` | What the (simulated) enforcement layer has done. | `id`, `action_id`, `action`, `target`, `created_at` |
 | `audit_log` | Tamper-evident history. | `seq`, `ts`, `actor`, `event`, `incident_id`, `data`, `prev_hash`, `hash` |
 
-Incident status: `queued → investigating → awaiting_approval | needs_review | closed | error`.
+Incident status: `queued → investigating → awaiting_approval | needs_review | closed | error`. Since step 11: benign verdicts close the incident; suspicious, malicious and disagreements go to `needs_review`; `awaiting_approval` arrives with human approval (step 15).
 
 ## 5. API surface
 
@@ -168,7 +168,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | `agent.thought` | Short narration of what the agent is about to do |
 | `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
 | `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |
-| `verdict` | Final verdict available |
+| `verdict` | Final verdict available (agent → gateway: verdict, attack type, risk score, cited evidence, counterfactual; the gateway recomputes the score and applies the floor) |
 | `investigation.complete` | (agent → gateway) Last line of every investigation; carries the status the incident moves to. Step 8 sends `needs_review` with engine `stub`. |
 | `action.decided` | A human approved or rejected an action |
 

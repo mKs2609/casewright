@@ -29,6 +29,7 @@ import tools.jackson.databind.JsonNode;
         @JsonSubTypes.Type(value = AgentEvent.Indicators.class, name = "incident.indicators"),
         @JsonSubTypes.Type(value = AgentEvent.Step.class, name = "agent.step"),
         @JsonSubTypes.Type(value = AgentEvent.Guardrail.class, name = "agent.guardrail"),
+        @JsonSubTypes.Type(value = AgentEvent.Verdict.class, name = "verdict"),
         @JsonSubTypes.Type(value = AgentEvent.Complete.class, name = "investigation.complete") })
 public sealed interface AgentEvent {
 
@@ -105,12 +106,25 @@ public sealed interface AgentEvent {
     }
 
     /**
-     * The last event of every investigation. "result" is the status the incident moves to,
-     * so it is limited to the statuses the agent is allowed to choose: it can never, say,
-     * mark an incident "closed" by itself.
+     * The agent's decision. The gateway does not simply accept it: it recomputes the risk
+     * score from the evidence it stored and never lets the verdict fall below that (ADR-9).
+     */
+    record Verdict(
+            @NotNull @Pattern(regexp = "^(benign|suspicious|malicious)$") String verdict,
+            @NotNull @Pattern(regexp = "^(none|phishing|credential_stuffing|brute_force|account_takeover"
+                    + "|impossible_travel|vishing|prompt_injection|bec|other)$") String attackType,
+            @NotNull @Min(0) @Max(100) Integer riskScore,
+            @NotNull @Size(max = 30) List<@NotNull @Pattern(regexp = "^E[1-9][0-9]{0,2}$") String> citedEvidence,
+            @NotNull @Size(min = 1, max = 500) @Pattern(regexp = PRINTABLE) String counterfactual) implements AgentEvent {
+    }
+
+    /**
+     * The last event of every investigation. "result" is limited to the statuses the agent may
+     * suggest; the gateway decides the actual status itself from the checked verdict, so the
+     * agent can never close an incident the evidence says is dangerous.
      */
     record Complete(
-            @NotNull @Pattern(regexp = "^needs_review$") String result,
+            @NotNull @Pattern(regexp = "^(needs_review|closed)$") String result,
             @NotNull @Pattern(regexp = "^rules$") String engine) implements AgentEvent {
     }
 }

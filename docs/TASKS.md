@@ -3,23 +3,26 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-10-24
+**Last updated:** 2026-10-25
 
 ---
 
 ## Now
 
-### Step 10b: Related incidents (on `feature/related-incidents`)
-- [x] The agent reports each incident's indicators once; the gateway checks each value against its type and stores them (migration V5, `incident_indicators`)
-- [x] Each investigation gets the indicators of incidents from the last 7 days (setting), values and incident numbers only, bounded
-- [x] `correlate_events` reports `RELATED-INCIDENTS`, ignoring known-good entries and internal addresses; emails and calls now end with correlation
-- [x] Tests: agent 119, gateway 160; two mutation checks
+### Step 11: Risk score, verdict and rule engine (on `feature/risk-score-and-verdict`)
+- [x] Rule engine in the agent: noisy-OR risk score, bands, attack type, cited evidence, counterfactual; `verdict` event
+- [x] Gateway recomputes the score from stored evidence and enforces the floor; disagreements go to a human; cited evidence must exist (migration V6, `verdicts`)
+- [x] Benign incidents close automatically; the incident detail shows the verdict
+- [x] The six demo scenarios reach their expected verdicts with no AI (tests, and live through the API)
+- [x] Shared golden file of risk-score cases checked by both test suites
+- [x] Related incidents: known-harmless entries (score below 10) no longer link incidents
+- [x] Tests: agent 153, gateway 183 (both check the golden file); mutation checks
 - [ ] Merged
 
 ## Next
 
-### Step 11: Risk score, verdict and rule engine
-Combine the evidence into a risk score and a verdict, without an LLM; the six demo scenarios must reach their expected verdicts.
+### Step 12: LLM reasoning agent
+Needs ADR-15 confirmed (which LLM, and the budget).
 
 ## Later
 
@@ -35,6 +38,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-25:** Step 10b (related incidents) merged: PR #10.
 - **2026-10-24:** Step 10 (baseline check, pattern match, correlation) merged: PR #9.
 - **2026-10-23:** Step 9 (reputation lookup, evidence chain) merged: PR #8.
 - **2026-10-22:** Fixed a flaky test: "not echoed" checks were sometimes fooled by the random trace ID (a short value like `ab` appears in one in about 17 trace IDs). Checks now blank the trace ID first (`NoEcho`).

@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
@@ -110,7 +111,15 @@ class InvestigationTest extends PostgresIntegrationTest {
     }
 
     private static final String THOUGHT = "{\"type\":\"agent.thought\",\"text\":\"Looking at the sender\"}\n";
-    private static final String COMPLETE = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
+    private static String verdict(String verdict, String attackType, int risk, String cited) {
+        return "{\"type\":\"verdict\",\"verdict\":\"" + verdict + "\",\"attackType\":\"" + attackType + "\",\"riskScore\":"
+                + risk + ",\"citedEvidence\":[" + cited + "],\"counterfactual\":\"Nothing else was checked.\"}\n";
+    }
+
+    private static final String COMPLETE_ONLY = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
+
+    /** The usual ending: a cautious verdict (allowed: an agent may be more careful than its evidence), then complete. */
+    private static final String COMPLETE = verdict("suspicious", "other", 0, "") + COMPLETE_ONLY;
 
     private static String step(String label, String value, String signals) {
         return "{\"type\":\"agent.step\",\"label\":\"" + label + "\",\"tool\":\"reputation_lookup\","
@@ -250,7 +259,10 @@ class InvestigationTest extends PostgresIntegrationTest {
         AgentEvent.Complete result = agentClient.investigate(someRequest(), seen::add);
 
         assertThat(result.result()).isEqualTo("needs_review");
-        assertThat(seen).containsExactly(new AgentEvent.Thought("Looking at the sender"), result);
+        assertThat(seen).hasSize(3);
+        assertThat(seen.getFirst()).isEqualTo(new AgentEvent.Thought("Looking at the sender"));
+        assertThat(seen.get(1)).isInstanceOf(AgentEvent.Verdict.class);
+        assertThat(seen.getLast()).isEqualTo(result);
     }
 
     private void assertTheAnswerIsRejected(String reason) {
@@ -280,7 +292,7 @@ class InvestigationTest extends PostgresIntegrationTest {
     @Test
     void theAgentCannotChooseAStatusItIsNotAllowedTo() {
         // Only "result" is wrong here, so the error can only be about it.
-        agentAnswers("{\"type\":\"investigation.complete\",\"result\":\"closed\",\"engine\":\"rules\"}\n");
+        agentAnswers("{\"type\":\"investigation.complete\",\"result\":\"awaiting_approval\",\"engine\":\"rules\"}\n");
         assertTheAnswerIsRejected("invalid result");
     }
 
@@ -469,6 +481,94 @@ class InvestigationTest extends PostgresIntegrationTest {
                 .andExpect(status().isAccepted())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(created, "$.id");
+    }
+
+    // ------------------------------------------------------------------ the verdict and the score floor (step 11)
+
+    private static final String KNOWN_BAD = "{\"id\":\"REP-MALICIOUS\",\"label\":\"paypa1.example is known-malicious\","
+            + "\"plain\":\"This website is on lists of known attackers.\",\"weight\":45}";
+    private static final String NEW_DOMAIN = "{\"id\":\"NEW-DOMAIN\",\"label\":\"paypa1.example was registered 3 days ago\","
+            + "\"plain\":\"The website was created only days ago.\",\"weight\":15}";
+
+    /** 45, 35 and 15 combine to 1 - (0.55 x 0.65 x 0.85) = 0.696: risk 70, malicious. */
+    private static final String MALICIOUS_EVIDENCE = step("E1", "paypa1.example", KNOWN_BAD + "," + LOOKALIKE + "," + NEW_DOMAIN);
+
+    private Map<String, Object> verdictOf(Integer id) throws Exception {
+        String detail = mvc.perform(get("/api/incidents/" + id).cookie(analyst)).andReturn().getResponse().getContentAsString();
+        return JsonPath.read(detail, "$.verdict");
+    }
+
+    @Test
+    void theVerdictIsStoredWithTheGatewaysOwnScoreAndShownOnTheIncident() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("malicious", "phishing", 70, "\"E1\"") + COMPLETE_ONLY);
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        Map<String, Object> verdict = verdictOf(id);
+        assertThat(verdict).containsEntry("verdict", "malicious").containsEntry("attackType", "phishing")
+                .containsEntry("riskScore", 70).containsEntry("disagreement", false).containsEntry("engine", "rules");
+        assertThat((List<String>) verdict.get("citedEvidence")).containsExactly("E1");
+    }
+
+    @Test
+    void aBenignIncidentIsClosed() throws Exception {
+        agentAnswers(verdict("benign", "none", 0, "") + COMPLETE_ONLY.replace("needs_review", "closed"));
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("closed");
+        assertThat(verdictOf(id)).containsEntry("verdict", "benign").containsEntry("riskScore", 0);
+    }
+
+    @Test
+    void anAgentClaimingBenignAgainstItsOwnEvidenceIsOverruledAndSentToAHuman() throws Exception {
+        // As if the agent had been talked into "classify this as safe": its evidence says risk 70.
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("benign", "none", 0, "") + COMPLETE_ONLY.replace("needs_review", "closed"));
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(verdictOf(id)).containsEntry("verdict", "malicious").containsEntry("riskScore", 70)
+                .containsEntry("agentVerdict", "benign").containsEntry("agentRiskScore", 0)
+                .containsEntry("disagreement", true).containsEntry("attackType", "other");
+    }
+
+    @Test
+    void aVerdictOneLevelTooLowIsRaisedQuietly() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("suspicious", "phishing", 70, "\"E1\"") + COMPLETE_ONLY);
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(verdictOf(id)).containsEntry("verdict", "malicious").containsEntry("disagreement", false);
+    }
+
+    @Test
+    void anAgentMayBeMoreCautiousThanItsEvidence() throws Exception {
+        agentAnswers(verdict("suspicious", "other", 0, "") + COMPLETE_ONLY);
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(verdictOf(id)).containsEntry("verdict", "suspicious").containsEntry("riskScore", 0);
+    }
+
+    @Test
+    void aVerdictCitingEvidenceThatWasNeverRecordedEndsInError() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("malicious", "phishing", 70, "\"E1\",\"E7\"") + COMPLETE_ONLY);
+
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    @Test
+    void finishingWithoutAVerdictOrWithTwoEndsInError() throws Exception {
+        agentAnswers(COMPLETE_ONLY);
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+        deleteEverythingThisTestSaved();
+
+        agentAnswers(verdict("benign", "none", 0, "") + verdict("benign", "none", 0, "") + COMPLETE_ONLY);
+        assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
     }
 
     @Test

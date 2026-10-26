@@ -58,6 +58,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Data sent to the agent kept to what it needs | 🟡 | Each request carries the incident, the subject's baseline, and other recent incidents' indicators as values and incident numbers only, never who those incidents were about (ADR-42); bounded to 1000 indicators. Pseudonymising personal identifiers before the LLM sees them comes with step 12. |
 | Agent service isolated and treated as untrusted | ✅ | Listens on `127.0.0.1` only; every request needs the service token (constant-time comparison); no database access and no state (ADR-3, ADR-4); API docs pages off; 1 MB body limit. The gateway re-validates every event it returns: known types and fields only, allow-listed statuses, size and time limits (ADR-5). Tests: `agent/tests`, `InvestigationTest`. |
 | LLM output validated against a schema before use | ⬜ | |
+| A verdict can never be lowered below the evidence | ✅ | The gateway recomputes the risk score from the evidence it stored and never lets the verdict fall below its band; claiming benign against the evidence is flagged as a disagreement and sent to a human; cited evidence must exist; the gateway, not the agent, sets the status (ADR-43). Tests: `InvestigationTest`, `RiskScoreTest`, the shared golden file. |
 
 ## G. Operational
 | Item | Status | Notes |

@@ -11,6 +11,7 @@ import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
 import com.securityanalyst.gateway.incident.IncidentService;
 import com.securityanalyst.gateway.incident.IncidentSubmitted;
+import com.securityanalyst.gateway.verdict.VerdictService;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,15 +32,17 @@ public class InvestigationRunner {
     private final AgentClient agent;
     private final EvidenceService evidence;
     private final IndicatorService indicators;
+    private final VerdictService verdicts;
     private final JsonMapper json;
 
     public InvestigationRunner(IncidentService incidents, MonitoredIdentityService identities, AgentClient agent,
-            EvidenceService evidence, IndicatorService indicators, JsonMapper json) {
+            EvidenceService evidence, IndicatorService indicators, VerdictService verdicts, JsonMapper json) {
         this.incidents = incidents;
         this.identities = identities;
         this.agent = agent;
         this.evidence = evidence;
         this.indicators = indicators;
+        this.verdicts = verdicts;
         this.json = json;
     }
 
@@ -58,8 +61,21 @@ public class InvestigationRunner {
         try {
             EvidenceChain chain = new EvidenceChain(incidentId);
             AgentEvent.Complete result = agent.investigate(requestFor(incidentId), chain::accept);
-            incidents.updateStatus(incidentId, result.result());
-            log.info("Incident {}: investigation finished ({}, engine {})", incidentId, result.result(), result.engine());
+            if (chain.verdict == null) {
+                throw new AgentException("The agent finished without a verdict");
+            }
+            AgentEvent.Verdict claimed = chain.verdict;
+            VerdictService.Decision decision = verdicts.decide(incidentId, new VerdictService.Claim(claimed.verdict(),
+                    claimed.attackType(), claimed.riskScore(), claimed.citedEvidence(), claimed.counterfactual(),
+                    result.engine()));
+            // The status comes from the checked verdict, not from what the agent suggested.
+            incidents.updateStatus(incidentId, decision.status());
+            if (decision.disagreement()) {
+                log.warn("Incident {}: the agent said {} but the evidence says {} (risk {}); sent for review",
+                        incidentId, claimed.verdict(), decision.verdict(), decision.riskScore());
+            }
+            log.info("Incident {}: {} {} (risk {}), status {}, engine {}", incidentId, decision.verdict(),
+                    decision.attackType(), decision.riskScore(), decision.status(), result.engine());
         } catch (RuntimeException e) {
             // Unexpected problems are logged in full; agent problems by their message only.
             if (e instanceof AgentException) {
@@ -82,6 +98,7 @@ public class InvestigationRunner {
         private int accepted;
         private int rejected;
         private boolean indicatorsReported;
+        private AgentEvent.Verdict verdict;
 
         EvidenceChain(Long incidentId) {
             this.incidentId = incidentId;
@@ -115,6 +132,19 @@ public class InvestigationRunner {
                     rejected++;
                     log.warn("Incident {}: {} refused a {} call: {}", incidentId, refused.label(), refused.tool(),
                             refused.reason());
+                }
+                case AgentEvent.Verdict decided -> {
+                    if (verdict != null) {
+                        throw new AgentException("The agent sent two verdicts");
+                    }
+                    // Every cited item must be evidence this investigation actually recorded.
+                    var recorded = evidence.acceptedLabels(incidentId);
+                    for (String label : decided.citedEvidence()) {
+                        if (!recorded.contains(label)) {
+                            throw new AgentException("The verdict cites " + label + ", which is not recorded evidence");
+                        }
+                    }
+                    verdict = decided;
                 }
                 case AgentEvent.Complete complete -> {
                     // Handled by the caller once the answer has been read to the end.

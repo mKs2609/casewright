@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 import com.securityanalyst.gateway.evidence.EvidenceService;
+import com.securityanalyst.gateway.verdict.VerdictService;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -26,16 +27,19 @@ final class IncidentResponses {
     }
 
     /**
-     * One incident in full: what was submitted (as a JSON object, not a string) and the
-     * evidence gathered so far, in order (E1, E2, ... and any refused calls R1, R2, ...).
+     * One incident in full: what was submitted (as a JSON object, not a string), the
+     * evidence gathered so far, in order (E1, E2, ... and any refused calls R1, R2, ...), and
+     * the verdict once the investigation has finished (null until then).
      */
     record Detail(Long id, String kind, String subjectIdentity, String subjectName, String status,
-            String source, String createdBy, Instant createdAt, JsonNode payload, List<EvidenceService.View> evidence) {
+            String source, String createdBy, Instant createdAt, JsonNode payload, List<EvidenceService.View> evidence,
+            VerdictService.View verdict) {
 
-        static Detail from(Incident incident, JsonMapper json, List<EvidenceService.View> evidence) {
+        static Detail from(Incident incident, JsonMapper json, List<EvidenceService.View> evidence,
+                VerdictService.View verdict) {
             Summary s = Summary.from(incident);
             return new Detail(s.id(), s.kind(), s.subjectIdentity(), s.subjectName(), s.status(), s.source(),
-                    s.createdBy(), s.createdAt(), json.readTree(incident.getPayload()), evidence);
+                    s.createdBy(), s.createdAt(), json.readTree(incident.getPayload()), evidence, verdict);
         }
     }
 }

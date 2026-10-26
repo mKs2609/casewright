@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app.models import CompleteEvent, IndicatorsEvent, StepEvent, ThoughtEvent
+from app.models import CompleteEvent, IndicatorsEvent, StepEvent, ThoughtEvent, VerdictEvent
 from tests.conftest import AUTH, valid_request
 
 
@@ -22,7 +22,8 @@ def test_an_investigation_streams_events_one_per_line_and_ends_with_complete(cli
     assert received[-1] == {"type": "investigation.complete", "result": "needs_review", "engine": "rules"}
     # Every line is a valid event, exactly as the gateway will check it.
     shapes = {"agent.thought": ThoughtEvent, "incident.indicators": IndicatorsEvent, "agent.step": StepEvent,
-              "investigation.complete": CompleteEvent}
+              "verdict": VerdictEvent, "investigation.complete": CompleteEvent}
+    assert [e["type"] for e in received][-2:] == ["verdict", "investigation.complete"]
     for event in received:
         shapes[event["type"]].model_validate(event)
 

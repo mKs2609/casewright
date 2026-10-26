@@ -13,10 +13,11 @@ import com.securityanalyst.gateway.common.ApiException;
 import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentity;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
+import com.securityanalyst.gateway.verdict.VerdictService;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** Storing, listing and fetching incidents. Investigation itself comes in later steps. */
+/** Storing, listing and fetching incidents (the investigation runs in InvestigationRunner). */
 @Service
 public class IncidentService {
 
@@ -26,15 +27,17 @@ public class IncidentService {
     private final JsonMapper json;
     private final ApplicationEventPublisher events;
     private final EvidenceService evidence;
+    private final VerdictService verdicts;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
-            JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence) {
+            JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence, VerdictService verdicts) {
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
         this.json = json;
         this.events = events;
         this.evidence = evidence;
+        this.verdicts = verdicts;
     }
 
     @Transactional
@@ -56,7 +59,7 @@ public class IncidentService {
         Incident saved = incidents.saveAndFlush(incident);
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
-        return IncidentResponses.Detail.from(saved, json, List.of());
+        return IncidentResponses.Detail.from(saved, json, List.of(), null);
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +88,8 @@ public class IncidentService {
     @Transactional(readOnly = true)
     public IncidentResponses.Detail get(Long id) {
         return incidents.findWithDetailsById(id)
-                .map(incident -> IncidentResponses.Detail.from(incident, json, evidence.forIncident(id)))
+                .map(incident -> IncidentResponses.Detail.from(incident, json, evidence.forIncident(id),
+                        verdicts.forIncident(id).orElse(null)))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Incident not found"));
     }
 }
