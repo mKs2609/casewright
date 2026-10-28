@@ -140,8 +140,21 @@ class CompleteEvent(Strict):
     type: Literal["investigation.complete"] = "investigation.complete"
     # Benign incidents are closed; anything else goes to a human (the gateway decides finally).
     result: Literal["needs_review", "closed"]
-    # "rules": a fixed plan chose the tool calls (an AI chooses them from step 12).
-    engine: Literal["rules"]
+    # "llm": a language model chose the tool calls and gave a verdict (step 12);
+    # "rules": the fixed plan did (no model, or the model failed or went over its limits).
+    engine: Literal["llm", "rules"]
+
+
+EvidenceLabel = Annotated[str, StringConstraints(pattern=r"^E[1-9][0-9]{0,2}$")]
+
+
+class LlmVerdict(Strict):
+    """What the model must send to submit_verdict (AGENT_DESIGN section 7). Checked before use;
+    an unknown field or a wrong value means the submission is refused."""
+
+    verdict: Verdict
+    attack_type: AttackType
+    cited_evidence: Annotated[list[EvidenceLabel], Field(max_length=30)]
 
 
 class IndicatorItem(Strict):

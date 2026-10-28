@@ -94,6 +94,9 @@ def test_a_lookup_of_something_not_in_the_incident_is_refused_and_recorded_as_r1
     ("reputation_lookup", {"indicatorType": "domain"}),                       # value missing
     ("Robert'); DROP TABLE--", {"value": "x"}),                               # a tool name that is not a name
     ("reputation_lookup", {"indicatorType": "domain", "value": "x" * 5000}),  # arguments too big to record
+    ("reputation_lookup", {"indicatorType": "domain", "value": "paypa1-secure-login.example",
+                           "function": "reputation_lookup"}),              # an argument the tool does not take
+    ("correlate_events", {"since": "2026-01-01"}),                            # a tool that takes none
 ])
 def test_anything_off_the_allow_list_is_refused_never_run(tool: str, args: dict[str, str]) -> None:
     event = toolbox(domain={"paypa1-secure-login.example"}).call(tool, args)

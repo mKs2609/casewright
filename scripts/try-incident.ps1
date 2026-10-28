@@ -4,9 +4,9 @@
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\try-incident.ps1 -Username mohit
 #
-# Expected: queued -> needs_review. (It passes through "investigating" too, but the agent
-# is still a stub that answers in milliseconds, so that is usually over before the first check.)
-# If the agent is not running, the incident ends as "error" instead.
+# Expected: queued -> investigating -> needs_review, then the verdict (malicious vishing) and
+# the engine: "llm" if the local AI model chose the steps (a few seconds), "rules" if the
+# fixed plan did. If the agent is not running, the incident ends as "error" instead.
 
 param(
     [Parameter(Mandatory = $true)][string]$Username,
@@ -52,11 +52,17 @@ $created = Send POST "/api/incidents" $incident
 
 "`n3. Watch the investigation (the gateway asks the agent in the background)"
 $last = $created.status
-for ($i = 0; $i -lt 30; $i++) {
+# Up to 3 minutes, the gateway's own deadline for one investigation.
+for ($i = 0; $i -lt 360; $i++) {
     Start-Sleep -Milliseconds 500
-    $now = (Send GET "/api/incidents/$($created.id)").status
+    $detail = Send GET "/api/incidents/$($created.id)"
+    $now = $detail.status
     if ($now -ne $last) { "   status: $now"; $last = $now }
     if ($now -notin @("queued", "investigating")) { break }
+}
+if ($detail.verdict) {
+    $v = $detail.verdict
+    "   verdict: $($v.verdict) $($v.attackType), risk $($v.riskScore)/100, engine $($v.engine), $($detail.evidence.Count) evidence item(s)"
 }
 
 "`n4. Log out"

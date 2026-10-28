@@ -14,7 +14,7 @@ Method: STRIDE per trust boundary, plus AI-specific abuse cases. Controls are tr
 | Audit log | It is the proof of who decided what. |
 | Analyst accounts | An attacker with an analyst account can approve anything. |
 | Behavioural baselines and incident content | Personal data about employees. |
-| Secrets (signing keys, service token, LLM key, DB password) | Each one unlocks a trust boundary. |
+| Secrets (signing keys, service token, DB password) | Each one unlocks a trust boundary. |
 
 ## 2. Who might attack
 
@@ -41,7 +41,7 @@ flowchart LR
       A[Agent]
       DB[(PostgreSQL)]
     end
-    L[LLM provider]
+    L[Local AI model]
     I --> G
     D -- TB1 --> G
     X -- TB2 --> A
@@ -75,7 +75,7 @@ flowchart LR
 | Fence escape | Content contains `</untrusted_incident>` | JSON encoding with `<` `>` escaped | 12 |
 | Poisoned tool output | Attacker text returns through a tool result | Tool results are also treated as data; snippets are short and encoded | 10, 12 |
 | Malformed model output | Model returns invented fields or evidence IDs | Schema validation; cited evidence must exist | 12 |
-| Resource exhaustion | Model loops forever | Turn limit, timeout, fallback engine | 12 |
+| Resource exhaustion | Model loops forever | Turn, time and per-turn call limits, a daily cap, fallback engine | 12 |
 | Unsafe rendering of model output | Model output contains markup | Rendered as text; never executed | 13, 16 |
 
 ### TB3: Gateway ↔ Agent
@@ -93,12 +93,13 @@ flowchart LR
 | Database dump exposes personal data | Passwords hashed; tokens hashed; baselines encrypted | 3, 4, 7 |
 | Over-privileged database account | Application uses a non-superuser role limited to its own schema | 2 |
 
-### TB5: Agent ↔ LLM provider
+### TB5: Agent ↔ local AI model
 | Threat | Control | Step |
 |---|---|---|
-| Personal data sent to a third party | Pseudonymise identities and addresses in prompts | 12 |
-| API key leaks | Environment variable only; never logged; never sent to the browser | 12 |
-| Provider outage | Rule-engine fallback | 11 |
+| Personal data sent to a third party | The model runs on the same machine; the agent refuses to start with a non-loopback model address (ADR-15). Pseudonymisation is needed only if a hosted provider is ever added (a new ADR) | 12 |
+| API key leaks | None to leak: the local model needs no key | 12 |
+| Model unavailable, slow or broken | Rule-engine fallback; per-turn and total time limits | 11, 12 |
+| Model replies used to attack the agent or gateway | Replies size-capped and schema-checked; every call through the guardrail; the model's words never logged | 12 |
 
 ## 5. Supply chain and operations
 

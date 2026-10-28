@@ -106,3 +106,9 @@ Run its tests:
 ```bash
 .\.venv\Scripts\python.exe -m pytest
 ```
+
+Optional: let a free local AI model choose the investigation steps. Install [Ollama](https://ollama.com/download) (use "Download manually"), download the model once, then add `LLM_PROVIDER=ollama` to `.env` and restart the agent. Without it, the agent uses its fixed plan.
+
+```bash
+ollama pull qwen3:8b
+```

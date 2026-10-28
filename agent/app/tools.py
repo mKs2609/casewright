@@ -112,6 +112,14 @@ TOOLS = {
     "correlate_events": correlate_events,
 }
 
+# The argument names each tool takes. Any other name is refused, not ignored.
+TOOL_ARGUMENTS = {
+    "reputation_lookup": {"indicatorType", "value"},
+    "baseline_check": {"identity"},
+    "pattern_match": {"target"},
+    "correlate_events": set(),
+}
+
 
 class ToolBox:
     """The tools for one investigation, limited to that incident (its indicators, people and text)."""
@@ -122,14 +130,24 @@ class ToolBox:
         self.accepted = 0
         self.rejected = 0
 
-    def call(self, tool: str, args: dict[str, str]) -> StepEvent | GuardrailEvent:
+    def call(self, tool: str, args: object) -> StepEvent | GuardrailEvent:
         try:
             if tool not in TOOLS:
                 raise ToolRejected("This tool is not on the allow-list")
+            # From step 12 an AI writes the arguments, and it may send numbers, lists or nesting.
+            if not isinstance(args, dict) or not all(isinstance(k, str) and isinstance(v, str)
+                                                     for k, v in args.items()):
+                args = {}   # not recordable as they are
+                raise ToolRejected("Arguments must be named text values")
+            if not set(args) <= TOOL_ARGUMENTS[tool]:
+                # Says what is allowed (our own list), so a model can correct itself; never repeats what was sent.
+                allowed = ", ".join(sorted(TOOL_ARGUMENTS[tool]))
+                raise ToolRejected(f"This tool takes only these arguments: {allowed}" if allowed
+                                   else "This tool takes no arguments")
             summary, result, signals = TOOLS[tool](self.case, args)
         except ToolRejected as refusal:
             self.rejected += 1
-            label, name = f"R{self.rejected}", _safe_tool_name(tool)
+            label, name = f"R{self.rejected}", safe_tool_name(tool)
             try:
                 return GuardrailEvent(label=label, tool=name, args=args, reason=str(refusal))
             except ValidationError:
@@ -141,7 +159,11 @@ class ToolBox:
         self.steps.append(step)
         return step
 
+    def earlier(self, tool: str, args: object) -> StepEvent | None:
+        """The evidence from the same call made before, if any: a repeat adds nothing new."""
+        return next((s for s in self.steps if s.tool == tool and s.args == args), None)
 
-def _safe_tool_name(tool: str) -> str:
+
+def safe_tool_name(tool: str) -> str:
     """Tool names asked for are recorded; anything that is not a plain name is replaced."""
     return tool if tool.isascii() and tool.replace("_", "").isalpha() and tool.islower() and len(tool) <= 40 else "unknown"

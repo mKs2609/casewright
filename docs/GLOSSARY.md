@@ -101,7 +101,15 @@ Plain-language meanings of the terms used in this project.
 
 | Term | Meaning |
 |---|---|
-| **LLM** | Large language model, such as Claude. |
+| **LLM** | Large language model, such as Claude, Qwen or Llama. |
+| **Local model** | An LLM that runs on your own computer instead of a company's servers: free, and the data never leaves the machine. |
+| **Ollama** | A free program that downloads open models and serves them on your own machine (here at `127.0.0.1:11434`). |
+| **Parameters (of a model)** | The numbers a model learned during training; "8B" means 8 billion. More usually means more capable, and needs more memory. |
+| **Token** | The chunk of text a model reads and writes: often part of a word. Limits and costs are counted in tokens. |
+| **Context window** | How many tokens a model can consider at once: the prompt, the conversation and its reply together. |
+| **Thinking mode** | A model writing out its reasoning before answering. More careful on hard problems, much slower. |
+| **Temperature** | How much randomness a model uses when choosing words; 0 makes it as repeatable as possible. |
+| **Fallback** | The plan that runs when the first one fails: here, the rule engine when the AI model cannot finish. |
 | **Agent** | An LLM that works in a loop, choosing tools to call until it finishes a task. |
 | **Tool / function calling** | The LLM asking our code to run a specific function with specific arguments. |
 | **Allow-list** | A fixed list of what is permitted; everything else is refused. |
@@ -112,6 +120,8 @@ Plain-language meanings of the terms used in this project.
 | **Counterfactual** | A statement of what would have changed the result. |
 | **Schema validation** | Checking that data has exactly the expected shape before using it. |
 | **Red team** | Deliberately attacking your own system to find weaknesses. |
+| **Hijacked model** | A model that has been talked into following an attacker's instructions (e.g. by prompt injection). The defences must hold even then. |
+| **Fence (in a prompt)** | Tags around untrusted text, so the model can tell data from instructions; the text inside is escaped so it cannot close the fence. |
 
 ## Project and tooling terms
 

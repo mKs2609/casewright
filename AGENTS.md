@@ -43,8 +43,9 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 | Gateway tests | `cd gateway; .\mvnw.cmd test` (uses its own embedded PostgreSQL; needs no setup) |
 | Run gateway | `cd gateway; .\mvnw.cmd spring-boot:run` (https://localhost:8443/api/health) |
 | Agent: one-time setup | `cd agent; python -m venv .venv; .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt` |
-| Agent tests | `cd agent; .\.venv\Scripts\python.exe -m pytest` |
+| Agent tests | `cd agent; .\.venv\Scripts\python.exe -m pytest` (never uses a real model) |
 | Run agent | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
+| Use the local AI model | Install Ollama (ollama.com, "Download manually"), then `ollama pull qwen3:8b` once, and set `LLM_PROVIDER=ollama` in `.env` (ADR-15). Without it the agent uses the fixed plan |
 | Dashboard | `cd dashboard; npm run dev` (from Step 16) |
 
 Maven is not installed globally; always use the wrapper `mvnw.cmd`.
@@ -77,7 +78,8 @@ docs/        All project documents
 - To check that an error response does not repeat a rejected value, use `NoEcho.doesNotEcho(value)`, never a plain "body does not contain": every error carries a random hex trace ID, which short values can appear in by chance.
 - Python: type hints, Pydantic models with `extra="forbid"` for all input and all LLM output (the `Strict` base class in `agent/app/models.py`; JSON names are camelCase). Packages are pinned to exact versions, including indirect ones, in `agent/requirements*.txt`; choose releases at least two weeks old.
 - A new agent event type needs: an entry in `AgentEvent`'s `@JsonSubTypes` (the gateway refuses unknown types), a Pydantic model in `agent/app/models.py`, a record in the gateway's `AgentEvent` (with its own validation rules), and handling in `InvestigationRunner`. The gateway never trusts the agent's output (ADR-5).
-- A new tool needs: a function in `agent/app/tools.py` registered in `TOOLS` (read-only; arguments checked against the incident's indicators, raising `ToolRejected` otherwise), its name in `StepEvent.tool` and in the gateway's `AgentEvent.KNOWN_TOOLS`. Every call goes through `ToolBox.call`, never around it.
+- A new tool needs: a function in `agent/app/tools.py` registered in `TOOLS` (read-only; arguments checked against the incident's indicators, raising `ToolRejected` otherwise), its argument names in `TOOL_ARGUMENTS`, a definition in `reasoning.tool_definitions` (what the AI model is offered), its name in `StepEvent.tool` and in the gateway's `AgentEvent.KNOWN_TOOLS`. Every call goes through `ToolBox.call`, never around it.
+- The AI model (ADR-15, ADR-44) is untrusted like the incident: everything it asks for goes through `ToolBox.call` or `reasoning.check_submission`; its own words never go into events or logs; any failure returns `None` from `investigate_with_llm` so the fixed plan finishes. Its address must stay a loopback one. Tests never reach a real model (`conftest.py` switches it off); use `tests/fake_model.ScriptedModel`.
 - Tool results never copy baseline values into evidence (baselines are encrypted at rest; evidence is not): record only the difference. Attacker-written text is matched only after `patterns.normalise`, and is quoted only inside a result, never in summaries or signal labels.
 - Related incidents (ADR-42): the agent reports indicators once per investigation (`incident.indicators`); the gateway validates each value against its type, stores it in `incident_indicators`, and sends recent ones (`agent.related-incident-window`, `agent.max-recent-indicators`) as values and incident numbers only. Known-good entries and internal addresses (`threat_intel.is_noise`) never link incidents; use `is_internal_address`, not Python's `is_private`, which also covers the documentation ranges.
 - The risk score exists twice, `agent/app/verdict.py` and the gateway's `RiskScore` (ADR-43): change both together, and both must still match `testdata/risk-score-cases.json`. The gateway, never the agent, sets an incident's final status.

@@ -96,10 +96,18 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Decision:** Code uses the package `com.securityanalyst` and service names `gateway`, `agent`, `dashboard`. No brand name appears in code.
 **Why:** The name is undecided; a brand name in code would need renaming everywhere.
 
-## ADR-15: Anthropic Claude as the LLM, model set by configuration
-**Status:** Proposed
-**Decision:** Use the official Anthropic Python SDK with tool calling. The model ID is an environment variable.
-**Why:** Strong tool-calling support. Keeping the model configurable lets us use a cheaper model for development.
+## ADR-15: A local model through Ollama, with the provider and model as settings
+**Status:** Accepted (Mohit, 2026-10-27; replaces the proposed paid hosted API)
+**Decision:**
+- The agent's language model runs on this machine, served by Ollama at `http://127.0.0.1:11434`. Default model `qwen3:8b` (8 billion parameters; fits an 8 GB graphics card).
+- Settings, not secrets: `LLM_PROVIDER` (`off` or `ollama`, default `off`), `LLM_MODEL`, `OLLAMA_URL`. The agent refuses to start if `OLLAMA_URL` is not a loopback address, so incident data cannot leave the machine through a configuration mistake.
+- "Thinking" mode off (measured: the same tool choice in 2.9 s instead of 26.9 s), temperature 0, at most 512 tokens per reply, a 12,288-token context.
+- Limits (Mohit's choice: per run plus daily): 8 turns, 120 seconds and 4 calls per turn per investigation; 200 AI-led investigations and 2 million tokens per day (counted in memory, reset daily). Past any limit, on any error, or with the AI off, the fixed plan finishes with the evidence already gathered. The gateway's deadline goes from 2 to 3 minutes so that the fallback has time to finish.
+- Tests and CI never use a real model: a scripted fake plays careful and hijacked models.
+
+**Why:** Free (no paid API), private (nothing leaves the laptop, which suits a security tool), and no account, key or rate limit. A small model reasons less well than a large hosted one, but the design already contains that: code computes the score, the gateway enforces the floor, and every call passes the guardrail.
+**Alternatives considered:** Anthropic's API (most capable, roughly 10-20 cents per investigation, data leaves the machine); hosted free tiers (accounts, limits that change, some use prompts for training); no model for now.
+**Trade-offs:** weaker reasoning than a large hosted model; Ollama and a ~5 GB model must be installed; the daily count resets when the agent restarts. Adding a hosted provider later takes code (a new client) and a new ADR, deliberately: personal data would then leave the machine (THREAT_MODEL TB5).
 
 ## ADR-16: Tests run against an embedded PostgreSQL
 **Status:** Accepted (2026-10-04)
@@ -292,3 +300,17 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** ADR-9 says the score comes from code, never from a model. Enforcing it at the trust boundary means even a compromised agent (or, from step 12, a manipulated LLM) cannot talk an incident down. Closing benign incidents spares analysts from reviewing harmless reports (alert fatigue).
 **Alternatives considered:** sending every incident to a human (nothing closed unseen, but real alerts drown in harmless ones); trusting the agent's score (simpler, but a single compromised component could close dangerous incidents).
 **Trade-offs:** a wrongly benign verdict closes an incident without review; the evaluation set (step 18) measures how often. The rules engine's attack type is a heuristic.
+
+## ADR-44: How the language model investigates
+**Status:** Accepted (2026-10-29)
+**Decision:**
+- The model chooses tools in a loop and finishes with `submit_verdict` (`verdict`, `attackType`, `citedEvidence`): a strict schema, unknown fields refused, every citation must exist, and evidence must come first. Reports come in step 13, proposed actions in step 15.
+- **The model can add checks, never remove them.** After the model finishes, code makes every standard check of the fixed plan that the model did not make (a text scan counts as done once every text field was scanned). So the evidence, and with it the score and the floor, never falls below what the fixed plan alone would find: a model steered into skipping `pattern_match` and saying "benign" still ends in a disagreement for a human. Found through Mohit's first own run, where the model honestly failed to scan the text and the score came out 53 instead of 71.
+- What the model sees: the incident as escaped JSON inside `<untrusted_incident>` (cut at 8,000 characters, and it is told so), the extracted indicators and people, and for each call only the tool's summary and findings, never the raw result (which can quote the attacker).
+- What the model says never reaches the event stream or the logs: live notes are written by code, and refusal reasons never repeat what the model sent.
+- Tool arguments must be named text values, and each tool has a fixed list of argument names; any other name is refused, and the refusal names the allowed ones (from code, never echoing what was sent) so the model can correct itself. (The fixed plan's tools used to ignore unknown names; this is stricter.) Three wrapper shapes seen from the local model, `{tool: {...}}`, `{"function": tool, "parameters": {...}}` and `{"function": tool, ...}`, are unwrapped only when they name the tool being called; what is inside is then checked as usual. A repeated call is answered with the earlier evidence label.
+- The model's verdict is reported as it is, so the gateway can apply the floor and flag a disagreement (ADR-43). The attack type comes from the evidence when the evidence is specific, otherwise from the model. The evidence behind the score is always cited.
+- `investigation.complete` carries the engine: `llm` when the model's verdict was used, `rules` when the fixed plan finished.
+
+**Why:** AGENT_DESIGN section 10: apart from the system prompt, every defence holds even if the model is fully manipulated. The live runs showed the small model's real habits (wrapped arguments, a less specific attack label), and each was handled without loosening a check.
+**Trade-offs:** the model reasons over summaries rather than raw results, which a stronger model might use better.

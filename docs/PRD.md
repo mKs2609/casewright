@@ -28,7 +28,7 @@ An agentic AI security analyst. Given a suspicious event (an email, a set of log
 3. **Human-in-the-loop.** High-risk actions (block, lock, quarantine) never execute without explicit approval by an authorised human.
 4. **Auditable.** Every tool call, verdict, approval and rejection is recorded in a tamper-evident log.
 5. **Secure by construction.** The system protecting people is itself hardened, including against attacks on its own AI. Tracked in `SECURITY.md`.
-6. **Demo-ready.** A live dashboard shows the investigation as it happens, and works even if the LLM API is unavailable.
+6. **Demo-ready.** A live dashboard shows the investigation as it happens, and works even if the AI model is unavailable.
 
 ### Non-goals (explicitly out of scope)
 - Real enforcement. Actions like "block IP" are **simulated** and recorded; no firewall, mail server or identity provider is touched.
@@ -121,7 +121,7 @@ Priority: **P0** = must have for the demo · **P1** = should have · **P2** = st
 | **Security** | Every item in `SECURITY.md` implemented and tested. Threats and controls in `docs/THREAT_MODEL.md`. |
 | **Performance** | First investigation step visible within 3 s of submission. Full investigation within 30 s (LLM) or 10 s (rule engine). API responses under 300 ms excluding investigations. |
 | **Reliability** | The demo must complete with no internet/LLM access (rule-engine fallback). |
-| **Privacy** | Personal data is minimised before being sent to the LLM provider. Baselines encrypted at rest. |
+| **Privacy** | The AI model runs on the same machine, so incident data never leaves it (ADR-15). Baselines encrypted at rest. |
 | **Accessibility** | Dashboard meets WCAG 2.1 AA: contrast, keyboard access, no meaning conveyed by colour alone. |
 | **Maintainability** | Each feature ships with tests; CI runs tests and security scans on every push. |
 
@@ -149,8 +149,8 @@ The step-by-step build order is in [`ROADMAP.md`](ROADMAP.md).
 | Risk | Mitigation |
 |---|---|
 | Three stacks (Java, Python, React) is a lot for 8 weeks. | One feature at a time; the Python prototype already proves the hardest part. |
-| LLM tool-calling is flaky or the API is down during the demo. | Rule-engine fallback; recorded demo video as backup. |
-| LLM cost. | Cheaper model configurable; cached/recorded runs for rehearsals. |
+| LLM tool-calling is flaky or the model is unavailable during the demo. | Rule-engine fallback; recorded demo video as backup. |
+| LLM cost and hardware. | A free local model (ADR-15); the rule engine when no model is installed. |
 | The LLM gets manipulated by incident text. | Guardrails enforced in code, not in the prompt; score floor; human approval. |
 | Scope creep. | This PRD's non-goals; P2 only after P0 is committed. |
 
@@ -159,6 +159,6 @@ The step-by-step build order is in [`ROADMAP.md`](ROADMAP.md).
 | # | Question | Needed by |
 |---|---|---|
 | 1 | ~~Final product name.~~ Decided: **Casewright** (ADR-30). | Done |
-| 2 | Which LLM model and budget for development vs demo. | Step 12 |
+| 2 | Which LLM model and budget for development vs demo. **Answered:** a free local model with per-run and daily limits (ADR-15). | Step 12 |
 | 3 | Source of evaluation data (public phishing corpora vs fully synthetic). | Step 18 |
 | 4 | Is HTTPS on localhost required for the demo, or is a reverse proxy acceptable? | Step 5 |

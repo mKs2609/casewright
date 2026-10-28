@@ -512,6 +512,23 @@ class InvestigationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void anInvestigationLedByTheAiModelIsStoredWithItsEngine() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("malicious", "phishing", 70, "\"E1\"")
+                + COMPLETE_ONLY.replace("\"rules\"", "\"llm\""));
+
+        Integer id = submitAnEmailIncident();
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(verdictOf(id)).containsEntry("engine", "llm").containsEntry("verdict", "malicious");
+    }
+
+    @Test
+    void anEngineTheGatewayDoesNotKnowIsRejected() {
+        agentAnswers(COMPLETE.replace("\"rules\"", "\"gpt\""));
+        assertTheAnswerIsRejected("invalid engine");
+    }
+
+    @Test
     void aBenignIncidentIsClosed() throws Exception {
         agentAnswers(verdict("benign", "none", 0, "") + COMPLETE_ONLY.replace("needs_review", "closed"));
 
