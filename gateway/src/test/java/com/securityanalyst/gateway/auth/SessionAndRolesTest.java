@@ -12,6 +12,7 @@ import java.util.Base64;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,10 @@ class SessionAndRolesTest extends PostgresIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Before AND after: this class commits its users, and the test database is shared by every
+    // class, so leftovers would break whichever class runs next (the order differs between machines).
     @BeforeEach
+    @AfterEach
     void emptyTables() {
         refreshTokens.deleteAll();
         users.deleteAll();

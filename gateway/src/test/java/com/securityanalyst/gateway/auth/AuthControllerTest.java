@@ -94,11 +94,12 @@ class AuthControllerTest extends PostgresIntegrationTest {
 
     @Test
     void nobodyCanGiveThemselvesARoleAtSignup() throws Exception {
+        // A name no other test uses: the shared test database may hold other classes' users.
         postJson("/api/auth/signup",
-                "{\"username\":\"mallory\",\"password\":\"" + GOOD_PASSWORD + "\",\"role\":\"ADMIN\"}")
+                "{\"username\":\"role.grabber\",\"password\":\"" + GOOD_PASSWORD + "\",\"role\":\"ADMIN\"}")
                 .andExpect(status().isBadRequest());
 
-        assertThat(users.existsByUsername("mallory")).isFalse();
+        assertThat(users.existsByUsername("role.grabber")).isFalse();
     }
 
     @ParameterizedTest
@@ -175,10 +176,11 @@ class AuthControllerTest extends PostgresIntegrationTest {
     @Test
     void sqlInjectionInTheLoginUsernameDoesNothing() throws Exception {
         postJson("/api/auth/signup", credentials("asha.rao", GOOD_PASSWORD)).andExpect(status().isCreated());
+        long before = users.count();   // not assumed to be 1: other classes may have left users
 
         postJson("/api/auth/login", credentials("asha.rao' OR '1'='1", "anything at all"))
                 .andExpect(status().isUnauthorized());
-        assertThat(users.count()).isEqualTo(1);
+        assertThat(users.count()).isEqualTo(before);
     }
 
     @Test

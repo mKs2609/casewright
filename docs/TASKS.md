@@ -18,6 +18,7 @@ Updated at the start and end of every step.
 - [x] Tools take a fixed set of argument names (stricter than before); refusals name the allowed ones; known wrapper shapes unwrapped
 - [x] The model can add checks, never remove them: the standard checks always run after it (found in Mohit's own run)
 - [x] Gateway accepts engine `llm`; deadline 3 minutes
+- [x] Fixed test pollution that failed CI on the new Ubuntu runners: auth tests no longer depend on the order test classes run in
 - [x] Red-team suite (scripted hijacked model); tests: agent 228, gateway 185; 16 mutation checks
 - [x] Live: all six scenarios correct, led by the model (8-14 s each); fallback with the model unreachable
 - [ ] Merged
