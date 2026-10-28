@@ -3,26 +3,30 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-10-25
+**Last updated:** 2026-10-29
 
 ---
 
 ## Now
 
-### Step 11: Risk score, verdict and rule engine (on `feature/risk-score-and-verdict`)
-- [x] Rule engine in the agent: noisy-OR risk score, bands, attack type, cited evidence, counterfactual; `verdict` event
-- [x] Gateway recomputes the score from stored evidence and enforces the floor; disagreements go to a human; cited evidence must exist (migration V6, `verdicts`)
-- [x] Benign incidents close automatically; the incident detail shows the verdict
-- [x] The six demo scenarios reach their expected verdicts with no AI (tests, and live through the API)
-- [x] Shared golden file of risk-score cases checked by both test suites
-- [x] Related incidents: known-harmless entries (score below 10) no longer link incidents
-- [x] Tests: agent 153, gateway 183 (both check the golden file); mutation checks
+### Step 12: LLM reasoning agent (on `feature/llm-agent`)
+- [x] ADR-15 decided: a free local model (Ollama, `qwen3:8b`), provider and model as settings, address must be on this machine
+- [x] The model chooses the tools and calls `submit_verdict`; every call through the same guardrail
+- [x] Prompt-injection defences: fenced incident, summaries instead of raw results, the model's words never in events
+- [x] Model output checked: size cap, strict verdict schema, citations must exist, evidence first
+- [x] Limits: 8 turns, 120 s, 4 calls per turn; 200 investigations and 2M tokens a day; fallback to the fixed plan
+- [x] Tools take a fixed set of argument names (stricter than before); refusals name the allowed ones; known wrapper shapes unwrapped
+- [x] The model can add checks, never remove them: the standard checks always run after it (found in Mohit's own run)
+- [x] Gateway accepts engine `llm`; deadline 3 minutes
+- [x] Fixed test pollution that failed CI on the new Ubuntu runners: auth tests no longer depend on the order test classes run in
+- [x] Red-team suite (scripted hijacked model); tests: agent 228, gateway 185; 16 mutation checks
+- [x] Live: all six scenarios correct, led by the model (8-14 s each); fallback with the model unreachable
 - [ ] Merged
 
 ## Next
 
-### Step 12: LLM reasoning agent
-Needs ADR-15 confirmed (which LLM, and the budget).
+### Step 13: Dual explanation
+A technical report and a plain-language report from the same evidence; every finding cites existing evidence.
 
 ## Later
 
@@ -32,12 +36,12 @@ See `ROADMAP.md` steps 7–18.
 
 | # | Question | Needed by |
 |---|---|---|
-| 1 | Confirm the Proposed decisions in `DECISIONS.md` | Before the step each one affects (ADR-15 before step 12) |
-| 2 | LLM model and budget | Step 12 |
-| 3 | Evaluation data source | Step 18 |
+| 1 | Confirm the Proposed decisions in `DECISIONS.md` | Before the step each one affects |
+| 2 | Evaluation data source | Step 18 |
 
 ## Done
 
+- **2026-10-27:** Step 11 (risk score, verdict, rule engine) merged: PR #11.
 - **2026-10-25:** Step 10b (related incidents) merged: PR #10.
 - **2026-10-24:** Step 10 (baseline check, pattern match, correlation) merged: PR #9.
 - **2026-10-23:** Step 9 (reputation lookup, evidence chain) merged: PR #8.

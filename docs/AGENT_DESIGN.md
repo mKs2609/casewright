@@ -34,7 +34,7 @@ flowchart TD
     P --> O[Build SOC + plain reports]
 ```
 
-Limits: at most 8 LLM turns and 120 seconds per investigation. On an API error, a refusal, truncation, timeout or the turn limit, the rule engine finishes the job using the evidence already gathered.
+Limits: at most 8 LLM turns, 120 seconds and 4 tool calls per turn per investigation, plus a daily cap (ADR-15). On a model error, an unusable reply, truncation, timeout, the turn limit or the daily cap, the rule engine finishes the job using the evidence already gathered. Implemented in step 12 (`agent/app/reasoning.py`, ADR-44). After the model's verdict, the rule engine's standard checks that the model skipped are made too: the model can add checks, never remove them, so it cannot lower the score by leaving evidence ungathered.
 
 ## 3. Indicators
 
@@ -154,18 +154,20 @@ A high-risk action proposed for a benign verdict is rejected. Rejected proposals
 | 6 | The verdict cannot go below the evidence score. | Code |
 | 7 | `pattern_match` detects injection phrasing and raises the score (`AML.T0051`). | Code |
 | 8 | Every call and every rejection is audited. | Code |
+| 9 | The model sees each tool's summary and findings, never its raw result (which can quote the attacker). | Code |
+| 10 | The model's own words never reach the live stream or the logs; live notes are written by code. | Code |
 
-Only defence 2 depends on the model behaving. The rest hold even if the model is fully manipulated; the red-team probe demonstrates this by replaying a hijacked model's calls.
+Only defence 2 depends on the model behaving. The rest hold even if the model is fully manipulated; the red-team tests (`agent/tests/test_reasoning.py`) demonstrate this with a scripted hijacked model, and the probe in step 17 will show it live.
 
 ## 11. LLM configuration
 
 | Setting | Value |
 |---|---|
-| Provider | Anthropic API (Claude), via the official Python SDK |
-| Model | Configurable by environment variable |
-| Tool definitions | Strict JSON schemas, `additionalProperties: false` |
+| Provider | A local model served by Ollama on this machine (ADR-15). `LLM_PROVIDER=off` runs the rule engine only |
+| Model | `LLM_MODEL`, default `qwen3:8b`; thinking off, temperature 0, at most 512 tokens per reply |
+| Tool definitions | JSON schemas with `additionalProperties: false`; values limited to this incident's where possible (people, text fields) |
 | Refusals / errors | Fall back to the rule engine |
-| Data sent | Incident payload with personal identifiers pseudonymised (planned), indicator lists, tool results |
+| Data sent | Never leaves the machine (`OLLAMA_URL` must be a loopback address): the fenced incident, indicator lists, tool summaries and findings |
 
 ## 12. Rule engine (fallback)
 

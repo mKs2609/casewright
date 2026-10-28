@@ -27,6 +27,7 @@ MAX_BODY_BYTES = 1024 * 1024
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     config.service_token()  # refuse to start without a usable token
+    config.llm_settings()   # ... or with unusable AI settings (e.g. a model address off this machine)
     yield
 
 

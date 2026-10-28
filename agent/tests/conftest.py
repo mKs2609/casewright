@@ -1,7 +1,8 @@
 """Shared test setup. pytest loads this file before any test.
 
 Every test run uses a fresh random service token, so the tests never need (or see) the
-real one in .env.
+real one in .env. The AI model is switched off (whatever .env says): tests that need one
+bring a fake (tests/fake_model.py), so no test reaches a real model.
 """
 
 import os
@@ -13,11 +14,15 @@ from fastapi.testclient import TestClient
 
 TEST_TOKEN = secrets.token_urlsafe(32)
 os.environ["AGENT_SERVICE_TOKEN"] = TEST_TOKEN
+os.environ["LLM_PROVIDER"] = "off"
+os.environ.pop("OLLAMA_URL", None)
+os.environ.pop("LLM_MODEL", None)
 
 from app import config  # noqa: E402  (must come after the token is set)
 from app.main import app  # noqa: E402
 
 config.service_token.cache_clear()
+config.llm_settings.cache_clear()
 
 AUTH = {"Authorization": f"Bearer {TEST_TOKEN}"}
 

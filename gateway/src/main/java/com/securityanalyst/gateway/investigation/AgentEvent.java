@@ -121,10 +121,11 @@ public sealed interface AgentEvent {
     /**
      * The last event of every investigation. "result" is limited to the statuses the agent may
      * suggest; the gateway decides the actual status itself from the checked verdict, so the
-     * agent can never close an incident the evidence says is dangerous.
+     * agent can never close an incident the evidence says is dangerous. "engine" says who chose
+     * the tool calls: "llm" (a local AI model, step 12) or "rules" (the fixed plan).
      */
     record Complete(
             @NotNull @Pattern(regexp = "^(needs_review|closed)$") String result,
-            @NotNull @Pattern(regexp = "^rules$") String engine) implements AgentEvent {
+            @NotNull @Pattern(regexp = "^(llm|rules)$") String engine) implements AgentEvent {
     }
 }

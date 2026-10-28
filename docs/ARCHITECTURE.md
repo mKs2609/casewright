@@ -12,7 +12,7 @@ flowchart LR
     U[Browser<br/>React dashboard] -- HTTPS + WebSocket --> G[Gateway<br/>Java Spring Boot]
     G -- SQL --> DB[(PostgreSQL)]
     G -- internal HTTP<br/>service token --> A[Agent service<br/>Python FastAPI]
-    A -- HTTPS --> L[LLM API]
+    A -- local HTTP --> L[Local AI model<br/>Ollama, same machine]
 ```
 
 There are three services and one database. Only the **gateway** is reachable from the browser.
@@ -79,13 +79,13 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       └── common/       error handling, validation, rate limiting, security config
 ├── agent/          Python FastAPI service
 │   └── app/
-│       ├── main.py       internal API
-│       ├── tools.py      the allow-listed tools
-│       ├── guardrails.py argument + action validation
-│       ├── scoring.py    risk score
-│       ├── explain.py    SOC + plain reports
-│       ├── llm.py        LLM loop
-│       └── rules.py      fallback rule engine
+│       ├── main.py          internal API
+│       ├── investigation.py one investigation: the AI first, the fixed plan as fallback
+│       ├── reasoning.py     the AI-led loop: prompt, fence, submit_verdict
+│       ├── llm.py           talks to the local model (Ollama)
+│       ├── budget.py        daily cap on model use
+│       ├── tools.py         the allow-listed tools and the guardrail (+ one module per tool)
+│       └── verdict.py       risk score, verdict, attack type
 ├── dashboard/      React app
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
@@ -115,7 +115,7 @@ erDiagram
 | `app_users` | People who log in to the product (analysts). | `id`, `username` (unique), `password_hash`, `role`, `created_at` |
 | `refresh_tokens` | Rotating refresh tokens. Only a hash is stored. | `token_hash`, `user_id`, `expires_at`, `revoked_at`, `replaced_by` |
 | `monitored_identities` | Employees the product protects, with their baseline. **Not** the same as `app_users`. | `identity` (e.g. `priya.sharma`), `display_name`, `baseline` (AES-256-GCM encrypted bytes, ADR-37), `created_at` |
-| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at`. Planned: `engine` (step 12) |
+| `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at` |
 | `incident_indicators` | The indicators found in each incident, for correlation across incidents (ADR-42). | `incident_id`, `type` (`ip`/`domain`/`email`/`phone`), `value`; indexed on (`type`, `value`) |
 | `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
 | `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `created_at`. Planned: `soc_report`, `plain_report` (step 13) |
@@ -169,7 +169,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
 | `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |
 | `verdict` | Final verdict available (agent → gateway: verdict, attack type, risk score, cited evidence, counterfactual; the gateway recomputes the score and applies the floor) |
-| `investigation.complete` | (agent → gateway) Last line of every investigation; carries the status the incident moves to. Step 8 sends `needs_review` with engine `stub`. |
+| `investigation.complete` | (agent → gateway) Last line of every investigation: the status the agent suggests (`needs_review` or `closed`; the gateway decides) and the engine, `llm` or `rules` (ADR-44). |
 | `action.decided` | A human approved or rejected an action |
 
 ## 6. Security architecture (summary)
@@ -195,7 +195,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | `AUDIT_HMAC_KEY` | gateway | Keys the audit chain |
 | `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest (exactly 32 random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
 | `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`; both read it from `.env`) |
-| `ANTHROPIC_API_KEY` | agent | LLM access (optional; without it the rule engine runs) |
+| `LLM_PROVIDER`, `LLM_MODEL`, `OLLAMA_URL` (not secret) | agent | The local AI model: `off` (default, rule engine only) or `ollama`; the model name; its address, which must be on this machine (ADR-15) |
 | `SECURITY_RATELIMIT_*` (optional) | gateway | Override the rate-limit thresholds set in `application.properties`, e.g. `SECURITY_RATELIMIT_REQUESTSPERMINUTE` |
 
 ## 8. Local development
@@ -204,6 +204,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 |---|---|---|
 | Gateway | 8443 (HTTPS only) | `cd gateway && ./mvnw spring-boot:run`. Needs the certificate from `scripts\setup-https.ps1` |
 | Agent | 8001 (127.0.0.1 only) | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
+| Ollama (AI model) | 11434 (127.0.0.1 only) | Installed app, runs in the background. Once: `ollama pull qwen3:8b`; then `LLM_PROVIDER=ollama` in `.env` |
 | Dashboard | 5173 | `cd dashboard && npm run dev` |
 | PostgreSQL | 5432 | Windows service `postgresql-x64-16`. Database `secanalyst`, role `secanalyst_app`, created once by `scripts\setup-db.ps1` |
 
@@ -214,8 +215,8 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Gateway unit / slice | JUnit 6, MockMvc | Controllers, validation, security rules |
 | Gateway integration | Spring Boot test + embedded PostgreSQL 16 (started by the tests, ADR-16) | Migrations, repositories, auth flows |
 | Agent unit | pytest | Tools, guardrails, scoring, reports |
-| Agent scenarios | pytest | Each demo scenario reaches the expected verdict with the rule engine |
-| Red-team suite | pytest | Injection payloads never cause an unauthorised tool call or action |
+| Agent scenarios | pytest | Each demo scenario reaches the expected verdict with the rule engine, and with a scripted model making the same calls (same evidence, same score) |
+| Red-team suite | pytest | A scripted hijacked model (tools off the allow-list, values not in the incident, odd arguments, invented evidence, skipped checks, a benign claim) never gets an unauthorised call through and never lowers a verdict (`test_reasoning.py`) |
 | Dashboard | Vitest + Testing Library | Components render untrusted text safely |
 | End to end | Script against running services | Submit → investigate → approve → audit verifies |
 | CI | GitHub Actions (`.github/workflows/ci.yml`) | Gateway tests on every pull request and push to `main` (since step 5a); more suites, dependency audit and static analysis added as they arrive |

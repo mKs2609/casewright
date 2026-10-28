@@ -36,6 +36,10 @@ def band(score: int) -> str:
     return "benign" if score < 30 else "suspicious" if score < 65 else "malicious"
 
 
+def more_severe(a: str, b: str) -> str:
+    return a if SEVERITY[a] >= SEVERITY[b] else b
+
+
 def attack_type(kind: str, signals: list[Signal]) -> str:
     """The kind of attack, from which findings fired. The most specific wins, in this order."""
     ids = {s.id for s in signals}
