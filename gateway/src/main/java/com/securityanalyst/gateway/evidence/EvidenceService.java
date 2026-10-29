@@ -59,6 +59,21 @@ public class EvidenceService {
                 .toList();
     }
 
+    /** One finding as stored, with the evidence item it belongs to and its exact words. */
+    public record RecordedSignal(String evidence, String id, String label, String plain, int weight, String mitre) {
+    }
+
+    /** Every finding of the incident's accepted evidence, as stored (what reports are checked against). */
+    @Transactional(readOnly = true)
+    public List<RecordedSignal> recordedSignals(Long incidentId) {
+        return evidence.findByIncidentIdOrderByIdAsc(incidentId).stream()
+                .filter(e -> Evidence.OK.equals(e.getStatus()))
+                .flatMap(e -> json.readTree(e.getSignals()).valueStream().map(signal -> new RecordedSignal(e.getLabel(),
+                        signal.get("id").asString(), signal.get("label").asString(), signal.get("plain").asString(),
+                        signal.get("weight").asInt(), signal.hasNonNull("mitre") ? signal.get("mitre").asString() : null)))
+                .toList();
+    }
+
     /** The labels of the incident's accepted evidence (E1, E2, ...). */
     @Transactional(readOnly = true)
     public Set<String> acceptedLabels(Long incidentId) {

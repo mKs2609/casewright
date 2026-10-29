@@ -64,10 +64,18 @@ public class InvestigationRunner {
             if (chain.verdict == null) {
                 throw new AgentException("The agent finished without a verdict");
             }
+            if (chain.report == null) {
+                throw new AgentException("The agent finished without the reports");
+            }
             AgentEvent.Verdict claimed = chain.verdict;
-            VerdictService.Decision decision = verdicts.decide(incidentId, new VerdictService.Claim(claimed.verdict(),
-                    claimed.attackType(), claimed.riskScore(), claimed.citedEvidence(), claimed.counterfactual(),
-                    result.engine()));
+            VerdictService.Claim claim = new VerdictService.Claim(claimed.verdict(), claimed.attackType(),
+                    claimed.riskScore(), claimed.citedEvidence(), claimed.counterfactual(), result.engine());
+            VerdictService.Decision decision = verdicts.assess(incidentId, claim);
+            // The reports describe the final verdict, so they are checked against it before anything is saved.
+            ReportCheck.check(chain.report, evidence.recordedSignals(incidentId), evidence.acceptedLabels(incidentId),
+                    decision.verdict());
+            verdicts.record(incidentId, claim, decision,
+                    new VerdictService.Reports(chain.report.soc(), chain.report.plain()));
             // The status comes from the checked verdict, not from what the agent suggested.
             incidents.updateStatus(incidentId, decision.status());
             if (decision.disagreement()) {
@@ -99,6 +107,7 @@ public class InvestigationRunner {
         private int rejected;
         private boolean indicatorsReported;
         private AgentEvent.Verdict verdict;
+        private AgentEvent.Report report;
 
         EvidenceChain(Long incidentId) {
             this.incidentId = incidentId;
@@ -145,6 +154,16 @@ public class InvestigationRunner {
                         }
                     }
                     verdict = decided;
+                }
+                case AgentEvent.Report reports -> {
+                    // After the verdict (the reports describe it), and once only.
+                    if (verdict == null) {
+                        throw new AgentException("The agent sent the reports before the verdict");
+                    }
+                    if (report != null) {
+                        throw new AgentException("The agent sent the reports twice");
+                    }
+                    report = reports;
                 }
                 case AgentEvent.Complete complete -> {
                     // Handled by the caller once the answer has been read to the end.

@@ -30,6 +30,7 @@ import tools.jackson.databind.JsonNode;
         @JsonSubTypes.Type(value = AgentEvent.Step.class, name = "agent.step"),
         @JsonSubTypes.Type(value = AgentEvent.Guardrail.class, name = "agent.guardrail"),
         @JsonSubTypes.Type(value = AgentEvent.Verdict.class, name = "verdict"),
+        @JsonSubTypes.Type(value = AgentEvent.Report.class, name = "report"),
         @JsonSubTypes.Type(value = AgentEvent.Complete.class, name = "investigation.complete") })
 public sealed interface AgentEvent {
 
@@ -116,6 +117,49 @@ public sealed interface AgentEvent {
             @NotNull @Min(0) @Max(100) Integer riskScore,
             @NotNull @Size(max = 30) List<@NotNull @Pattern(regexp = "^E[1-9][0-9]{0,2}$") String> citedEvidence,
             @NotNull @Size(min = 1, max = 500) @Pattern(regexp = PRINTABLE) String counterfactual) implements AgentEvent {
+    }
+
+    String EVIDENCE_LABEL = "^E[1-9][0-9]{0,2}$";
+    String SIGNAL_ID = "^[A-Z][A-Z0-9-]{1,39}$";
+    String MITRE = "^(T\\d{4}(\\.\\d{3})?|AML\\.T\\d{4}(\\.\\d{3})?)$";
+
+    /**
+     * The two reports (step 13), built by the agent from the evidence chain. Their shape is
+     * checked here; ReportCheck then compares every finding and reason with the evidence the
+     * gateway stored, so a report can only repeat what was actually recorded.
+     */
+    record Report(@NotNull @Valid SocReport soc, @NotNull @Valid PlainReport plain) implements AgentEvent {
+    }
+
+    /** For the security team. The AI summary line is optional and checked separately. */
+    record SocReport(
+            @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String headline,
+            @NotNull @Size(max = 30) List<@NotNull @Valid ReportFinding> findings,
+            @NotNull @Size(max = 30) List<@NotNull @Pattern(regexp = MITRE) String> techniques,
+            @NotNull @Size(max = 6) List<@NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String> nextSteps,
+            @Size(min = 1, max = 200) @Pattern(regexp = PRINTABLE) String aiSummary) {
+    }
+
+    record ReportFinding(
+            @NotNull @Pattern(regexp = EVIDENCE_LABEL) String evidence,
+            @NotNull @Pattern(regexp = SIGNAL_ID) String signal,
+            @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String text,
+            @NotNull @Min(0) @Max(100) Integer weight,
+            @Pattern(regexp = MITRE) String mitre) {
+    }
+
+    /** For the employee. */
+    record PlainReport(
+            @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String headline,
+            @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String whatHappened,
+            @NotNull @Size(max = 5) List<@NotNull @Valid ReportReason> reasons,
+            @NotNull @Size(min = 1, max = 5) List<@NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String> whatToDo) {
+    }
+
+    record ReportReason(
+            @NotNull @Pattern(regexp = EVIDENCE_LABEL) String evidence,
+            @NotNull @Pattern(regexp = SIGNAL_ID) String signal,
+            @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String text) {
     }
 
     /**

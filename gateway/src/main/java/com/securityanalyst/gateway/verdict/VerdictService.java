@@ -35,9 +35,14 @@ public class VerdictService {
     public record Decision(String verdict, String attackType, int riskScore, boolean disagreement, String status) {
     }
 
-    /** A verdict as the API shows it. */
+    /** The two reports (step 13), already checked against the evidence by the caller. */
+    public record Reports(Object soc, Object plain) {
+    }
+
+    /** A verdict as the API shows it. The reports are null for verdicts recorded before step 13. */
     public record View(String verdict, String attackType, int riskScore, String agentVerdict, int agentRiskScore,
-            boolean disagreement, String engine, JsonNode citedEvidence, String counterfactual, Instant createdAt) {
+            boolean disagreement, String engine, JsonNode citedEvidence, String counterfactual, JsonNode socReport,
+            JsonNode plainReport, Instant createdAt) {
     }
 
     private final EvidenceService evidence;
@@ -50,8 +55,12 @@ public class VerdictService {
         this.json = json;
     }
 
-    @Transactional
-    public Decision decide(Long incidentId, Claim claim) {
+    /**
+     * Works out the outcome from the evidence the gateway stored, without saving anything, so
+     * the caller can check the reports against the final verdict before {@link #record}.
+     */
+    @Transactional(readOnly = true)
+    public Decision assess(Long incidentId, Claim claim) {
         List<RiskScore.Finding> findings = evidence.findings(incidentId).stream()
                 .map(f -> new RiskScore.Finding(f.id(), f.weight())).toList();
         int score = RiskScore.of(findings);
@@ -63,26 +72,36 @@ public class VerdictService {
         // A raised verdict must not keep "no attack" as its type.
         String attackType = !"benign".equals(verdict) && "none".equals(claim.attackType()) ? "other" : claim.attackType();
         String status = disagreement || !"benign".equals(verdict) ? "needs_review" : "closed";
+        return new Decision(verdict, attackType, score, disagreement, status);
+    }
 
+    @Transactional
+    public void record(Long incidentId, Claim claim, Decision decision, Reports reports) {
         jdbc.update("""
                 INSERT INTO verdicts (incident_id, verdict, attack_type, risk_score, agent_verdict, agent_risk_score,
-                                      disagreement, engine, cited_evidence, counterfactual)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?)""",
-                incidentId, verdict, attackType, score, claim.verdict(), claim.riskScore(), disagreement, claim.engine(),
-                json.writeValueAsString(claim.citedEvidence()), claim.counterfactual());
-        return new Decision(verdict, attackType, score, disagreement, status);
+                                      disagreement, engine, cited_evidence, counterfactual, soc_report, plain_report)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?::jsonb, ?::jsonb)""",
+                incidentId, decision.verdict(), decision.attackType(), decision.riskScore(), claim.verdict(),
+                claim.riskScore(), decision.disagreement(), claim.engine(), json.writeValueAsString(claim.citedEvidence()),
+                claim.counterfactual(), json.writeValueAsString(reports.soc()), json.writeValueAsString(reports.plain()));
     }
 
     @Transactional(readOnly = true)
     public Optional<View> forIncident(Long incidentId) {
         return jdbc.query("""
                 SELECT verdict, attack_type, risk_score, agent_verdict, agent_risk_score, disagreement, engine,
-                       cited_evidence::text AS cited, counterfactual, created_at
+                       cited_evidence::text AS cited, counterfactual, soc_report::text AS soc,
+                       plain_report::text AS plain, created_at
                 FROM verdicts WHERE incident_id = ?""",
                 (rs, row) -> new View(rs.getString("verdict"), rs.getString("attack_type"), rs.getInt("risk_score"),
                         rs.getString("agent_verdict"), rs.getInt("agent_risk_score"), rs.getBoolean("disagreement"),
                         rs.getString("engine"), json.readTree(rs.getString("cited")), rs.getString("counterfactual"),
+                        jsonOrNull(rs.getString("soc")), jsonOrNull(rs.getString("plain")),
                         rs.getTimestamp("created_at").toInstant()),
                 incidentId).stream().findFirst();
+    }
+
+    private JsonNode jsonOrNull(String text) {
+        return text == null ? null : json.readTree(text);
     }
 }

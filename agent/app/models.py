@@ -157,6 +157,58 @@ class LlmVerdict(Strict):
     cited_evidence: Annotated[list[EvidenceLabel], Field(max_length=30)]
 
 
+SignalId = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9-]{1,39}$")]
+Mitre = Annotated[str, StringConstraints(pattern=r"^(T\d{4}(\.\d{3})?|AML\.T\d{4}(\.\d{3})?)$")]
+# The AI summary line (step 13): one short sentence.
+SummaryLine = Annotated[str, StringConstraints(min_length=1, max_length=200, pattern=r"^[^\x00-\x1f\x7f]*$")]
+
+
+class ReportFinding(Strict):
+    """One finding in the SOC report: a recorded signal, exactly as recorded (its label)."""
+
+    evidence: EvidenceLabel
+    signal: SignalId
+    text: ShortPrintable
+    weight: Annotated[int, Field(ge=0, le=100)]
+    mitre: Mitre | None = None
+
+
+class ReportReason(Strict):
+    """One reason in the plain report: a recorded signal, in its plain words."""
+
+    evidence: EvidenceLabel
+    signal: SignalId
+    text: ShortPrintable
+
+
+class SocReport(Strict):
+    """For the security team: every finding with its evidence ID and technique."""
+
+    headline: ShortPrintable
+    findings: Annotated[list[ReportFinding], Field(max_length=30)]
+    techniques: Annotated[list[Mitre], Field(max_length=30)]
+    next_steps: Annotated[list[ShortPrintable], Field(max_length=6)]
+    ai_summary: SummaryLine | None = None
+
+
+class PlainReport(Strict):
+    """For the employee: what happened, why we think so, what to do. No jargon."""
+
+    headline: ShortPrintable
+    what_happened: ShortPrintable
+    reasons: Annotated[list[ReportReason], Field(max_length=5)]
+    what_to_do: Annotated[list[ShortPrintable], Field(min_length=1, max_length=5)]
+
+
+class ReportEvent(Strict):
+    """The two reports, built from the same evidence chain (step 13). The gateway checks
+    every finding and reason against the evidence it stored before keeping them."""
+
+    type: Literal["report"] = "report"
+    soc: SocReport
+    plain: PlainReport
+
+
 class IndicatorItem(Strict):
     type: IndicatorType
     value: ShortText
@@ -170,4 +222,4 @@ class IndicatorsEvent(Strict):
     indicators: Annotated[list[IndicatorItem], Field(max_length=200)]
 
 
-Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | VerdictEvent | CompleteEvent
+Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | VerdictEvent | ReportEvent | CompleteEvent

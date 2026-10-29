@@ -43,7 +43,7 @@ SIGNATURES: list[tuple[str, str, str, int, str, re.Pattern[str]]] = [
      "It asks you to confirm your password or account details.", 25, "T1566.002",
      _rx(r"\b(verify|confirm|update|validate|re-?enter) (your )?(account|password|identity|login|credentials)\b")),
     ("SIG-OTP-REQ", "Asks for a one-time code",
-     "It asks for a one-time code. Real banks and IT staff never ask for these.", 35, "T1111",
+     "It asks for a one-time code. Real banks and support staff never ask for these.", 35, "T1111",
      # Either a one-time kind of code named outright, or any code asked for "to me / to us".
      # (A plain "send the source code" must not count.)
      _rx(r"\b(otp|one[- ]time (pass ?)?code|verification code|security code|login code|sms code"
@@ -53,14 +53,14 @@ SIGNATURES: list[tuple[str, str, str, int, str, re.Pattern[str]]] = [
      "It pushes you to send money, gift cards or cryptocurrency.", 20, "T1657",
      _rx(r"\b(gift ?cards?|wire transfer|bitcoin|crypto(currency)?|upi (id|pin))\b")),
     ("SIG-IMPERSONATION", "Claims to be an authority (bank, IT, security)",
-     "The sender claims to be a bank, an IT team or an official to win your trust.", 15, "T1656",
+     "The sender claims to be a bank, a support team or an official to win your trust.", 15, "T1656",
      _rx(r"\b(this is|from|with) (the |your )?[\w ]{0,20}(bank|it department|it support|security team|"
          r"fraud department|helpdesk|help desk)\b")),
     ("SIG-REMOTE-TOOL", "Asks to install remote-access software",
      "It asks you to install software that lets a stranger control your computer.", 30, "T1219",
      _rx(r"\b(anydesk|teamviewer|quick ?support|remote access|screen ?share)\b")),
     ("SIG-AI-INJECTION", "Prompt-injection text aimed at an AI analyst",
-     "The message hides instructions meant to trick an AI system. Genuine messages never do that.", 40, "AML.T0051",
+     "The message hides instructions meant to trick our security checks. Genuine messages never do that.", 40, "AML.T0051",
      _rx(r"(ignore (all |any )?(the )?(previous|prior|above|earlier) (instructions|rules|prompts?)"
          r"|disregard (all |any |your )?(previous |prior )?(instructions|rules)"
          r"|note to (the )?(ai|assistant|model|analyst bot)"

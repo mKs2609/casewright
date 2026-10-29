@@ -85,7 +85,9 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       ├── llm.py           talks to the local model (Ollama)
 │       ├── budget.py        daily cap on model use
 │       ├── tools.py         the allow-listed tools and the guardrail (+ one module per tool)
-│       └── verdict.py       risk score, verdict, attack type
+│       ├── verdict.py       risk score, verdict, attack type
+│       ├── report.py        the SOC and plain reports, from the evidence
+│       └── summary.py       the one checked AI summary line
 ├── dashboard/      React app
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
@@ -118,7 +120,7 @@ erDiagram
 | `incidents` | One suspicious event. | `id`, `kind`, `subject_identity`, `payload` (JSONB, the validated request), `status`, `source`, `created_by`, `created_at` |
 | `incident_indicators` | The indicators found in each incident, for correlation across incidents (ADR-42). | `incident_id`, `type` (`ip`/`domain`/`email`/`phone`), `value`; indexed on (`type`, `value`) |
 | `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
-| `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `created_at`. Planned: `soc_report`, `plain_report` (step 13) |
+| `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `soc_report`, `plain_report` (JSONB, step 13, checked against the stored evidence), `created_at` |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
 | `enforcement` | What the (simulated) enforcement layer has done. | `id`, `action_id`, `action`, `target`, `created_at` |
 | `audit_log` | Tamper-evident history. | `seq`, `ts`, `actor`, `event`, `incident_id`, `data`, `prev_hash`, `hash` |
@@ -169,6 +171,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
 | `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |
 | `verdict` | Final verdict available (agent → gateway: verdict, attack type, risk score, cited evidence, counterfactual; the gateway recomputes the score and applies the floor) |
+| `report` | (agent → gateway, after the verdict) The SOC and plain reports as structured data; every finding and reason must match the stored evidence (ADR-45) |
 | `investigation.complete` | (agent → gateway) Last line of every investigation: the status the agent suggests (`needs_review` or `closed`; the gateway decides) and the engine, `llm` or `rules` (ADR-44). |
 | `action.decided` | A human approved or rejected an action |
 

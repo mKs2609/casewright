@@ -17,13 +17,21 @@ def call(name: str, arguments: object = None, **named: str) -> tuple[str, object
 
 
 class ScriptedModel:
-    def __init__(self, *turns: Turn) -> None:
+    def __init__(self, *turns: Turn, summary: str | LlmError = "") -> None:
         self.turns = list(turns)
-        self.seen: list[list[dict[str, Any]]] = []   # the messages of every request
+        self.summary = summary   # its answer when asked for the summary line (a request with no tools)
+        self.seen: list[list[dict[str, Any]]] = []   # the messages of every investigation request
+        self.summary_requests: list[list[dict[str, Any]]] = []
         self.tools: list[dict[str, Any]] = []
         self.timeouts: list[float] = []
 
     def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]], timeout: float) -> Reply:
+        if not tools:
+            self.summary_requests.append(copy.deepcopy(messages))
+            if isinstance(self.summary, LlmError):
+                raise self.summary
+            return Reply(tool_calls=[], has_text=bool(self.summary), tokens=50,
+                         message={"role": "assistant", "content": self.summary, "tool_calls": []})
         self.seen.append(copy.deepcopy(messages))
         self.tools = tools
         self.timeouts.append(timeout)
