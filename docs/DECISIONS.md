@@ -314,3 +314,15 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 
 **Why:** AGENT_DESIGN section 10: apart from the system prompt, every defence holds even if the model is fully manipulated. The live runs showed the small model's real habits (wrapped arguments, a less specific attack label), and each was handled without loosening a check.
 **Trade-offs:** the model reasons over summaries rather than raw results, which a stronger model might use better.
+
+## ADR-45: Reports written by code from the evidence, plus one checked AI line
+**Status:** Accepted (Mohit, 2026-10-29)
+**Decision:**
+- Both reports are built by code from the evidence chain (`agent/app/report.py`): the SOC report lists every finding that counts (the strongest of each kind) in its technical words (`label`), with its evidence ID, weight and technique; the plain report gives up to five of the same findings in their plain words (`plain`). Headlines, "what happened", next steps and "what to do" are fixed wording chosen by the verdict after the score floor and the attack type. Nothing comes from the incident's text.
+- They travel as structured data in a `report` event after the verdict. The gateway compares every finding and reason with the evidence it stored (same evidence item, signal, words, weight, technique); a mismatch ends the investigation in error and nothing is saved. Both are stored with the verdict (migration V7) and shown on the incident.
+- Mohit's choice: code writes the reports, and the model may add **one summary line to the SOC report only**, labelled as the AI's. It is written after all the evidence is in, from the findings with every name, address, link and number replaced by plain words ("the user", "a website"), and kept only if it is one printable sentence of at most 200 characters, cites existing evidence (`[E2]` or `[E2, E3]`), contains no address, link or number, copies no run of four words from the incident, and does not call a non-benign incident safe. Otherwise it is left out and the reason, in our words, goes into the live notes. The gateway repeats the checks it can make without the incident text.
+- The plain report must read at grade 8 or below (Flesch-Kincaid, PRD) and contain no acronyms; three plain sentences from steps 9-10 were reworded ("IT", "AI").
+
+**Why:** a report the employee acts on must never say something the evidence does not, and must never carry attacker text. Code-built reports are traceable by construction and identical with the AI on or off; the one AI line adds a readable overview for analysts where a mistake costs least.
+**Alternatives considered:** reports written by the AI and checked by code (more natural, but a citation check proves only that an ID exists, not that the sentence is true); no AI text at all.
+**Trade-offs:** fixed wording is less varied. The copy check catches verbatim copying, not rewording; rewording still has to pass the other checks. In the live run 4 of 5 AI lines were kept; the fifth was too long.

@@ -79,6 +79,9 @@ Plain-language meanings of the terms used in this project.
 | **Risk band** | The verdict a score falls into: 0–29 benign, 30–64 suspicious, 65–100 malicious. |
 | **Score floor** | The rule that a verdict is never lower than its evidence's band, enforced by the gateway. |
 | **Counterfactual** | "What would change the verdict": the strongest finding and the risk without it. |
+| **SOC report / plain report** | The two reports of every investigation: one for the security team (technical, every finding with its evidence ID), one for the employee (what happened, why, what to do; no jargon). |
+| **Reading grade (Flesch-Kincaid)** | A formula from sentence length and syllables per word that estimates the school year needed to read a text easily. The plain report must be grade 8 or below. |
+| **Masking** | Replacing real values (names, addresses, numbers) with plain words before showing text to someone, or something, that should not see them. |
 | **Golden file** | A file of test cases with known answers, shared by two implementations so they stay identical. |
 | **Encryption at rest** | Data is stored encrypted, so a stolen disk, backup or database dump is unreadable without the key. |
 | **AES-256-GCM** | A standard encryption method. AES-256 hides the data; GCM adds a tag that detects any change to it (authenticated encryption). |

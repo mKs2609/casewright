@@ -10,8 +10,8 @@ from app.budget import BUDGET, DailyBudget
 from app.case import Case
 from app.llm import ChatModel
 from app.models import (CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, LlmVerdict,
-                        ThoughtEvent, VerdictEvent)
-from app import reasoning
+                        ReportEvent, ThoughtEvent, VerdictEvent)
+from app import reasoning, report, summary
 from app import verdict as decide
 from app.tools import ToolBox
 
@@ -144,10 +144,20 @@ def investigate(request: InvestigateRequest, model: ChatModel | None = None,
         # The evidence behind the score is always cited, whatever the model chose to cite.
         cited = sorted(set(cited) | set(claim.cited_evidence), key=lambda label: int(label[1:]))
 
+    # The verdict after the score floor: what the gateway will record, and what the reports describe.
+    final = decide.more_severe(verdict, band)
+    ai_line = None
+    if claim is not None and model is not None:
+        ai_line, why_not = summary.write(case, report.counted_findings(tools.steps),
+                                         {step.label for step in tools.steps}, final, attack, score, model, budget)
+        yield ThoughtEvent(text="The AI summary passed every check and was added to the SOC report." if ai_line
+                           else f"The AI summary was left out: {why_not}.")
+    soc, plain = report.build(incident.kind, tools.steps, final, attack, score, ai_line)
+
     # Built with the JSON (camelCase) names: the models accept only those, for code and callers alike.
     yield VerdictEvent.model_validate({
         "verdict": verdict, "attackType": attack, "riskScore": score,
         "citedEvidence": cited, "counterfactual": decide.counterfactual(signals)})
+    yield ReportEvent(soc=soc, plain=plain)
     # Closed only when both the verdict and the evidence say benign (the gateway decides finally).
-    yield CompleteEvent(result="closed" if decide.more_severe(verdict, band) == "benign" else "needs_review",
-                        engine=engine)
+    yield CompleteEvent(result="closed" if final == "benign" else "needs_review", engine=engine)

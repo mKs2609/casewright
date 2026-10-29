@@ -9,24 +9,19 @@ Updated at the start and end of every step.
 
 ## Now
 
-### Step 12: LLM reasoning agent (on `feature/llm-agent`)
-- [x] ADR-15 decided: a free local model (Ollama, `qwen3:8b`), provider and model as settings, address must be on this machine
-- [x] The model chooses the tools and calls `submit_verdict`; every call through the same guardrail
-- [x] Prompt-injection defences: fenced incident, summaries instead of raw results, the model's words never in events
-- [x] Model output checked: size cap, strict verdict schema, citations must exist, evidence first
-- [x] Limits: 8 turns, 120 s, 4 calls per turn; 200 investigations and 2M tokens a day; fallback to the fixed plan
-- [x] Tools take a fixed set of argument names (stricter than before); refusals name the allowed ones; known wrapper shapes unwrapped
-- [x] The model can add checks, never remove them: the standard checks always run after it (found in Mohit's own run)
-- [x] Gateway accepts engine `llm`; deadline 3 minutes
-- [x] Fixed test pollution that failed CI on the new Ubuntu runners: auth tests no longer depend on the order test classes run in
-- [x] Red-team suite (scripted hijacked model); tests: agent 228, gateway 185; 16 mutation checks
-- [x] Live: all six scenarios correct, led by the model (8-14 s each); fallback with the model unreachable
+### Step 13: Dual explanation (on `feature/dual-explanation`)
+- [x] SOC and plain reports built by code from the evidence chain; sent as a `report` event after the verdict
+- [x] Gateway checks every finding and reason against the stored evidence; reports stored with the verdict (migration V7)
+- [x] One AI summary line (SOC report only): written from masked findings, kept only if it passes every check (Mohit's choice, ADR-45)
+- [x] Plain report: no jargon, reading grade 8 or below; three plain sentences reworded
+- [x] Tests: agent 291, gateway 192 (both test orders); 12 new mutation checks, step 12's 16 still caught
+- [x] Live: six scenarios with both reports accepted; 4 of 5 AI lines kept (one too long)
 - [ ] Merged
 
 ## Next
 
-### Step 13: Dual explanation
-A technical report and a plain-language report from the same evidence; every finding cites existing evidence.
+### Step 14: Audit log
+Every event logged in a hash chain with an HMAC key kept outside the database; editing a row makes verification fail.
 
 ## Later
 
@@ -41,6 +36,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-29:** Step 12 (LLM reasoning agent, local model) merged: PR #12.
 - **2026-10-27:** Step 11 (risk score, verdict, rule engine) merged: PR #11.
 - **2026-10-25:** Step 10b (related incidents) merged: PR #10.
 - **2026-10-24:** Step 10 (baseline check, pattern match, correlation) merged: PR #9.

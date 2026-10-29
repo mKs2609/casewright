@@ -108,8 +108,6 @@ The LLM's `submit_verdict` call is parsed against this before it is trusted:
 |---|---|---|
 | `verdict` | enum | `benign` / `suspicious` / `malicious` |
 | `attack_type` | enum | `none`, `phishing`, `credential_stuffing`, `brute_force`, `account_takeover`, `impossible_travel`, `vishing`, `prompt_injection`, `bec`, `other` |
-| `summary_technical` | string ≤ 1500 | Must cite at least one evidence ID like `[E1]` |
-| `summary_plain` | string ≤ 800 | Plain language |
 | `cited_evidence` | list of `E\d+` | Every ID must exist |
 | `mitre_techniques` | list | Must match `T####(.###)` or `AML.T####` |
 | `proposed_actions` | list of `{action, target}` | Validated by the action policy |
@@ -189,3 +187,14 @@ Verdict = evidence band. Attack type and actions are derived from which signals 
 | Labelled set | 50–100 benign and malicious incidents | Recall ≥ 90%, false-positive rate ≤ 10% |
 | Red-team suite | Injection payloads in every text field | 0 unauthorised tool calls, 0 unauthorised actions, verdict never lowered |
 | Traceability | Every report | Every finding cites an existing evidence ID |
+
+## 14. Reports (step 13, ADR-45)
+
+| | SOC report | Plain report |
+|---|---|---|
+| Reader | Security team | The employee |
+| Built from | Every finding that counts, in its technical words (`label`), with evidence ID, weight, technique | Up to five of the same findings in their plain words (`plain`) |
+| Fixed wording | Headline, next steps (by verdict and attack type) | Headline, what happened, what to do (no jargon, grade 8 or below) |
+| AI text | One optional summary line, checked (below) | None |
+
+The AI line is written after all the evidence is in, from findings whose names, addresses, links and numbers are replaced by plain words. It is kept only if it is one printable sentence of at most 200 characters, cites existing evidence, contains no address, link or number, copies no four-word run from the incident, and does not call a non-benign incident safe. The gateway checks every finding and reason against the stored evidence before saving either report.

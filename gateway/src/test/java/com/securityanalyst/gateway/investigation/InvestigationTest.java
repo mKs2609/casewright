@@ -116,7 +116,20 @@ class InvestigationTest extends PostgresIntegrationTest {
                 + risk + ",\"citedEvidence\":[" + cited + "],\"counterfactual\":\"Nothing else was checked.\"}\n";
     }
 
-    private static final String COMPLETE_ONLY = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
+    /** The two reports (step 13). Findings and reasons are given as JSON; the AI line may be null. */
+    private static String report(String findings, String techniques, String reasons, String aiSummary) {
+        return "{\"type\":\"report\",\"soc\":{\"headline\":\"Suspicious: phishing, risk 70/100.\",\"findings\":["
+                + findings + "],\"techniques\":[" + techniques + "],\"nextSteps\":[\"Review the evidence.\"],"
+                + "\"aiSummary\":" + (aiSummary == null ? "null" : "\"" + aiSummary + "\"") + "},"
+                + "\"plain\":{\"headline\":\"This email looks suspicious.\",\"whatHappened\":\"We checked an email.\","
+                + "\"reasons\":[" + reasons + "],\"whatToDo\":[\"Do not click links in this email.\"]}}\n";
+    }
+
+    private static final String NO_FINDINGS_REPORT = report("", "", "", null);
+
+    /** Reports, then complete: what follows the verdict. */
+    private static final String COMPLETE_ONLY = NO_FINDINGS_REPORT
+            + "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
 
     /** The usual ending: a cautious verdict (allowed: an agent may be more careful than its evidence), then complete. */
     private static final String COMPLETE = verdict("suspicious", "other", 0, "") + COMPLETE_ONLY;
@@ -187,7 +200,9 @@ class InvestigationTest extends PostgresIntegrationTest {
     private Cookie analyst;
 
     private Integer submitAnEmailIncident() throws Exception {
-        users.save(new User("ivy.analyst", passwordEncoder.encode(PASSWORD), Role.ANALYST));
+        if (!users.existsByUsername("ivy.analyst")) {   // a test may submit several incidents
+            users.save(new User("ivy.analyst", passwordEncoder.encode(PASSWORD), Role.ANALYST));
+        }
         analyst = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"ivy.analyst\",\"password\":\"" + PASSWORD + "\"}"))
                 .andReturn().getResponse().getCookie(AuthCookies.ACCESS_TOKEN);
@@ -259,9 +274,10 @@ class InvestigationTest extends PostgresIntegrationTest {
         AgentEvent.Complete result = agentClient.investigate(someRequest(), seen::add);
 
         assertThat(result.result()).isEqualTo("needs_review");
-        assertThat(seen).hasSize(3);
+        assertThat(seen).hasSize(4);
         assertThat(seen.getFirst()).isEqualTo(new AgentEvent.Thought("Looking at the sender"));
         assertThat(seen.get(1)).isInstanceOf(AgentEvent.Verdict.class);
+        assertThat(seen.get(2)).isInstanceOf(AgentEvent.Report.class);
         assertThat(seen.getLast()).isEqualTo(result);
     }
 
@@ -586,6 +602,115 @@ class InvestigationTest extends PostgresIntegrationTest {
 
         agentAnswers(verdict("benign", "none", 0, "") + verdict("benign", "none", 0, "") + COMPLETE_ONLY);
         assertThat(finalStatusOf(submitAnEmailIncident())).isEqualTo("error");
+    }
+
+    // ------------------------------------------------------------------ the reports (step 13)
+
+    private static final String LOOKALIKE_FINDING = "{\"evidence\":\"E1\",\"signal\":\"LOOKALIKE-DOMAIN\","
+            + "\"text\":\"paypa1.example imitates paypal.com\",\"weight\":35,\"mitre\":\"T1583.001\"}";
+    private static final String LOOKALIKE_REASON = "{\"evidence\":\"E1\",\"signal\":\"LOOKALIKE-DOMAIN\","
+            + "\"text\":\"The address is made to look like paypal.com, but it isn't.\"}";
+    private static final String MALICIOUS_VERDICT = verdict("malicious", "phishing", 70, "\"E1\"");
+    private static final String COMPLETE_LINE =
+            "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"llm\"}\n";
+
+    private Integer submitWithReport(String report) throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + report + COMPLETE_LINE);
+        return submitAnEmailIncident();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void bothReportsAreStoredWithTheVerdictAndShownOnTheIncident() throws Exception {
+        Integer id = submitWithReport(report(LOOKALIKE_FINDING, "\"T1583.001\"", LOOKALIKE_REASON,
+                "A look-alike of a payment brand that is on attacker lists [E1]."));
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        Map<String, Object> verdict = verdictOf(id);
+        Map<String, Object> soc = (Map<String, Object>) verdict.get("socReport");
+        Map<String, Object> plain = (Map<String, Object>) verdict.get("plainReport");
+        assertThat(soc).containsEntry("aiSummary", "A look-alike of a payment brand that is on attacker lists [E1].")
+                .containsEntry("techniques", List.of("T1583.001"));
+        assertThat((List<Map<String, Object>>) soc.get("findings")).singleElement()
+                .satisfies(f -> assertThat(f).containsEntry("signal", "LOOKALIKE-DOMAIN").containsEntry("weight", 35));
+        assertThat(plain).containsEntry("headline", "This email looks suspicious.");
+        assertThat((List<Map<String, Object>>) plain.get("reasons")).singleElement()
+                .satisfies(r -> assertThat(r).containsEntry("evidence", "E1"));
+    }
+
+    @Test
+    void aReportMayLeaveTheAiLineOut() throws Exception {
+        Integer id = submitWithReport(report(LOOKALIKE_FINDING, "", "", null));
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+    }
+
+    /** Each of these makes a report say something the stored evidence does not: the investigation ends in error. */
+    @Test
+    void aReportThatDoesNotMatchTheEvidenceEndsInError() throws Exception {
+        List<String> lies = List.of(
+                // a finding that was never recorded
+                report(LOOKALIKE_FINDING.replace("LOOKALIKE-DOMAIN", "CEO-FRAUD"), "", "", null),
+                report(LOOKALIKE_FINDING.replace("\"E1\"", "\"E2\""), "", "", null),
+                // a recorded finding with its words, weight or technique changed
+                report(LOOKALIKE_FINDING.replace("imitates paypal.com", "is confirmed fraud"), "", "", null),
+                report(LOOKALIKE_FINDING.replace("\"weight\":35", "\"weight\":5"), "", "", null),
+                report(LOOKALIKE_FINDING.replace("T1583.001", "T1078"), "", "", null),
+                // the plain reason reworded
+                report("", "", LOOKALIKE_REASON.replace("made to look like", "the real"), null),
+                // a technique no finding has
+                report(LOOKALIKE_FINDING, "\"T1078\"", "", null));
+        for (String lie : lies) {
+            Integer id = submitWithReport(lie);
+            assertThat(finalStatusOf(id)).as(lie).isEqualTo("error");
+            assertThat(verdictCount(id)).as("nothing is saved for a report that lies").isZero();
+        }
+    }
+
+    @Test
+    void anAiLineThatBreaksTheRulesEndsInError() throws Exception {
+        List<String> lines = List.of(
+                "A look-alike domain with no citation.",
+                "A look-alike domain [E7].",                                  // cites evidence that does not exist
+                "A look-alike domain [E1, E7].",                              // ... even inside a list
+                "Confirm at https://paypa1.example/login [E1].",              // a link
+                "Call +15555550142 to confirm [E1].",                         // a number
+                "This email is safe to ignore [E1].");                        // calls a malicious incident safe
+        for (String line : lines) {
+            Integer id = submitWithReport(report(LOOKALIKE_FINDING, "", "", line));
+            assertThat(finalStatusOf(id)).as(line).isEqualTo("error");
+        }
+    }
+
+    @Test
+    void anAiLineMayCiteSeveralItemsInOneBracketAndMayCallTheImitatedBrandLegitimate() throws Exception {
+        Integer id = submitWithReport(report(LOOKALIKE_FINDING, "", "",
+                "A website imitating a legitimate payment brand, on attacker lists [E1, E1]."));
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+    }
+
+    @Test
+    void reportsMustComeOnceAndAfterTheVerdict() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + COMPLETE_LINE);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("missing").isEqualTo("error");
+
+        agentAnswers(MALICIOUS_EVIDENCE + NO_FINDINGS_REPORT + MALICIOUS_VERDICT + COMPLETE_LINE);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("before the verdict").isEqualTo("error");
+
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + NO_FINDINGS_REPORT + NO_FINDINGS_REPORT + COMPLETE_LINE);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("twice").isEqualTo("error");
+    }
+
+    @Test
+    void aReportWithAnExtraFieldIsRejected() {
+        agentAnswers(MALICIOUS_VERDICT + NO_FINDINGS_REPORT.replace("\"techniques\"", "\"approvedBy\":\"ciso\",\"techniques\"")
+                + COMPLETE_LINE);
+        assertTheAnswerIsRejected("not valid");
+    }
+
+    private Integer verdictCount(Integer incidentId) {
+        return jdbc.queryForObject("SELECT count(*) FROM verdicts WHERE incident_id = ?", Integer.class, incidentId);
     }
 
     @Test
