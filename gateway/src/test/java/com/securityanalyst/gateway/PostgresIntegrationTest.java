@@ -40,6 +40,9 @@ public abstract class PostgresIntegrationTest {
     /** A fresh random agent service token for each test run. */
     protected static final String TEST_AGENT_TOKEN = randomKey();
 
+    /** A fresh random audit chain key for each test run. */
+    protected static final String TEST_AUDIT_KEY = randomKey();
+
     private static EmbeddedPostgres start() {
         try {
             return EmbeddedPostgres.builder().start();
@@ -62,5 +65,6 @@ public abstract class PostgresIntegrationTest {
         registry.add("security.jwt.signing-key", () -> TEST_JWT_KEY);
         registry.add("security.baseline.encryption-key", () -> TEST_BASELINE_KEY);
         registry.add("agent.service-token", () -> TEST_AGENT_TOKEN);
+        registry.add("security.audit.hmac-key", () -> TEST_AUDIT_KEY);
     }
 }

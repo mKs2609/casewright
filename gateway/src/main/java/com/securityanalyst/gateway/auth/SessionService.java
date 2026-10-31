@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.common.ApiException;
 
 /**
@@ -35,14 +37,16 @@ public class SessionService {
     private final RefreshTokenRepository refreshTokens;
     private final UserRepository users;
     private final JwtService jwtService;
+    private final AuditLog audit;
     private final Duration refreshLifetime;
     private final SecureRandom random = new SecureRandom();
 
-    public SessionService(RefreshTokenRepository refreshTokens, UserRepository users, JwtService jwtService,
+    public SessionService(RefreshTokenRepository refreshTokens, UserRepository users, JwtService jwtService, AuditLog audit,
             @Value("${security.refresh-token-days}") long refreshTokenDays) {
         this.refreshTokens = refreshTokens;
         this.users = users;
         this.jwtService = jwtService;
+        this.audit = audit;
         this.refreshLifetime = Duration.ofDays(refreshTokenDays);
     }
 
@@ -54,6 +58,7 @@ public class SessionService {
     @Transactional
     public Tokens start(User user) {
         refreshTokens.deleteExpiredForUser(user.getId(), Instant.now());
+        audit.record(user.getUsername(), "auth.login", null, Map.of());
         return issue(user, UUID.randomUUID());
     }
 
@@ -81,6 +86,7 @@ public class SessionService {
         if (alreadyUsed) {
             refreshTokens.revokeFamily(current.getFamilyId(), now);
             log.warn("Refresh token reuse detected for user id {}; the whole session was revoked", current.getUserId());
+            audit.record(usernameOf(current.getUserId()), "auth.session_reuse", null, Map.of());
             throw sessionExpired();
         }
         if (current.getExpiresAt().isBefore(now)) {
@@ -97,14 +103,20 @@ public class SessionService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             return;
         }
-        refreshTokens.findByTokenHash(fingerprint(rawRefreshToken))
-                .ifPresent(token -> refreshTokens.revokeFamily(token.getFamilyId(), Instant.now()));
+        refreshTokens.findByTokenHash(fingerprint(rawRefreshToken)).ifPresent(token -> {
+            refreshTokens.revokeFamily(token.getFamilyId(), Instant.now());
+            audit.record(usernameOf(token.getUserId()), "auth.logout", null, Map.of());
+        });
     }
 
     /** Called when a user's role changes: all their sessions must be renewed by logging in again. */
     @Transactional
     public void endAllFor(Long userId) {
         refreshTokens.revokeAllForUser(userId, Instant.now());
+    }
+
+    private String usernameOf(Long userId) {
+        return users.findById(userId).map(User::getUsername).orElse(AuditLog.UNKNOWN_USER);
     }
 
     public Duration refreshLifetime() {

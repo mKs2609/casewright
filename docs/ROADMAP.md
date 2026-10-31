@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-10-29
+**Last updated:** 2026-10-31
 
 One feature at a time. A step is finished only when it is **built, explained, tested, and committed by Mohit**.
 The code is public on GitHub; every step reaches `main` through a pull request (see [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md)).
@@ -26,8 +26,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 10b | **Related incidents** | Storing indicators, cross-incident correlation | Each incident's indicators are stored; the agent is told which recent incidents share them and reports `RELATED-INCIDENTS` | ✅ |
 | 11 | **Risk score, verdict, rule engine** | Combining evidence, deterministic verdicts | All six scenarios reach the expected verdict with no LLM | ✅ |
 | 12 | **LLM reasoning agent** | Tool calling with an LLM, prompt-injection defence, schema-validated output | The LLM drives the tools; red-team suite passes; fallback works when the LLM is off | ✅ |
-| 13 | **Dual explanation** | Generating two views from one source | SOC and plain reports are produced; every finding cites existing evidence | 🟡 |
-| 14 | **Audit log** | Hash chains, HMAC | Every event is logged; editing a row makes verification fail | ⬜ |
+| 13 | **Dual explanation** | Generating two views from one source | SOC and plain reports are produced; every finding cites existing evidence | ✅ |
+| 14 | **Audit log** | Hash chains, HMAC | Every event is logged; editing a row makes verification fail | 🟡 |
 | 15 | **Human approval** | State machines, separation of duties | High-risk actions wait as `pending`; approve/reject is audited; expiry and self-approval rules hold | ⬜ |
 | 16 | **Dashboard + live stream** | React, WebSocket auth, safe rendering, the design system | Investigation appears live; steps are clickable; both reports render; approval works from the UI | ⬜ |
 | 17 | **Demo scenarios + red-team probe** | Building a reliable demo | "Attempt breach" and the other scenarios run from the UI; the probe shows every hijack attempt blocked | ⬜ |

@@ -19,7 +19,7 @@ public class RequiredSettingsCheck implements ApplicationListener<ApplicationEnv
 
     static final List<String> REQUIRED =
             List.of("DB_URL", "DB_USER", "DB_PASSWORD", "JWT_SIGNING_KEY", "SSL_KEYSTORE_PASSWORD",
-                    "BASELINE_ENCRYPTION_KEY", "AGENT_SERVICE_TOKEN");
+                    "BASELINE_ENCRYPTION_KEY", "AGENT_SERVICE_TOKEN", "AUDIT_HMAC_KEY");
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {

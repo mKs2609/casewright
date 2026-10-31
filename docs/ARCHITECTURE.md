@@ -123,7 +123,7 @@ erDiagram
 | `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `soc_report`, `plain_report` (JSONB, step 13, checked against the stored evidence), `created_at` |
 | `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
 | `enforcement` | What the (simulated) enforcement layer has done. | `id`, `action_id`, `action`, `target`, `created_at` |
-| `audit_log` | Tamper-evident history. | `seq`, `ts`, `actor`, `event`, `incident_id`, `data`, `prev_hash`, `hash` |
+| `audit_log` | Tamper-evident, append-only history (ADR-46). | `seq` (no gaps), `ts`, `actor`, `event`, `incident_id` (no foreign key), `data`, `prev_hash`, `hash` |
 
 Incident status: `queued → investigating → awaiting_approval | needs_review | closed | error`. Since step 11: benign verdicts close the incident; suspicious, malicious and disagreements go to `needs_review`; `awaiting_approval` arrives with human approval (step 15).
 
@@ -147,8 +147,8 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | GET | `/api/incidents` | any | List incidents |
 | GET | `/api/incidents/{id}` | any | Incident + evidence (since step 9) + verdict + actions |
 | POST | `/api/actions/{id}/decision` | ANALYST+ | Approve or reject |
-| GET | `/api/audit` | any | Recent audit entries |
-| GET | `/api/audit/verify` | any | Check the hash chain |
+| GET | `/api/audit?limit=100` | any | Recent audit entries, newest first (at most 500) |
+| GET | `/api/audit/verify` | any | Walk the hash chain: valid or not, entries, head entry and hash, where it broke |
 | POST | `/api/demo/{scenario}` | ANALYST+ | Fire a simulated incident |
 | WS | `/ws` | any | Live event stream |
 
@@ -195,7 +195,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 |---|---|---|
 | `DB_URL`, `DB_USER`, `DB_PASSWORD` | gateway | PostgreSQL connection |
 | `JWT_SIGNING_KEY` | gateway | Signs access tokens (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
-| `AUDIT_HMAC_KEY` | gateway | Keys the audit chain |
+| `AUDIT_HMAC_KEY` | gateway | Signs the audit chain (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`; never change it, or existing entries fail verification) |
 | `BASELINE_ENCRYPTION_KEY` | gateway | Encrypts baselines at rest (exactly 32 random bytes, Base64; created by `scripts\setup-secrets.ps1`) |
 | `AGENT_SERVICE_TOKEN` | gateway, agent | Authenticates gateway → agent calls (32+ random bytes, Base64; created by `scripts\setup-secrets.ps1`; both read it from `.env`) |
 | `LLM_PROVIDER`, `LLM_MODEL`, `OLLAMA_URL` (not secret) | agent | The local AI model: `off` (default, rule engine only) or `ollama`; the model name; its address, which must be on this machine (ADR-15) |

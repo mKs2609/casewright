@@ -1,6 +1,7 @@
 package com.securityanalyst.gateway.auth;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.common.ApiException;
 import com.securityanalyst.gateway.common.TooManyRequestsException;
 
@@ -20,6 +22,7 @@ public class AuthService {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
     private final LoginThrottle loginThrottle;
+    private final AuditLog audit;
 
     /**
      * A hash of a random value nobody knows. When a login names a user that
@@ -28,10 +31,11 @@ public class AuthService {
      */
     private final String dummyHash;
 
-    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, LoginThrottle loginThrottle) {
+    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, LoginThrottle loginThrottle, AuditLog audit) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.loginThrottle = loginThrottle;
+        this.audit = audit;
         this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -45,16 +49,22 @@ public class AuthService {
         }
         // Every new account is a VIEWER. Higher roles are granted by an admin, never self-assigned.
         User user = new User(request.username(), passwordEncoder.encode(request.password()), Role.VIEWER);
+        User saved;
         try {
-            return users.saveAndFlush(user);
+            saved = users.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
             // Two signups for the same name at the same moment: the database's
             // unique constraint lets exactly one through.
             throw usernameTaken();
         }
+        audit.record(saved.getUsername(), "auth.signup", null, Map.of());
+        return saved;
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Not @Transactional: a refused login must still leave its audit entry, and a transaction
+     * around this method would undo that entry when the refusal is thrown.
+     */
     public User login(LoginRequest request) {
         // Before anything else: while a username has to wait, its password is not even checked.
         Duration wait = loginThrottle.tryAttempt(request.username());
@@ -65,6 +75,8 @@ public class AuthService {
         String hash = user.map(User::getPasswordHash).orElse(dummyHash);
         boolean passwordMatches = passwordEncoder.matches(request.password(), hash);
         if (user.isEmpty() || !passwordMatches) {
+            // Only a real account's name is recorded: people sometimes type their password as the username.
+            audit.record(user.map(User::getUsername).orElse(AuditLog.UNKNOWN_USER), "auth.login_failed", null, Map.of());
             // One message for both cases, so an attacker can't tell them apart.
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }

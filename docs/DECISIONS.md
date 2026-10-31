@@ -326,3 +326,17 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** a report the employee acts on must never say something the evidence does not, and must never carry attacker text. Code-built reports are traceable by construction and identical with the AI on or off; the one AI line adds a readable overview for analysts where a mistake costs least.
 **Alternatives considered:** reports written by the AI and checked by code (more natural, but a citation check proves only that an ID exists, not that the sentence is true); no AI text at all.
 **Trade-offs:** fixed wording is less varied. The copy check catches verbatim copying, not rewording; rewording still has to pass the other checks. In the live run 4 of 5 AI lines were kept; the fifth was too long.
+
+## ADR-46: How the audit log works
+**Status:** Accepted (failed-login names and the head record chosen by Mohit, 2026-10-30)
+**Decision:**
+- Builds on ADR-11. `audit_log` holds one row per event; `hash` is HMAC-SHA256 (key `AUDIT_HMAC_KEY`, never in the database) over the entry and the previous entry's hash. `seq` is assigned by the gateway under a PostgreSQL advisory lock, so it has no gaps. `incident_id` has no foreign key: the history outlives what it describes.
+- `AuditLog.record` joins the caller's transaction, so an action and its entry are saved together or not at all. `AuthService.login` runs without a transaction so that a refused login's entry commits before the refusal is thrown.
+- Recorded: signup, login, failed login, logout, refresh-token reuse, role changes, incident submissions, status changes, every tool call (accepted or refused), verdicts. Approvals join in step 15. Entries hold short facts only: never incident text, tool arguments (they can hold incident text) or anything the agent wrote.
+- A failed login names the account only if it exists; otherwise the actor is `(unknown user)`, because people sometimes type their password into the username box. Built-in actors have parentheses, which usernames cannot contain, so nobody can sign up as `(system)`.
+- A database trigger refuses `UPDATE`, `DELETE` and `TRUNCATE`. The application's role owns the table and could switch the trigger off (ADR-18), which the chain then catches.
+- A chain cannot show its newest entries being cut off, because nothing comes after them. So after each commit the latest entry number and hash go to `gateway/logs/gateway.log`, a record outside the database. Comparing it with `GET /api/audit/verify` is a manual step for now.
+
+**Why:** the audit log is the proof of who decided what, so it must hold up against someone with full database access.
+**Alternatives considered:** an entry for every failed login's typed username (more detail, but could store a mistyped password forever); a separate transaction for each entry (entries could describe actions that were then rolled back).
+**Trade-offs:** adding an entry is one-at-a-time across the whole system, acceptable at this volume. Someone with both database access and the key can still rewrite the chain, except for what the log file saw. Entries cannot be deleted, so test users from live runs stay in the development history. Changing `AUDIT_HMAC_KEY` makes every existing entry fail verification.

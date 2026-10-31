@@ -29,7 +29,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 ## C. Secrets & dependencies
 | Item | Status | Notes |
 |---|---|---|
-| All secrets in env vars, never in code | 🟡 | `.gitignore` blocks `.env`, keys and certs. Database credentials and the token-signing key come from `.env` / environment only; the gateway refuses to start if any is missing, or if the signing key is shorter than 32 bytes. Tests use their own random key. More secrets arrive in later steps. |
+| All secrets in env vars, never in code | 🟡 | `.gitignore` blocks `.env`, keys and certs. Database credentials and the token-signing key come from `.env` / environment only; the gateway refuses to start if any is missing, or if the signing key is shorter than 32 bytes. `AUDIT_HMAC_KEY` follows the same rules. Tests use their own random keys. |
 | Pre-commit secret scanning | ⬜ | |
 | Nothing sensitive in the frontend bundle | ⬜ | |
 | Dependency audit (Maven, pip, npm) with findings table | ⬜ | Python packages are pinned to exact versions, including indirect ones (`agent/requirements*.txt`). Audit and hash pinning in step 18. |
@@ -41,7 +41,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Application uses a non-superuser database role | 🟡 | `scripts/setup-db.sql` creates `secanalyst_app` with no superuser, create-database or create-role rights. Checked by hand against a throwaway instance; no automated test. |
 | Parameterised queries only | 🟡 | All queries so far use bound parameters. Database constraints reject malformed usernames (`AppUsersMigrationTest`). |
 | Sensitive fields encrypted at rest | 🟡 | Employee baselines: AES-256-GCM in the gateway, key from `BASELINE_ENCRYPTION_KEY`, random nonce per write, identity bound as associated data, tampering detected (ADR-37). Evidence never copies baseline values, only differences from them (ADR-41). Tests: `BaselineCipherTest`, `MonitoredIdentitiesTest`, `agent/tests/test_baseline_check.py`. Incident payloads are not encrypted (they are what analysts read); revisit before real data. |
-| Tamper-evident (hash-chained) audit log | ⬜ | |
+| Tamper-evident (hash-chained) audit log | ✅ | Each entry's HMAC-SHA256 covers the entry and the previous hash; the key is outside the database; `GET /api/audit/verify` reports the first break. A trigger refuses update, delete and truncate. The chain cannot show the newest entries being cut off, so the latest position also goes to the log file; comparing them is manual (ADR-46). Entries never hold incident text, tool arguments or a mistyped password. Tests: `AuditChainTest` (tampering with every field, missing entries, a forged key), `AuditEventsTest`, `InvestigationTest`; 14 mutation checks. |
 
 ## E. File uploads
 | Item | Status | Notes |

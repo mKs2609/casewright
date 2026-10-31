@@ -4,7 +4,7 @@
 #
 # Safe to run again: a secret that already exists in .env is never changed
 # (changing the signing key would log everybody out; changing the baseline key would make
-# every stored baseline unreadable).
+# every stored baseline unreadable; changing the audit key would make the audit chain fail).
 # The values are random, are never printed, and .env is ignored by git.
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +17,7 @@ $secrets = [ordered]@{
     "SSL_KEYSTORE_PASSWORD" = 24   # protects the HTTPS keystore made by setup-https.ps1
     "BASELINE_ENCRYPTION_KEY" = 32 # encrypts employee baselines (AES-256 needs exactly 32 bytes)
     "AGENT_SERVICE_TOKEN" = 32     # the gateway proves itself to the agent service with this
+    "AUDIT_HMAC_KEY" = 32          # signs the audit chain, so the database alone cannot rewrite it
 }
 
 $lines = @()

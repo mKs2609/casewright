@@ -2,6 +2,7 @@ package com.securityanalyst.gateway.auth;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.common.ApiException;
 
 import jakarta.validation.Valid;
@@ -29,10 +31,12 @@ public class AdminUserController {
 
     private final UserRepository users;
     private final SessionService sessionService;
+    private final AuditLog audit;
 
-    public AdminUserController(UserRepository users, SessionService sessionService) {
+    public AdminUserController(UserRepository users, SessionService sessionService, AuditLog audit) {
         this.users = users;
         this.sessionService = sessionService;
+        this.audit = audit;
     }
 
     public record UserSummary(Long id, String username, Role role, Instant createdAt) {
@@ -60,6 +64,8 @@ public class AdminUserController {
         }
         User user = users.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found"));
+        audit.record(admin.username(), "auth.role_changed", null, Map.of("user", user.getUsername(),
+                "from", user.getRole().name(), "to", request.role().name()));
         user.setRole(request.role());
         // Their current sessions carry the old role, so end them: they must log in again.
         sessionService.endAllFor(user.getId());

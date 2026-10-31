@@ -83,6 +83,8 @@ cd gateway
 
 ## Running the agent
 
+The gateway keeps a tamper-evident audit log: `GET /api/audit` shows recent entries and `GET /api/audit/verify` checks the chain. If you already have a `.env`, run `setup-secrets.ps1` again to add its key.
+
 The agent is a separate Python service (3.14) that the gateway calls to investigate each incident. It listens on this machine only and accepts calls only from the gateway, which proves itself with `AGENT_SERVICE_TOKEN` from `.env` (created by `setup-secrets.ps1`).
 
 One-time setup, from the `agent` folder:

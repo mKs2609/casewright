@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.audit.AuditLog;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -27,10 +29,12 @@ public class EvidenceService {
 
     private final EvidenceRepository evidence;
     private final JsonMapper json;
+    private final AuditLog audit;
 
-    public EvidenceService(EvidenceRepository evidence, JsonMapper json) {
+    public EvidenceService(EvidenceRepository evidence, JsonMapper json, AuditLog audit) {
         this.evidence = evidence;
         this.json = json;
+        this.audit = audit;
     }
 
     @Transactional
@@ -38,11 +42,14 @@ public class EvidenceService {
             JsonNode result, List<?> signals) {
         evidence.save(Evidence.accepted(incidentId, label, tool, json.writeValueAsString(args), summary,
                 json.writeValueAsString(result), json.writeValueAsString(signals)));
+        // The label and tool only: arguments can hold text from the incident.
+        audit.record(AuditLog.AGENT, "tool.call", incidentId, Map.of("label", label, "tool", tool, "outcome", "accepted"));
     }
 
     @Transactional
     public void recordRejected(Long incidentId, String label, String tool, Map<String, String> args, String reason) {
         evidence.save(Evidence.rejected(incidentId, label, tool, json.writeValueAsString(args), reason));
+        audit.record(AuditLog.AGENT, "tool.call", incidentId, Map.of("label", label, "tool", tool, "outcome", "refused"));
     }
 
     /** One finding as stored: its kind and weight. */

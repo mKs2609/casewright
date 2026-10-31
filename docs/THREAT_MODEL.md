@@ -90,7 +90,9 @@ flowchart LR
 | Threat | Control | Step |
 |---|---|---|
 | SQL injection | Parameterised queries only (JPA / prepared statements) | 2 |
-| Insider edits the audit log | HMAC hash chain with the key outside the database; verify endpoint | 14 |
+| Insider edits the audit log | Append-only trigger; HMAC hash chain with the key outside the database; verify endpoint | 14 |
+| Insider cuts the newest entries off the audit log | The chain cannot show this; the latest position goes to the log file after every entry, for comparison with the verify result (ADR-46) | 14 |
+| A password ends up in the audit log | Failed logins name real accounts only; entries hold short facts, never incident text or tool arguments | 14 |
 | Database dump exposes personal data | Passwords hashed; tokens hashed; baselines encrypted | 3, 4, 7 |
 | Over-privileged database account | Application uses a non-superuser role limited to its own schema | 2 |
 
@@ -119,7 +121,7 @@ flowchart LR
 - Enforcement is simulated.
 - A single shared service token rather than mutual TLS between services.
 - One database role both runs migrations and serves queries (ADR-18). It is not a superuser, but it can alter its own tables.
-- The audit chain head is not anchored outside the system (planned as stretch).
+- The audit chain's position is recorded only in a local log file, and comparing the two is manual. Someone with database access, the key and that file could rewrite history.
 
 ## 7. How we test the model
 
