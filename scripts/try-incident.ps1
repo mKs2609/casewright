@@ -65,7 +65,16 @@ if ($detail.verdict) {
     "   verdict: $($v.verdict) $($v.attackType), risk $($v.riskScore)/100, engine $($v.engine), $($detail.evidence.Count) evidence item(s)"
 }
 
-"`n4. Log out"
+"`n4. Check the audit log's chain"
+$check = Send GET "/api/audit/verify"
+if ($check.valid) {
+    "   valid: $($check.entries) entries, newest is number $($check.headSeq)"
+    "   (compare with the last 'Audit head' line in gateway\logs\gateway.log)"
+} else {
+    "   BROKEN at entry $($check.brokenAt): $($check.problem)"
+}
+
+"`n5. Log out"
 $null = Send POST "/api/auth/logout"
 if ($last -eq "error") {
     "   done. The investigation failed; the gateway's log says why (search for 'Incident $($created.id):')."

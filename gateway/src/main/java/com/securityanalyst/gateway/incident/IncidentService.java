@@ -1,12 +1,14 @@
 package com.securityanalyst.gateway.incident;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.auth.AuthenticatedUser;
 import com.securityanalyst.gateway.auth.UserRepository;
 import com.securityanalyst.gateway.common.ApiException;
@@ -28,9 +30,11 @@ public class IncidentService {
     private final ApplicationEventPublisher events;
     private final EvidenceService evidence;
     private final VerdictService verdicts;
+    private final AuditLog audit;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
-            JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence, VerdictService verdicts) {
+            JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence, VerdictService verdicts,
+            AuditLog audit) {
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
@@ -38,6 +42,7 @@ public class IncidentService {
         this.events = events;
         this.evidence = evidence;
         this.verdicts = verdicts;
+        this.audit = audit;
     }
 
     @Transactional
@@ -57,6 +62,8 @@ public class IncidentService {
         Incident incident = new Incident(kind, subject, payload, Incident.SOURCE_API,
                 users.getReferenceById(submittedBy.id()));
         Incident saved = incidents.saveAndFlush(incident);
+        audit.record(submittedBy.username(), "incident.submitted", saved.getId(),
+                Map.of("kind", kind, "subject", subject.getIdentity()));
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
         return IncidentResponses.Detail.from(saved, json, List.of(), null);
@@ -83,6 +90,7 @@ public class IncidentService {
     @Transactional
     public void updateStatus(Long id, String status) {
         incidents.updateStatus(id, status);
+        audit.record(AuditLog.SYSTEM, "incident.status", id, Map.of("status", status));
     }
 
     @Transactional(readOnly = true)

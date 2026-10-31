@@ -25,6 +25,9 @@ Plain-language meanings of the terms used in this project.
 | **Audit log** | A permanent record of who did what and when. |
 | **Hash chain** | A log where each entry includes a fingerprint of the previous one, so edits are detectable. |
 | **HMAC** | A fingerprint that can only be produced with a secret key. |
+| **Append-only** | Entries can be added but never changed or removed. |
+| **Advisory lock** | A lock in PostgreSQL that means whatever the application decides, here "one audit entry at a time". |
+| **Chain head** | The newest entry of a hash chain and its hash. |
 | **STRIDE** | A checklist of threat types: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege. |
 | **Threat model** | A structured list of what could go wrong and how we prevent it. |
 | **Least privilege** | Giving each part only the access it needs. |

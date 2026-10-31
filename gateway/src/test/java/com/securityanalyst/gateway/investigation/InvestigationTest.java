@@ -713,6 +713,39 @@ class InvestigationTest extends PostgresIntegrationTest {
         return jdbc.queryForObject("SELECT count(*) FROM verdicts WHERE incident_id = ?", Integer.class, incidentId);
     }
 
+    // ------------------------------------------------------------------ the audit log (step 14)
+
+    @Test
+    void anInvestigationLeavesItsHistoryInTheAuditLogWithoutAnyIncidentText() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + REFUSED + MALICIOUS_VERDICT + NO_FINDINGS_REPORT + COMPLETE_LINE);
+
+        Integer id = submitAnEmailIncident();
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+
+        List<Map<String, Object>> entries = jdbc.queryForList(
+                "SELECT actor, event, data::text AS data FROM audit_log WHERE incident_id = ? ORDER BY seq", id);
+        assertThat(entries).extracting(e -> e.get("event")).containsExactly("incident.submitted", "incident.status",
+                "tool.call", "tool.call", "verdict.recorded", "incident.status");
+        assertThat(entries).extracting(e -> e.get("actor")).containsExactly("ivy.analyst", "(system)", "(agent)", "(agent)",
+                "(agent)", "(system)");
+        assertThat((String) entries.get(4).get("data")).contains("\"verdict\": \"malicious\"", "\"engine\": \"llm\"");
+        // Neither the incident's words nor the refused call's arguments end up in the permanent record.
+        assertThat(entries.toString()).doesNotContain("Verify your password", "attacker-server.example");
+    }
+
+    @Test
+    void aFailedInvestigationIsRecordedToo() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + COMPLETE_LINE);   // no reports
+
+        Integer id = submitAnEmailIncident();
+        assertThat(finalStatusOf(id)).isEqualTo("error");
+
+        assertThat(jdbc.queryForList("SELECT data::text FROM audit_log WHERE incident_id = ? AND event = 'incident.status' "
+                + "ORDER BY seq DESC LIMIT 1", String.class, id)).singleElement().asString().contains("error");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE incident_id = ? AND event = 'verdict.recorded'",
+                Integer.class, id)).isZero();
+    }
+
     @Test
     void anAgentThatGoesSilentIsCutOffAtTheDeadline() {
         pauseBeforeLastLine = Duration.ofSeconds(20);

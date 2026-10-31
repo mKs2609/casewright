@@ -2,12 +2,14 @@ package com.securityanalyst.gateway.verdict;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.evidence.EvidenceService;
 
 import tools.jackson.databind.JsonNode;
@@ -48,11 +50,13 @@ public class VerdictService {
     private final EvidenceService evidence;
     private final JdbcTemplate jdbc;
     private final JsonMapper json;
+    private final AuditLog audit;
 
-    public VerdictService(EvidenceService evidence, JdbcTemplate jdbc, JsonMapper json) {
+    public VerdictService(EvidenceService evidence, JdbcTemplate jdbc, JsonMapper json, AuditLog audit) {
         this.evidence = evidence;
         this.jdbc = jdbc;
         this.json = json;
+        this.audit = audit;
     }
 
     /**
@@ -84,6 +88,10 @@ public class VerdictService {
                 incidentId, decision.verdict(), decision.attackType(), decision.riskScore(), claim.verdict(),
                 claim.riskScore(), decision.disagreement(), claim.engine(), json.writeValueAsString(claim.citedEvidence()),
                 claim.counterfactual(), json.writeValueAsString(reports.soc()), json.writeValueAsString(reports.plain()));
+        audit.record(AuditLog.AGENT, "verdict.recorded", incidentId, Map.of("verdict", decision.verdict(),
+                "attackType", decision.attackType(), "riskScore", String.valueOf(decision.riskScore()),
+                "agentVerdict", claim.verdict(), "disagreement", String.valueOf(decision.disagreement()),
+                "engine", claim.engine()));
     }
 
     @Transactional(readOnly = true)
