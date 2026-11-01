@@ -128,7 +128,8 @@ class InvestigationTest extends PostgresIntegrationTest {
     private static final String NO_FINDINGS_REPORT = report("", "", "", null);
 
     /** Reports, then complete: what follows the verdict. */
-    private static final String COMPLETE_ONLY = NO_FINDINGS_REPORT
+    private static final String NO_ACTIONS = "{\"type\":\"actions.proposed\",\"actions\":[]}\n";
+    private static final String COMPLETE_ONLY = NO_FINDINGS_REPORT + NO_ACTIONS
             + "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
 
     /** The usual ending: a cautious verdict (allowed: an agent may be more careful than its evidence), then complete. */
@@ -274,10 +275,11 @@ class InvestigationTest extends PostgresIntegrationTest {
         AgentEvent.Complete result = agentClient.investigate(someRequest(), seen::add);
 
         assertThat(result.result()).isEqualTo("needs_review");
-        assertThat(seen).hasSize(4);
+        assertThat(seen).hasSize(5);
         assertThat(seen.getFirst()).isEqualTo(new AgentEvent.Thought("Looking at the sender"));
         assertThat(seen.get(1)).isInstanceOf(AgentEvent.Verdict.class);
         assertThat(seen.get(2)).isInstanceOf(AgentEvent.Report.class);
+        assertThat(seen.get(3)).isInstanceOf(AgentEvent.Actions.class);
         assertThat(seen.getLast()).isEqualTo(result);
     }
 
@@ -611,8 +613,8 @@ class InvestigationTest extends PostgresIntegrationTest {
     private static final String LOOKALIKE_REASON = "{\"evidence\":\"E1\",\"signal\":\"LOOKALIKE-DOMAIN\","
             + "\"text\":\"The address is made to look like paypal.com, but it isn't.\"}";
     private static final String MALICIOUS_VERDICT = verdict("malicious", "phishing", 70, "\"E1\"");
-    private static final String COMPLETE_LINE =
-            "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"llm\"}\n";
+    private static final String COMPLETE_LINE = NO_ACTIONS
+            + "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"llm\"}\n";
 
     private Integer submitWithReport(String report) throws Exception {
         agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + report + COMPLETE_LINE);
@@ -692,7 +694,7 @@ class InvestigationTest extends PostgresIntegrationTest {
 
     @Test
     void reportsMustComeOnceAndAfterTheVerdict() throws Exception {
-        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + COMPLETE_LINE);
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + COMPLETE_LINE);   // actions, but no reports
         assertThat(finalStatusOf(submitAnEmailIncident())).as("missing").isEqualTo("error");
 
         agentAnswers(MALICIOUS_EVIDENCE + NO_FINDINGS_REPORT + MALICIOUS_VERDICT + COMPLETE_LINE);
@@ -744,6 +746,90 @@ class InvestigationTest extends PostgresIntegrationTest {
                 + "ORDER BY seq DESC LIMIT 1", String.class, id)).singleElement().asString().contains("error");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE incident_id = ? AND event = 'verdict.recorded'",
                 Integer.class, id)).isZero();
+    }
+
+    // ------------------------------------------------------------------ proposed actions (step 15)
+
+    private static String actions(String... entries) {
+        return "{\"type\":\"actions.proposed\",\"actions\":[" + String.join(",", entries) + "]}\n";
+    }
+
+    private static String action(String action, String target) {
+        return "{\"action\":\"" + action + "\",\"target\":\"" + target + "\",\"evidence\":\"E1\"}";
+    }
+
+    private static final String COMPLETE_END = "{\"type\":\"investigation.complete\",\"result\":\"needs_review\",\"engine\":\"rules\"}\n";
+
+    private Integer investigateWith(String proposals) throws Exception {
+        agentAnswers(indicators(PHISHING_DOMAIN.replace("paypa1-secure-login.example", "paypa1.example"))
+                + MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + NO_FINDINGS_REPORT + proposals + COMPLETE_END);
+        return submitAnEmailIncident();
+    }
+
+    @Test
+    void aHighRiskProposalWaitsAndTheIncidentSaysSo() throws Exception {
+        Integer id = investigateWith(actions(action("block_sender_domain", "paypa1.example")));
+
+        assertThat(finalStatusOf(id)).isEqualTo("awaiting_approval");
+        String detail = mvc.perform(get("/api/incidents/" + id).cookie(analyst)).andReturn().getResponse().getContentAsString();
+        assertThat((String) JsonPath.read(detail, "$.actions[0].status")).isEqualTo("pending");
+        assertThat((String) JsonPath.read(detail, "$.actions[0].risk")).isEqualTo("high");
+        assertThat((String) JsonPath.read(detail, "$.actions[0].evidence")).isEqualTo("E1");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM enforcement e JOIN actions a ON a.id = e.action_id "
+                + "WHERE a.incident_id = ?", Integer.class, id)).as("nothing happens before a person decides").isZero();
+    }
+
+    @Test
+    void lowRiskProposalsRunAtOnceAndLeaveNothingWaiting() throws Exception {
+        Integer id = investigateWith(actions(action("monitor", "priya.sharma"), action("notify_user", "priya.sharma")));
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM enforcement e JOIN actions a ON a.id = e.action_id "
+                + "WHERE a.incident_id = ?", Integer.class, id)).isEqualTo(2);
+    }
+
+    @Test
+    void aRefusedProposalIsRecordedButTheVerdictStands() throws Exception {
+        // What the hidden note in the injection email wants.
+        Integer id = investigateWith(actions(action("block_ip", "10.0.0.5")));
+
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        assertThat(verdictOf(id)).containsEntry("verdict", "malicious");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM actions WHERE incident_id = ?", Integer.class, id)).isZero();
+        assertThat(jdbc.queryForList("SELECT data::text FROM audit_log WHERE incident_id = ? AND event = 'action.refused'",
+                String.class, id)).singleElement().asString().contains("block_ip").doesNotContain("10.0.0.5");
+    }
+
+    @Test
+    void anActionOffTheListMakesTheAnswerInvalid() {
+        agentAnswers(COMPLETE.replace("\"actions\":[]", "\"actions\":[" + action("delete_mailbox", "priya.sharma") + "]"));
+        assertTheAnswerIsRejected("invalid");
+    }
+
+    @Test
+    void proposedActionsAreRequiredOnceAndAfterTheReports() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + NO_FINDINGS_REPORT + COMPLETE_END);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("missing").isEqualTo("error");
+
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + NO_ACTIONS + NO_FINDINGS_REPORT + COMPLETE_END);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("before the reports").isEqualTo("error");
+
+        agentAnswers(MALICIOUS_EVIDENCE + MALICIOUS_VERDICT + NO_FINDINGS_REPORT + NO_ACTIONS + NO_ACTIONS + COMPLETE_END);
+        assertThat(finalStatusOf(submitAnEmailIncident())).as("twice").isEqualTo("error");
+    }
+
+    @Autowired
+    private StuckInvestigations stuck;
+
+    @Test
+    void investigationsCutOffByAStoppedGatewayAreMarkedAsErrorAtStartup() throws Exception {
+        Integer id = investigateWith(actions());
+        assertThat(finalStatusOf(id)).isEqualTo("needs_review");
+        jdbc.update("UPDATE incidents SET status = 'investigating' WHERE id = ?", id);
+
+        stuck.markAsError();
+
+        assertThat(jdbc.queryForObject("SELECT status FROM incidents WHERE id = ?", String.class, id)).isEqualTo("error");
     }
 
     @Test

@@ -3,26 +3,29 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-10-31
+**Last updated:** 2026-11-01
 
 ---
 
 ## Now
 
-### Step 14: Audit log (on `feature/audit-log`)
-- [x] Append-only `audit_log` (migration V8) with an HMAC hash chain; `AUDIT_HMAC_KEY` added as a required secret
-- [x] Recorded: signup, login, failed login, logout, session reuse, role changes, submissions, status changes, tool calls, verdicts
-- [x] `GET /api/audit` and `GET /api/audit/verify`
-- [x] Failed logins name real accounts only (Mohit's choice); no incident text or tool arguments in entries
-- [x] Latest chain position written to `gateway/logs/gateway.log` after each commit (Mohit's choice)
-- [x] Tests: gateway 228 (both test orders); 14 mutation checks with a control run
-- [x] Live: chain valid on the real key, entries read back, the database refused an edit and a delete
+### Step 15: Human approval (on `feature/human-approval`)
+- [x] Code proposes actions from the findings (Mohit's choice); a new `actions.proposed` event
+- [x] The gateway's policy decides the risk and checks every target against what it stored
+- [x] Low-risk actions run at once; high-risk ones wait as `pending`, and the incident shows `awaiting_approval`
+- [x] `POST /api/actions/{id}/decision`: analysts and admins, one winner, no deciding your own account; the submitter may decide (Mohit's choice)
+- [x] Approvals expire after 24 hours, as a setting (Mohit's choice)
+- [x] Simulated enforcement table; every step in the audit log
+- [x] Incidents cut off by a stopped gateway become `error` at startup
+- [x] README brought up to date
+- [x] Tests: agent 302, gateway 287 (both test orders); 22 mutation checks with controls
+- [x] Live: AI-led run, awaiting approval, approved by a person, simulated enforcement recorded, chain valid
 - [ ] Merged
 
 ## Next
 
-### Step 15: Human approval
-High-risk actions wait as `pending`; approve and reject are audited; expiry and self-approval rules hold.
+### Step 16: Dashboard and live stream
+The investigation appears live; steps are clickable; both reports render; approval works from the screen.
 
 ## Later
 
@@ -37,6 +40,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-10-31:** Step 14 (audit log) merged: PR #14.
 - **2026-10-30:** Step 13 (dual explanation) merged: PR #13.
 - **2026-10-29:** Step 12 (LLM reasoning agent, local model) merged: PR #12.
 - **2026-10-27:** Step 11 (risk score, verdict, rule engine) merged: PR #11.

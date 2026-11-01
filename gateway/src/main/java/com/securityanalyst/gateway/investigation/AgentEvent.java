@@ -31,6 +31,7 @@ import tools.jackson.databind.JsonNode;
         @JsonSubTypes.Type(value = AgentEvent.Guardrail.class, name = "agent.guardrail"),
         @JsonSubTypes.Type(value = AgentEvent.Verdict.class, name = "verdict"),
         @JsonSubTypes.Type(value = AgentEvent.Report.class, name = "report"),
+        @JsonSubTypes.Type(value = AgentEvent.Actions.class, name = "actions.proposed"),
         @JsonSubTypes.Type(value = AgentEvent.Complete.class, name = "investigation.complete") })
 public sealed interface AgentEvent {
 
@@ -160,6 +161,20 @@ public sealed interface AgentEvent {
             @NotNull @Pattern(regexp = EVIDENCE_LABEL) String evidence,
             @NotNull @Pattern(regexp = SIGNAL_ID) String signal,
             @NotNull @Size(min = 1, max = 300) @Pattern(regexp = PRINTABLE) String text) {
+    }
+
+    /**
+     * The actions the agent proposes (step 15). An action outside this list makes the answer
+     * invalid; ActionPolicy then checks each one against the incident and the evidence.
+     */
+    record Actions(@NotNull @Size(max = 20) List<@NotNull @Valid ProposedAction> actions) implements AgentEvent {
+    }
+
+    record ProposedAction(
+            @NotNull @Pattern(regexp = "^(monitor|notify_user|force_password_reset|lock_account|block_ip|quarantine_email"
+                    + "|block_sender_domain|block_phone_number)$") String action,
+            @NotNull @Size(min = 1, max = 254) @Pattern(regexp = PRINTABLE) String target,
+            @NotNull @Pattern(regexp = EVIDENCE_LABEL) String evidence) {
     }
 
     /**

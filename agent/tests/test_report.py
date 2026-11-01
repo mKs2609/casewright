@@ -140,7 +140,7 @@ def test_the_same_evidence_always_gives_the_same_reports() -> None:
 def test_the_reports_come_after_the_verdict_and_before_complete() -> None:
     events = run("vishing_call")
 
-    kinds = [type(e).__name__ for e in events][-3:]
-    assert kinds == ["VerdictEvent", "ReportEvent", "CompleteEvent"]
+    kinds = [type(e).__name__ for e in events][-4:]
+    assert kinds == ["VerdictEvent", "ReportEvent", "ActionsEvent", "CompleteEvent"]
     assert reports(events).soc.ai_summary is None   # no AI in this run: no AI line
-    assert isinstance(events[-3], VerdictEvent)
+    assert isinstance(events[-4], VerdictEvent)

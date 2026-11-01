@@ -94,6 +94,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Submitting incidents: analysts and admins (viewers may only read):
                 .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole("ANALYST", "ADMIN")
+                // Deciding actions: the same. The server checks this; a hidden button is no control.
+                .requestMatchers(HttpMethod.POST, "/api/actions/**").hasAnyRole("ANALYST", "ADMIN")
                 // Everything else, including URLs that don't exist: must be logged in.
                 .anyRequest().authenticated())
 

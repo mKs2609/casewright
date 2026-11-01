@@ -9,9 +9,9 @@ from collections.abc import Iterator
 from app.budget import BUDGET, DailyBudget
 from app.case import Case
 from app.llm import ChatModel
-from app.models import (CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, LlmVerdict,
+from app.models import (ActionsEvent, CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, LlmVerdict,
                         ReportEvent, ThoughtEvent, VerdictEvent)
-from app import reasoning, report, summary
+from app import actions, reasoning, report, summary
 from app import verdict as decide
 from app.tools import ToolBox
 
@@ -159,5 +159,6 @@ def investigate(request: InvestigateRequest, model: ChatModel | None = None,
         "verdict": verdict, "attackType": attack, "riskScore": score,
         "citedEvidence": cited, "counterfactual": decide.counterfactual(signals)})
     yield ReportEvent(soc=soc, plain=plain)
+    yield ActionsEvent(actions=actions.propose(case, tools.steps, final, attack))
     # Closed only when both the verdict and the evidence say benign (the gateway decides finally).
     yield CompleteEvent(result="closed" if final == "benign" else "needs_review", engine=engine)

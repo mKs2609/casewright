@@ -340,3 +340,18 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the audit log is the proof of who decided what, so it must hold up against someone with full database access.
 **Alternatives considered:** an entry for every failed login's typed username (more detail, but could store a mistyped password forever); a separate transaction for each entry (entries could describe actions that were then rolled back).
 **Trade-offs:** adding an entry is one-at-a-time across the whole system, acceptable at this volume. Someone with both database access and the key can still rewrite the chain, except for what the log file saw. Entries cannot be deleted, so test users from live runs stay in the development history. Changing `AUDIT_HMAC_KEY` makes every existing entry fail verification.
+
+## ADR-47: Proposed actions and human approval
+**Status:** Accepted (the three choices by Mohit, 2026-10-31)
+**Decision:**
+- **Code proposes the actions** (`agent/app/actions.py`), from the recorded findings, the same with the AI on or off. This replaces the `proposed_actions` field the design first gave the model: text in an incident has no path to suggesting an action.
+- The gateway does not trust the proposals. `ActionPolicy` decides each one's risk and checks its target against what the gateway itself stored: identities and indicators of this incident, the sender, the caller, and a finding about that very target in the cited evidence. Internal addresses and `actions.protected-domains` can never be blocked, and a benign verdict cannot carry a high-risk action. A refused proposal is recorded in the audit log and dropped, and the verdict stands, so a bad proposal cannot hide what was found. An action off the list makes the whole answer invalid.
+- Low-risk actions (`monitor`, `notify_user`) run at once. High-risk ones start `pending` and the incident shows `awaiting_approval` until none are left, then `needs_review`. Running an action writes a row to `enforcement` (ADR-13).
+- `POST /api/actions/{id}/decision` needs ANALYST or ADMIN. An atomic update means only one of two simultaneous decisions wins, and a decision cannot be changed. Nobody decides an action targeting their own account.
+- **The person who submitted an incident may decide its actions**; the audit log shows both names. One analyst can run the system, as the demo needs.
+- **Approvals expire after 24 hours** (`actions.approval-lifetime`). A regular check and any late decision mark them expired; a late decision is refused and nothing runs.
+- Investigations left unfinished by a stopped gateway are marked `error` at startup, closing the trade-off in ADR-39.
+
+**Why:** the agent reads attacker-written text, so nothing it says can authorise anything. Enforcing this at the gateway means a fully compromised agent can still only ask.
+**Alternatives considered:** the AI also proposing actions (little gain from a small model, and one more path for injected text); requiring a second person to approve (stronger, but unusable with one analyst); ending the investigation in error on a bad proposal (would let one bad proposal hide a verdict).
+**Trade-offs:** one analyst can both submit and approve; a real deployment would want a second person. An analyst could approve something unwise: the policy limits what can be proposed, not human judgement. Expiry means a report nobody looks at within 24 hours gets no action.

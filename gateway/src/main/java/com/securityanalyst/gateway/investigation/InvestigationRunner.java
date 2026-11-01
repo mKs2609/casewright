@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.securityanalyst.gateway.action.ActionService;
 import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
 import com.securityanalyst.gateway.incident.IncidentService;
@@ -33,16 +34,19 @@ public class InvestigationRunner {
     private final EvidenceService evidence;
     private final IndicatorService indicators;
     private final VerdictService verdicts;
+    private final ActionService actions;
     private final JsonMapper json;
 
     public InvestigationRunner(IncidentService incidents, MonitoredIdentityService identities, AgentClient agent,
-            EvidenceService evidence, IndicatorService indicators, VerdictService verdicts, JsonMapper json) {
+            EvidenceService evidence, IndicatorService indicators, VerdictService verdicts, ActionService actions,
+            JsonMapper json) {
         this.incidents = incidents;
         this.identities = identities;
         this.agent = agent;
         this.evidence = evidence;
         this.indicators = indicators;
         this.verdicts = verdicts;
+        this.actions = actions;
         this.json = json;
     }
 
@@ -67,6 +71,9 @@ public class InvestigationRunner {
             if (chain.report == null) {
                 throw new AgentException("The agent finished without the reports");
             }
+            if (chain.proposed == null) {
+                throw new AgentException("The agent finished without its proposed actions");
+            }
             AgentEvent.Verdict claimed = chain.verdict;
             VerdictService.Claim claim = new VerdictService.Claim(claimed.verdict(), claimed.attackType(),
                     claimed.riskScore(), claimed.citedEvidence(), claimed.counterfactual(), result.engine());
@@ -76,14 +83,19 @@ public class InvestigationRunner {
                     decision.verdict());
             verdicts.record(incidentId, claim, decision,
                     new VerdictService.Reports(chain.report.soc(), chain.report.plain()));
-            // The status comes from the checked verdict, not from what the agent suggested.
-            incidents.updateStatus(incidentId, decision.status());
+            IncidentService.InvestigationInput input = incidents.investigationInput(incidentId);
+            int pending = actions.apply(incidentId, chain.proposed.actions().stream()
+                    .map(a -> new ActionService.Proposal(a.action(), a.target(), a.evidence())).toList(),
+                    decision.verdict(), input.subjectIdentity(), input.payloadJson());
+            // The status comes from the checked verdict and actions, not from what the agent suggested.
+            String status = pending > 0 ? "awaiting_approval" : decision.status();
+            incidents.updateStatus(incidentId, status);
             if (decision.disagreement()) {
                 log.warn("Incident {}: the agent said {} but the evidence says {} (risk {}); sent for review",
                         incidentId, claimed.verdict(), decision.verdict(), decision.riskScore());
             }
             log.info("Incident {}: {} {} (risk {}), status {}, engine {}", incidentId, decision.verdict(),
-                    decision.attackType(), decision.riskScore(), decision.status(), result.engine());
+                    decision.attackType(), decision.riskScore(), status, result.engine());
         } catch (RuntimeException e) {
             // Unexpected problems are logged in full; agent problems by their message only.
             if (e instanceof AgentException) {
@@ -108,6 +120,7 @@ public class InvestigationRunner {
         private boolean indicatorsReported;
         private AgentEvent.Verdict verdict;
         private AgentEvent.Report report;
+        private AgentEvent.Actions proposed;
 
         EvidenceChain(Long incidentId) {
             this.incidentId = incidentId;
@@ -164,6 +177,16 @@ public class InvestigationRunner {
                         throw new AgentException("The agent sent the reports twice");
                     }
                     report = reports;
+                }
+                case AgentEvent.Actions actionList -> {
+                    // After the reports, and once only.
+                    if (report == null) {
+                        throw new AgentException("The agent proposed actions before the reports");
+                    }
+                    if (proposed != null) {
+                        throw new AgentException("The agent proposed actions twice");
+                    }
+                    proposed = actionList;
                 }
                 case AgentEvent.Complete complete -> {
                     // Handled by the caller once the answer has been read to the end.
