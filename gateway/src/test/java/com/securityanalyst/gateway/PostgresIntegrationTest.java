@@ -26,7 +26,9 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
         "security.rate-limit.credential-requests-per-minute=1000000",
         "security.rate-limit.free-login-attempts=1000000",
         // No agent runs during tests: port 1 refuses at once. InvestigationTest starts a fake one.
-        "agent.base-url=http://127.0.0.1:1" })
+        "agent.base-url=http://127.0.0.1:1",
+        // The database is shared: a context starting up must not touch another test's incident.
+        "agent.recover-stuck-on-startup=false" })
 public abstract class PostgresIntegrationTest {
 
     private static final EmbeddedPostgres POSTGRES = start();

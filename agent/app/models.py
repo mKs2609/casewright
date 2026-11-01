@@ -209,6 +209,25 @@ class ReportEvent(Strict):
     plain: PlainReport
 
 
+ActionName = Literal["monitor", "notify_user", "force_password_reset", "lock_account", "block_ip",
+                     "quarantine_email", "block_sender_domain", "block_phone_number"]
+
+
+class ProposedAction(Strict):
+    """One proposed response. The gateway decides whether it is allowed, and its risk."""
+
+    action: ActionName
+    target: ShortText
+    evidence: EvidenceLabel
+
+
+class ActionsEvent(Strict):
+    """The agent's proposals (step 15), worked out by code from the findings. May be empty."""
+
+    type: Literal["actions.proposed"] = "actions.proposed"
+    actions: Annotated[list[ProposedAction], Field(max_length=20)]
+
+
 class IndicatorItem(Strict):
     type: IndicatorType
     value: ShortText
@@ -222,4 +241,4 @@ class IndicatorsEvent(Strict):
     indicators: Annotated[list[IndicatorItem], Field(max_length=200)]
 
 
-Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | VerdictEvent | ReportEvent | CompleteEvent
+Event = ThoughtEvent | IndicatorsEvent | StepEvent | GuardrailEvent | VerdictEvent | ReportEvent | ActionsEvent | CompleteEvent

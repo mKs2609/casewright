@@ -110,7 +110,6 @@ The LLM's `submit_verdict` call is parsed against this before it is trusted:
 | `attack_type` | enum | `none`, `phishing`, `credential_stuffing`, `brute_force`, `account_takeover`, `impossible_travel`, `vishing`, `prompt_injection`, `bec`, `other` |
 | `cited_evidence` | list of `E\d+` | Every ID must exist |
 | `mitre_techniques` | list | Must match `T####(.###)` or `AML.T####` |
-| `proposed_actions` | list of `{action, target}` | Validated by the action policy |
 | `counterfactual` | string ≤ 500 | What would change the verdict |
 
 Unknown fields are rejected.
@@ -138,7 +137,7 @@ The LLM can make the system more cautious, never less.
 | `block_sender_domain` | **high** | an extracted domain, with evidence | never a protected (own) domain |
 | `block_phone_number` | **high** | the caller number, with evidence | |
 
-A high-risk action proposed for a benign verdict is rejected. Rejected proposals are logged as guardrail events. The gateway applies the same allow-list again when it receives the result.
+Proposals are worked out by code from the findings (`agent/app/actions.py`, ADR-47), never by the AI. A high-risk action proposed for a benign verdict is rejected. Rejected proposals are logged as guardrail events. The gateway applies the same allow-list again when it receives the result.
 
 ## 10. Prompt-injection defences
 

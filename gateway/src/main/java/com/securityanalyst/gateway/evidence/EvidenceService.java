@@ -67,7 +67,8 @@ public class EvidenceService {
     }
 
     /** One finding as stored, with the evidence item it belongs to and its exact words. */
-    public record RecordedSignal(String evidence, String id, String label, String plain, int weight, String mitre) {
+    public record RecordedSignal(String evidence, String id, String label, String plain, int weight, String mitre,
+            String indicator) {
     }
 
     /** Every finding of the incident's accepted evidence, as stored (what reports are checked against). */
@@ -77,7 +78,8 @@ public class EvidenceService {
                 .filter(e -> Evidence.OK.equals(e.getStatus()))
                 .flatMap(e -> json.readTree(e.getSignals()).valueStream().map(signal -> new RecordedSignal(e.getLabel(),
                         signal.get("id").asString(), signal.get("label").asString(), signal.get("plain").asString(),
-                        signal.get("weight").asInt(), signal.hasNonNull("mitre") ? signal.get("mitre").asString() : null)))
+                        signal.get("weight").asInt(), signal.hasNonNull("mitre") ? signal.get("mitre").asString() : null,
+                        signal.hasNonNull("indicator") ? signal.get("indicator").asString() : null)))
                 .toList();
     }
 

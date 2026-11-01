@@ -22,6 +22,10 @@ Plain-language meanings of the terms used in this project.
 | **MITRE ATLAS** | The same idea for attacks on AI systems, with IDs like `AML.T0051`. |
 | **Prompt injection** | Text written by an attacker that tries to give instructions to an AI. |
 | **Human-in-the-loop** | A person must approve before the system acts. |
+| **Pending action** | A proposed high-risk action waiting for a person's decision. |
+| **Enforcement (simulated)** | What approving an action leads to here: a recorded row, not a real block (ADR-13). |
+| **Separation of duties** | Not letting one person both raise and approve something. Here, nobody decides an action on their own account. |
+| **Atomic update** | One database statement that either fully applies or does not, so two people at once cannot both win. |
 | **Audit log** | A permanent record of who did what and when. |
 | **Hash chain** | A log where each entry includes a fingerprint of the previous one, so edits are detectable. |
 | **HMAC** | A fingerprint that can only be produced with a secret key. |

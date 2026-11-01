@@ -87,6 +87,7 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       ├── tools.py         the allow-listed tools and the guardrail (+ one module per tool)
 │       ├── verdict.py       risk score, verdict, attack type
 │       ├── report.py        the SOC and plain reports, from the evidence
+│       ├── actions.py       proposed actions, from the findings
 │       └── summary.py       the one checked AI summary line
 ├── dashboard/      React app
 ├── docs/           this folder
@@ -121,11 +122,11 @@ erDiagram
 | `incident_indicators` | The indicators found in each incident, for correlation across incidents (ADR-42). | `incident_id`, `type` (`ip`/`domain`/`email`/`phone`), `value`; indexed on (`type`, `value`) |
 | `evidence` | One row per agent tool call, accepted (E1, E2, …) or refused (R1, R2, …). | `id`, `incident_id`, `label`, `tool`, `args` (JSONB), `status` (`ok`/`rejected`), `summary`, `result` (JSONB), `signals` (JSONB list of findings), `reason` (refused calls), `created_at`. One label per incident. |
 | `verdicts` | Final outcome of an investigation (ADR-43). | `incident_id`, `verdict`, `attack_type`, `risk_score` (recomputed by the gateway), `agent_verdict`, `agent_risk_score`, `disagreement`, `engine`, `cited_evidence`, `counterfactual`, `soc_report`, `plain_report` (JSONB, step 13, checked against the stored evidence), `created_at` |
-| `actions` | Proposed response actions and their lifecycle. | `id`, `incident_id`, `action`, `target`, `risk`, `status` (`pending`/`executed`/`rejected`/`expired`), `proposed_by`, `decided_by`, `decided_at`, `reason` |
+| `actions` | Proposed response actions and their lifecycle (ADR-47). | `id`, `incident_id`, `action`, `target`, `risk` (`low`/`high`), `status` (`pending`/`executed`/`rejected`/`expired`), `evidence`, `decided_by`, `decided_at`, `expires_at`, `created_at` |
 | `enforcement` | What the (simulated) enforcement layer has done. | `id`, `action_id`, `action`, `target`, `created_at` |
 | `audit_log` | Tamper-evident, append-only history (ADR-46). | `seq` (no gaps), `ts`, `actor`, `event`, `incident_id` (no foreign key), `data`, `prev_hash`, `hash` |
 
-Incident status: `queued → investigating → awaiting_approval | needs_review | closed | error`. Since step 11: benign verdicts close the incident; suspicious, malicious and disagreements go to `needs_review`; `awaiting_approval` arrives with human approval (step 15).
+Incident status: `queued → investigating → awaiting_approval | needs_review | closed | error`. Since step 11: benign verdicts close the incident; suspicious, malicious and disagreements go to `needs_review`; since step 15, an incident with high-risk actions waiting is `awaiting_approval`, then `needs_review` once none are left. Incidents cut off by a stopped gateway become `error` at startup.
 
 ## 5. API surface
 
@@ -146,7 +147,8 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | POST | `/api/incidents` | ANALYST+ | Submit an incident (`202 Accepted`, investigation queued) |
 | GET | `/api/incidents` | any | List incidents |
 | GET | `/api/incidents/{id}` | any | Incident + evidence (since step 9) + verdict + actions |
-| POST | `/api/actions/{id}/decision` | ANALYST+ | Approve or reject |
+| GET | `/api/actions?status=pending` | any | Actions by status, newest first (at most 100) |
+| POST | `/api/actions/{id}/decision` | ANALYST+ | `{"decision": "approve"}` or `"reject"`. `409` if already decided or expired; `403` on your own account |
 | GET | `/api/audit?limit=100` | any | Recent audit entries, newest first (at most 500) |
 | GET | `/api/audit/verify` | any | Walk the hash chain: valid or not, entries, head entry and hash, where it broke |
 | POST | `/api/demo/{scenario}` | ANALYST+ | Fire a simulated incident |
@@ -171,6 +173,7 @@ Every internal request carries `Authorization: Bearer <AGENT_SERVICE_TOKEN>`. Th
 | `agent.step` | A completed tool call (an evidence item: label, tool, args, summary, result, signals); the running risk score is added in step 11 |
 | `agent.guardrail` | A tool call or action that was **blocked** (label R1, R2, …), with the reason |
 | `verdict` | Final verdict available (agent → gateway: verdict, attack type, risk score, cited evidence, counterfactual; the gateway recomputes the score and applies the floor) |
+| `actions.proposed` | (agent → gateway, after the reports) Proposed actions, each with a target and evidence; the gateway's policy checks every one (ADR-47) |
 | `report` | (agent → gateway, after the verdict) The SOC and plain reports as structured data; every finding and reason must match the stored evidence (ADR-45) |
 | `investigation.complete` | (agent → gateway) Last line of every investigation: the status the agent suggests (`needs_review` or `closed`; the gateway decides) and the engine, `llm` or `rules` (ADR-44). |
 | `action.decided` | A human approved or rejected an action |

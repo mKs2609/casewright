@@ -4,13 +4,16 @@
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\try-incident.ps1 -Username mohit
 #
-# Expected: queued -> investigating -> needs_review, then the verdict (malicious vishing) and
-# the engine: "llm" if the local AI model chose the steps (a few seconds), "rules" if the
-# fixed plan did. If the agent is not running, the incident ends as "error" instead.
+# Expected: queued -> investigating -> awaiting_approval, then the verdict (malicious vishing), the
+# engine ("llm" if the local AI model chose the steps, "rules" if the fixed plan did) and the
+# proposed actions. If the agent is not running, the incident ends as "error" instead.
+#
+# Add -Decide approve or -Decide reject to decide the first action that is waiting.
 
 param(
     [Parameter(Mandatory = $true)][string]$Username,
-    [string]$BaseUrl = "https://localhost:8443"
+    [string]$BaseUrl = "https://localhost:8443",
+    [ValidateSet("approve", "reject")][string]$Decide
 )
 
 $ErrorActionPreference = "Stop"
@@ -65,7 +68,20 @@ if ($detail.verdict) {
     "   verdict: $($v.verdict) $($v.attackType), risk $($v.riskScore)/100, engine $($v.engine), $($detail.evidence.Count) evidence item(s)"
 }
 
-"`n4. Check the audit log's chain"
+"`n4. Actions"
+foreach ($a in $detail.actions) {
+    "   $($a.action) on $($a.target): $($a.status) (risk: $($a.risk), evidence: $($a.evidence))"
+}
+$waiting = @($detail.actions | Where-Object { $_.status -eq "pending" })
+if ($Decide -and $waiting.Count -gt 0) {
+    $done = Send POST "/api/actions/$($waiting[0].id)/decision" (@{ decision = $Decide } | ConvertTo-Json)
+    "   you chose to $Decide $($done.action): now $($done.status), decided by $($done.decidedBy)"
+    if ($waiting.Count -gt 1) { "   $($waiting.Count - 1) more still waiting, so the incident stays awaiting_approval" }
+} elseif ($waiting.Count -gt 0) {
+    "   $($waiting.Count) waiting. Run with -Decide approve or -Decide reject to decide one, or use POST /api/actions/{id}/decision"
+}
+
+"`n5. Check the audit log's chain"
 $check = Send GET "/api/audit/verify"
 if ($check.valid) {
     "   valid: $($check.entries) entries, newest is number $($check.headSeq)"
@@ -74,7 +90,7 @@ if ($check.valid) {
     "   BROKEN at entry $($check.brokenAt): $($check.problem)"
 }
 
-"`n5. Log out"
+"`n6. Log out"
 $null = Send POST "/api/auth/logout"
 if ($last -eq "error") {
     "   done. The investigation failed; the gateway's log says why (search for 'Incident $($created.id):')."

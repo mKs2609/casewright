@@ -8,14 +8,49 @@
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
-**Status:** early development. See the [roadmap](docs/ROADMAP.md).
+**Status:** the backend works end to end through its API: investigation, verdicts, both reports, human approval and the audit log. The dashboard, demo scenarios and evaluation are next. See the [roadmap](docs/ROADMAP.md).
+
+## What it does today
+
+| Stage | What happens | What keeps it honest |
+|---|---|---|
+| **Report** | Someone submits a suspicious email, a batch of logins or a call transcript | Strict validation; only analysts and admins can submit |
+| **Investigate** | A local AI model chooses which read-only tools to run. Without one, a fixed plan does | Every call passes one guardrail; incident text is fenced as data; the model can add checks but never skip the standard ones |
+| **Decide** | A risk score from the evidence gives the verdict and attack type | Computed by code, not the AI; the gateway recomputes it and never lets a verdict fall below the evidence |
+| **Explain** | One report for the security team, one in plain language for the employee | Both built from recorded findings, and checked word for word against the stored evidence |
+| **Act** | Actions are proposed from the findings. Low-risk ones run at once; high-risk ones wait for a person | The gateway's policy checks every proposal; proposals expire after 24 hours; nobody decides an action on their own account |
+| **Record** | Every step goes into an append-only audit log | Each entry is signed together with the one before it, using a key outside the database |
+
+**What is simulated:** the threat data is a small built-in list using reserved example names, and approved actions are recorded instead of carried out ([ADR-13](docs/DECISIONS.md)). Nothing real gets blocked.
+
+### Human approval
+
+A high-risk action (blocking an address, domain or number, quarantining an email, locking an account or forcing a password reset) starts as `pending`, and its incident shows `awaiting_approval`. Analysts and admins decide it:
+
+| Request | What it does |
+|---|---|
+| `GET /api/actions` | What is waiting (or `?status=executed`, `rejected`, `expired`) |
+| `GET /api/incidents/{id}` | The incident with its evidence, verdict, reports and actions |
+| `POST /api/actions/{id}/decision` | Body `{"decision": "approve"}` or `{"decision": "reject"}` |
+| `GET /api/audit` | Recent audit entries |
+| `GET /api/audit/verify` | Checks the chain, and says where it broke if it did |
+
+Internal addresses and your own domains can never be blocked, whatever an incident says. So a hidden "block 10.0.0.5" note in an email goes nowhere.
+
+To try the whole path, with the gateway and agent running (see below):
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\try-incident.ps1 -Username <you> -Decide approve
+```
+
+Your account needs the `ANALYST` or `ADMIN` role, which `scripts\set-role.ps1` can grant.
 
 ## Project structure
 
 ```
 .
-├── gateway/     Java Spring Boot: public API, auth, rate limiting, WebSocket
-├── agent/       Python: the AI reasoning agent and its tools        (not built yet)
+├── gateway/     Java Spring Boot: public API, auth, rate limiting, approvals, audit log
+├── agent/       Python: the investigation, its tools, the verdict and both reports
 ├── dashboard/   React + D3: live investigation dashboard             (not built yet)
 ├── docs/        Project documents
 ├── AGENTS.md    Instructions for AI coding assistants
@@ -74,6 +109,10 @@ cd gateway
 
 Then open https://localhost:8443/api/health. The gateway only speaks HTTPS. You should see `{"status":"UP","database":"UP", ...}`.
 
+If you already have a `.env` from before the audit log, run `setup-secrets.ps1` again to add its key. Keep that key: changing it makes every existing audit entry fail verification. The gateway also writes `gateway/logs/gateway.log`, which is a record of the audit chain's latest position outside the database.
+
+Settings such as how long approvals stay open (`actions.approval-lifetime`, 24 hours) and which domains can never be blocked (`actions.protected-domains`) are in `gateway/src/main/resources/application.properties`.
+
 Run the tests (they start their own throwaway PostgreSQL, so they need no setup). GitHub also runs them on every pull request:
 
 ```bash
@@ -82,8 +121,6 @@ cd gateway
 ```
 
 ## Running the agent
-
-The gateway keeps a tamper-evident audit log: `GET /api/audit` shows recent entries and `GET /api/audit/verify` checks the chain. If you already have a `.env`, run `setup-secrets.ps1` again to add its key.
 
 The agent is a separate Python service (3.14) that the gateway calls to investigate each incident. It listens on this machine only and accepts calls only from the gateway, which proves itself with `AGENT_SERVICE_TOKEN` from `.env` (created by `setup-secrets.ps1`).
 

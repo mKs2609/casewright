@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securityanalyst.gateway.action.ActionService;
 import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.auth.AuthenticatedUser;
 import com.securityanalyst.gateway.auth.UserRepository;
@@ -31,10 +32,11 @@ public class IncidentService {
     private final EvidenceService evidence;
     private final VerdictService verdicts;
     private final AuditLog audit;
+    private final ActionService actions;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
             JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence, VerdictService verdicts,
-            AuditLog audit) {
+            AuditLog audit, ActionService actions) {
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
@@ -43,6 +45,7 @@ public class IncidentService {
         this.evidence = evidence;
         this.verdicts = verdicts;
         this.audit = audit;
+        this.actions = actions;
     }
 
     @Transactional
@@ -66,7 +69,7 @@ public class IncidentService {
                 Map.of("kind", kind, "subject", subject.getIdentity()));
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
-        return IncidentResponses.Detail.from(saved, json, List.of(), null);
+        return IncidentResponses.Detail.from(saved, json, List.of(), null, List.of());
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +100,7 @@ public class IncidentService {
     public IncidentResponses.Detail get(Long id) {
         return incidents.findWithDetailsById(id)
                 .map(incident -> IncidentResponses.Detail.from(incident, json, evidence.forIncident(id),
-                        verdicts.forIncident(id).orElse(null)))
+                        verdicts.forIncident(id).orElse(null), actions.forIncident(id)))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Incident not found"));
     }
 }
