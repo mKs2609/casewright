@@ -81,3 +81,35 @@ jobs:
 
       - name: Run all tests
         run: python -m pytest
+
+  dashboard-tests:
+    name: Dashboard tests        # the name branch protection asks for
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: dashboard
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm                   # reuse downloaded packages between runs
+          cache-dependency-path: dashboard/package-lock.json
+
+      # npm ci installs exactly what the lockfile says, and fails if it doesn't match package.json.
+      - name: Install the pinned packages
+        run: npm ci
+
+      - name: Run all tests
+        run: npm test
+
+      # Includes the type check. Needs no certificate: only the local servers do.
+      - name: Check that it builds
+        run: npm run build

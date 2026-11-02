@@ -9,7 +9,7 @@ Decisions referenced as ADR-n are recorded in [`DECISIONS.md`](DECISIONS.md).
 
 ```mermaid
 flowchart LR
-    U[Browser<br/>React dashboard] -- HTTPS + WebSocket --> G[Gateway<br/>Java Spring Boot]
+    U[Browser<br/>React dashboard] -- HTTPS + Server-Sent Events --> G[Gateway<br/>Java Spring Boot]
     G -- SQL --> DB[(PostgreSQL)]
     G -- internal HTTP<br/>service token --> A[Agent service<br/>Python FastAPI]
     A -- local HTTP --> L[Local AI model<br/>Ollama, same machine]
@@ -19,8 +19,8 @@ There are three services and one database. Only the **gateway** is reachable fro
 
 | Component | Tech | Responsibility | Never does |
 |---|---|---|---|
-| **Dashboard** | React, TypeScript, Vite, D3 | Shows incidents, the live investigation, both reports, the approval screen. | Hold secrets; decide anything about security. |
-| **Gateway** | Java 25, Spring Boot 4, Spring Security | The only public entry point. Authentication, authorisation, rate limiting, validation, incident storage, approvals, audit log, WebSocket. **Owns the database.** | Call the LLM. |
+| **Dashboard** | React, TypeScript, Vite | Shows incidents, the live investigation, both reports, the approval screen. | Hold secrets; decide anything about security. |
+| **Gateway** | Java 25, Spring Boot 4, Spring Security | The only public entry point. Authentication, authorisation, rate limiting, validation, incident storage, approvals, audit log, live feed. **Owns the database.** | Call the LLM. |
 | **Agent** | Python 3, FastAPI | Runs one investigation: tools, LLM loop, guardrails, risk score, both reports. **Stateless.** | Touch the database; accept traffic from browsers; execute actions. |
 | **PostgreSQL** | v16 | All persistent data. | |
 
@@ -51,12 +51,12 @@ sequenceDiagram
         A->>A: validate arguments, run tool
         A-->>G: stream event: step
         G->>DB: insert evidence + audit entry
-        G-->>B: WebSocket: agent.step
+        G-->>B: Server-Sent Event: step
     end
     A-->>G: stream event: verdict (reports, proposed actions)
     G->>G: validate schema, re-check action policy
     G->>DB: insert verdict, actions (high-risk = pending), audit
-    G-->>B: WebSocket: verdict
+    G-->>B: Server-Sent Event: verdict
     B->>G: POST /api/actions/{id}/decision
     G->>DB: update action, audit entry
 ```
@@ -75,7 +75,7 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       ├── agent/        client that calls the agent service
 │       ├── action/       proposed actions, approvals
 │       ├── audit/        hash-chained audit log
-│       ├── realtime/     WebSocket
+│       ├── realtime/     live feed (Server-Sent Events, step 16b)
 │       └── common/       error handling, validation, rate limiting, security config
 ├── agent/          Python FastAPI service
 │   └── app/
@@ -90,6 +90,12 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       ├── actions.py       proposed actions, from the findings
 │       └── summary.py       the one checked AI summary line
 ├── dashboard/      React app
+│   ├── pagePolicy.ts    the page's security policy
+│   └── src/
+│       ├── api.ts           every call to the gateway; one session refresh at a time
+│       ├── meaning.tsx      each state's word, icon and colour
+│       ├── components/      login, incident list, investigation, reports, approval
+│       └── styles/          design tokens and the styles built on them
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
 ├── README.md
@@ -211,7 +217,7 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Gateway | 8443 (HTTPS only) | `cd gateway && ./mvnw spring-boot:run`. Needs the certificate from `scripts\setup-https.ps1` |
 | Agent | 8001 (127.0.0.1 only) | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
 | Ollama (AI model) | 11434 (127.0.0.1 only) | Installed app, runs in the background. Once: `ollama pull qwen3:8b`; then `LLM_PROVIDER=ollama` in `.env` |
-| Dashboard | 5173 | `cd dashboard && npm run dev` |
+| Dashboard | 5173 (HTTPS, `localhost` only; forwards `/api` to the gateway) | `cd dashboard; npm run dev`, or `npm run build` then `npm run preview` for the built app under the strict page policy. Uses the certificate from `scripts\setup-https.ps1` (ADR-48) |
 | PostgreSQL | 5432 | Windows service `postgresql-x64-16`. Database `secanalyst`, role `secanalyst_app`, created once by `scripts\setup-db.ps1` |
 
 ## 9. Testing strategy
@@ -223,6 +229,6 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Agent unit | pytest | Tools, guardrails, scoring, reports |
 | Agent scenarios | pytest | Each demo scenario reaches the expected verdict with the rule engine, and with a scripted model making the same calls (same evidence, same score) |
 | Red-team suite | pytest | A scripted hijacked model (tools off the allow-list, values not in the incident, odd arguments, invented evidence, skipped checks, a benign claim) never gets an unauthorised call through and never lowers a verdict (`test_reasoning.py`) |
-| Dashboard | Vitest + Testing Library | Components render untrusted text safely |
+| Dashboard | Vitest + Testing Library | Untrusted text stays text; session renewal; roles and refusals on the approval card; project rules (no HTML rendering, tokens only, the page policy) |
 | End to end | Script against running services | Submit → investigate → approve → audit verifies |
-| CI | GitHub Actions (`.github/workflows/ci.yml`) | Gateway tests on every pull request and push to `main` (since step 5a); more suites, dependency audit and static analysis added as they arrive |
+| CI | GitHub Actions (`.github/workflows/ci.yml`) | Gateway, agent and dashboard tests on every pull request and push to `main`; dependency audit and static analysis arrive in step 18 |

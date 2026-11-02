@@ -74,7 +74,9 @@ public class IncidentService {
 
     @Transactional(readOnly = true)
     public List<IncidentResponses.Summary> latest() {
-        return incidents.findTop100ByOrderByCreatedAtDescIdDesc().stream().map(IncidentResponses.Summary::from).toList();
+        List<Incident> newest = incidents.findTop100ByOrderByCreatedAtDescIdDesc();
+        Map<Long, VerdictService.Outcome> outcomes = verdicts.outcomes(newest.stream().map(Incident::getId).toList());
+        return newest.stream().map(i -> IncidentResponses.Summary.from(i, outcomes.get(i.getId()))).toList();
     }
 
     /** What an investigation needs to know about one incident. */

@@ -108,7 +108,7 @@ Priority: **P0** = must have for the demo · **P1** = should have · **P2** = st
 ### 6.6 Dashboard and demo
 | ID | Requirement | Pri |
 |---|---|---|
-| FR-24 | Live stream of investigation steps over an authenticated WebSocket. | P0 |
+| FR-24 | Live stream of investigation steps over an authenticated connection (Server-Sent Events, ADR-48). | P0 |
 | FR-25 | Animated investigation view; click any step for full detail. | P0 |
 | FR-26 | "Attempt breach" button and other simulated scenarios (phishing, vishing, impossible travel, prompt-injection email). | P0 |
 | FR-27 | "Red-team the agent" action that replays what a hijacked model would attempt and shows every attempt blocked. | P1 |

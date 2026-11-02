@@ -1,0 +1,66 @@
+/* Design tokens (docs/DESIGN_SYSTEM.md). Components never hardcode a colour, size or duration. */
+:root {
+  /* Surfaces and text */
+  --color-bg: #0b0f14;
+  --color-surface: #121821;
+  --color-surface-2: #18202b;
+  --color-border: #243040;
+  --color-border-control: #5b728f;
+  --color-text: #dbe4ee;
+  --color-text-muted: #8494a7;
+  --color-accent: #4cc2ff;
+  --color-on-accent: #04121c;
+
+  /* Meaning */
+  --color-benign: #3fcf8e;
+  --color-suspicious: #f5b942;
+  --color-malicious: #ff5d5d;
+  --color-info: #c6a8ff;
+  --color-danger-fill: #c93a3a;
+  --color-on-danger: #ffffff;
+
+  /* Type */
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --text-display: 26px;
+  --text-h1: 20px;
+  --text-h2: 18px;
+  --text-h3: 16px;
+  --text-body: 14px;
+  --text-body-large: 15px;
+  --text-small: 12px;
+  --line-display: 32px;
+  --line-h1: 28px;
+  --line-h2: 26px;
+  --line-h3: 24px;
+  --line-body: 21px;
+  --line-body-large: 24px;
+  --line-small: 18px;
+  --line-label: 16px;
+  --tracking-label: 0.06em;
+
+  /* Spacing and shape */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --border-thin: 1px;
+  --border-focus: 2px;
+  --target-min: 32px;
+  --meter-height: 8px;
+  --column-incidents: 290px;
+  --login-width: 360px;
+  --disabled-opacity: 0.45;
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --motion-base: 450ms;
+  --motion-slow: 600ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}

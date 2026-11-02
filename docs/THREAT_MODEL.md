@@ -61,10 +61,11 @@ flowchart LR
 | Tampering | Malformed or oversized input | Strict schema validation, size limits, reject don't clean | 5, 7 |
 | **R**epudiation | "I never approved that" | Audit entry for every decision, tied to the user | 14, 15 |
 | **I**nformation disclosure | Stack traces in errors; user A reads user B's data by changing an ID | Generic errors with trace ID; role and object-level checks on every endpoint | 5, 7 |
-| Information disclosure | Script injection through incident text shown in the dashboard | CSP, text-only rendering, no inline scripts | 5, 16 |
-| **D**enial of service | Flooding endpoints or the WebSocket | Tiered rate limits; per-connection message limits; investigation concurrency cap | 6, 16 |
+| Information disclosure | Script injection through incident text shown in the dashboard | The page's own CSP, text-only rendering, no inline scripts, no links from incident data (ADR-48) | 5, 16a |
+| **D**enial of service | Flooding endpoints or the live feed | Tiered rate limits; a limit on open live connections; investigation concurrency cap | 6, 16b |
 | **E**levation of privilege | Viewer approves an action | Role checks server-side; UI state is never the control | 4, 15 |
-| Elevation | Cross-site WebSocket hijacking | Origin check and cookie authentication on the handshake | 16 |
+| Spoofing | A session that ends while a live feed stays open | The feed stops when the session's token expires, and the browser must reconnect with a valid one | 16b |
+| Spoofing | Two tabs refresh at once, and reuse detection logs the person out | One refresh at a time, shared within a tab and locked across tabs (ADR-48) | 16a |
 
 ### TB2: Incident content → Agent (AI-specific)
 | Threat | Example | Control | Step |

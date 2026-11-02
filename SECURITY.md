@@ -12,7 +12,9 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Security headers: CSP, `nosniff`, `X-Frame-Options: DENY`, HSTS | ✅ | Every response, including refusals: `Content-Security-Policy` (nothing may load or run), `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, cross-origin opener/resource policies, `Cache-Control: no-store`; HSTS on HTTPS responses only (as the standard requires). No `Server` header. Tests: `ErrorHandlingAndHeadersTest`. |
 | Request size limit | ✅ | Bodies over 256 KB refused with 413 before being read; chunked bodies without a length refused with 411; limit in config (`aBodyOverTheLimitIsRefusedBeforeItIsRead`). |
 | HTTPS/TLS everywhere, including local demo | 🟡 | The gateway serves HTTPS only (port 8443), TLS 1.3 and 1.2 only; plain HTTP to the port is refused. Development certificate: self-signed, `localhost` only, marked not-a-CA, private key in a git-ignored, password-protected keystore. Trusting it is a separate, opt-in step for the current Windows user. Tests: `HttpsServerTest`. Production certificates come with deployment (step 17); agent-service traffic gets TLS when that service exists. |
-| WebSocket hardening: authenticated handshake, message schema, per-connection rate limit | ⬜ | |
+| Live feed hardening: login required, ends with the session, limit on open connections | ⬜ | Server-Sent Events instead of a WebSocket (ADR-48). Step 16b. |
+| The dashboard's own page policy | 🟡 | Strict CSP with no inline code, no framing, and requests to its own server only; `npm run dev` relaxes inline code for hot reloading. Checked by hand in a real browser under `npm run preview`. Tests: `dashboard/src/test/rules.test.ts`. Headers for production come with deployment. |
+| Incident text is only ever text on the dashboard | ✅ | No HTML rendering, and no links from incident data. Markup placed in every field an attacker can influence stays as text and nothing runs. Evidence chips are made only from citations in the exact `E1` form. Tests: `dashboard/src/test/untrusted.test.tsx`, `rules.test.ts`; part of 25 dashboard mutation checks. |
 
 ## B. Authentication & authorization
 | Item | Status | Notes |
@@ -31,8 +33,8 @@ Each item is ticked only when it is implemented **and** covered by a test.
 |---|---|---|
 | All secrets in env vars, never in code | 🟡 | `.gitignore` blocks `.env`, keys and certs. Database credentials and the token-signing key come from `.env` / environment only; the gateway refuses to start if any is missing, or if the signing key is shorter than 32 bytes. `AUDIT_HMAC_KEY` follows the same rules. Tests use their own random keys. |
 | Pre-commit secret scanning | ⬜ | |
-| Nothing sensitive in the frontend bundle | ⬜ | |
-| Dependency audit (Maven, pip, npm) with findings table | ⬜ | Python packages are pinned to exact versions, including indirect ones (`agent/requirements*.txt`). Audit and hash pinning in step 18. |
+| Nothing sensitive in the frontend bundle | ✅ | No setting reaches the page: the code reads no environment values, and the server only reads the keystore password for itself. Tokens stay in cookies the page cannot read, and nothing goes in browser storage. Tests: `dashboard/src/test/rules.test.ts`. The built files were also searched for the keystore password by hand, with none found. |
+| Dependency audit (Maven, pip, npm) with findings table | ⬜ | Python packages are pinned to exact versions, including indirect ones (`agent/requirements*.txt`). npm packages are pinned the same way through the lockfile, with install scripts off; `npm audit` was clean when added. Audit and hash pinning in step 18. |
 
 ## D. Error handling & data protection
 | Item | Status | Notes |

@@ -3,33 +3,34 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-01
+**Last updated:** 2026-11-02
 
 ---
 
 ## Now
 
-### Step 15: Human approval (on `feature/human-approval`)
-- [x] Code proposes actions from the findings (Mohit's choice); a new `actions.proposed` event
-- [x] The gateway's policy decides the risk and checks every target against what it stored
-- [x] Low-risk actions run at once; high-risk ones wait as `pending`, and the incident shows `awaiting_approval`
-- [x] `POST /api/actions/{id}/decision`: analysts and admins, one winner, no deciding your own account; the submitter may decide (Mohit's choice)
-- [x] Approvals expire after 24 hours, as a setting (Mohit's choice)
-- [x] Simulated enforcement table; every step in the audit log
-- [x] Incidents cut off by a stopped gateway become `error` at startup
-- [x] README brought up to date
-- [x] Tests: agent 302, gateway 287 (both test orders); 22 mutation checks with controls
-- [x] Live: AI-led run, awaiting approval, approved by a person, simulated enforcement recorded, chain valid
-- [ ] Merged
+### Step 16a: Dashboard (on `feature/dashboard`)
+- [x] React and TypeScript app in `dashboard/`, with design tokens from the design system
+- [x] Login, session renewal (one refresh at a time, across tabs) and logout
+- [x] Incident list with verdict, status and risk score (the gateway's list gained the last two)
+- [x] Investigation view: steps, blocked calls, risk meter, clickable evidence chips
+- [x] Both reports, side by side with the evidence
+- [x] Approval card: evidence above the buttons; the gateway has the last word
+- [x] Page security policy; incident text is only ever text
+- [x] Tests: dashboard 73, gateway 288 (both test orders), agent 302; 26 mutation checks with controls
+- [x] "Dashboard tests" job in CI
+- [x] Checked in a real browser against a fake gateway, and the HTTPS forwarding against the real one (no login)
+- [x] Live: logged in on the real gateway, opened an AI-led incident and approved its block; simulated enforcement recorded, chain valid
+- [ ] Merged, and "Dashboard tests" added to the required checks
 
 ## Next
 
-### Step 16: Dashboard and live stream
-The investigation appears live; steps are clickable; both reports render; approval works from the screen.
+### Step 16b: Live stream
+Steps appear as they happen, over Server-Sent Events (ADR-48).
 
 ## Later
 
-See `ROADMAP.md` steps 7–18.
+See `ROADMAP.md` steps 17–18.
 
 ## Open questions
 
@@ -40,6 +41,7 @@ See `ROADMAP.md` steps 7–18.
 
 ## Done
 
+- **2026-11-02:** Step 15 (human approval) merged: PR #15.
 - **2026-10-31:** Step 14 (audit log) merged: PR #14.
 - **2026-10-30:** Step 13 (dual explanation) merged: PR #13.
 - **2026-10-29:** Step 12 (LLM reasoning agent, local model) merged: PR #12.

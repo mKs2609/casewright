@@ -97,7 +97,7 @@ Layout: three columns on desktop (incidents 290px · investigation 1.25fr · rep
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **App bar** | Product name, engine badge, audit-chain badge, live-connection badge, user menu | Badges always show icon + text. |
+| **App bar** | Product name, audit-chain badge, live-connection badge (step 16b), user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
 | **Scenario buttons** | Fire simulated incidents | One primary "Attempt breach"; others secondary. Disabled for `VIEWER`. |
 | **Incident list item** | One incident in the feed | Verdict icon + colour dot, kind icon, `#id`, subject, status text, risk number. Selected state uses accent border. |
 | **Risk meter** | Running risk score | Big number + bar. Updates on every step. `role="meter"` with `aria-valuenow`. |
@@ -108,7 +108,7 @@ Layout: three columns on desktop (incidents 290px · investigation 1.25fr · rep
 | **Signal chip** | A finding and its weight | Mono text; three strength levels (muted / amber / red) plus the numeric weight. |
 | **Report panel (plain)** | For everyone | Headline with icon and word, "what happened", "why we think so", "what to do". Body-large text. |
 | **Report panel (SOC)** | For experts | Verdict line, technique tags, analysis with evidence chips, findings table, indicator table, counterfactual, actions. |
-| **Approval card** | Human decision | Amber border. Shows evidence summary **above** the buttons. Approve = danger-fill button, Reject = ghost button, optional reason field, expiry time. |
+| **Approval card** | Human decision | Amber border. Shows evidence summary **above** the buttons. Approve = danger-fill button, Reject = ghost button, expiry time. |
 | **Status chip** | Any state | Icon + word; colour from the meaning tokens. |
 | **Toast** | Transient feedback | `role="status"`, auto-dismiss after 3.5 s, never the only place an error appears. |
 | **Empty state** | Nothing selected | One sentence telling the user what to do next. |

@@ -8,7 +8,7 @@
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
-**Status:** the backend works end to end through its API: investigation, verdicts, both reports, human approval and the audit log. The dashboard, demo scenarios and evaluation are next. See the [roadmap](docs/ROADMAP.md).
+**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard to read them and decide. The live stream, demo scenarios and evaluation are next. See the [roadmap](docs/ROADMAP.md).
 
 ## What it does today
 
@@ -25,7 +25,7 @@ Given a suspicious email, a burst of login attempts or a phone-call transcript, 
 
 ### Human approval
 
-A high-risk action (blocking an address, domain or number, quarantining an email, locking an account or forcing a password reset) starts as `pending`, and its incident shows `awaiting_approval`. Analysts and admins decide it:
+A high-risk action (blocking an address, domain or number, quarantining an email, locking an account or forcing a password reset) starts as `pending`, and its incident shows `awaiting_approval`. Analysts and admins decide it on the dashboard, or through the API:
 
 | Request | What it does |
 |---|---|
@@ -51,7 +51,7 @@ Your account needs the `ANALYST` or `ADMIN` role, which `scripts\set-role.ps1` c
 .
 ├── gateway/     Java Spring Boot: public API, auth, rate limiting, approvals, audit log
 ├── agent/       Python: the investigation, its tools, the verdict and both reports
-├── dashboard/   React + D3: live investigation dashboard             (not built yet)
+├── dashboard/   React: incidents, the evidence, both reports, approvals
 ├── docs/        Project documents
 ├── AGENTS.md    Instructions for AI coding assistants
 └── SECURITY.md  Security checklist and status
@@ -151,3 +151,35 @@ Optional: let a free local AI model choose the investigation steps. Install [Oll
 ```bash
 ollama pull qwen3:8b
 ```
+
+## Running the dashboard
+
+The dashboard needs Node 24 and the development certificate from `setup-https.ps1`. It talks only to the gateway, so start that first. One-time setup, from the `dashboard` folder:
+
+```bash
+npm ci
+```
+
+Start it, then open https://localhost:5173 and log in. New investigations appear when you refresh; the live stream comes next.
+
+```bash
+npm run dev
+```
+
+`npm run dev` relaxes the page's security policy for hot reloading. To run the built app under the strict policy:
+
+```bash
+npm run build
+```
+
+```bash
+npm run preview
+```
+
+Run its tests (they need neither the gateway nor the certificate):
+
+```bash
+npm test
+```
+
+Incidents are submitted through the API for now, with `scripts\try-incident.ps1` above.

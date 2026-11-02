@@ -96,7 +96,15 @@ Plain-language meanings of the terms used in this project.
 | **Associated data** | Extra context (here, the employee's identity) that is checked during decryption but not hidden. Decryption fails if it doesn't match. |
 | **Account lockout** | Disabling an account after too many wrong passwords. We use backoff instead, so an attacker cannot lock a real user out. |
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
-| **WebSocket** | A connection that stays open so the server can push updates. |
+| **WebSocket** | A two-way connection that stays open, so both sides can send at any time. We chose Server-Sent Events instead (ADR-48). |
+| **Server-Sent Events (SSE)** | A one-way feed: the browser opens an ordinary request, and the server keeps sending updates down it. |
+| **Origin** | The scheme, host and port of a page, such as `https://localhost:5173`. Browsers limit what a page can do with other origins. |
+| **CORS** | Rules that let a server open itself to pages from other origins. We avoid needing it by forwarding requests through one origin. |
+| **Proxy (forwarding)** | A server that passes requests on to another server. The dashboard's server forwards `/api` to the gateway. |
+| **Content Security Policy (CSP)** | A header telling the browser what a page may load and run. Ours forbids inline code, so injected markup cannot run. |
+| **Cross-site scripting (XSS)** | An attack that gets a page to run someone else's code, often through text shown as HTML. |
+| **Component (React)** | A function that returns a piece of the screen. React updates the screen when its data changes. |
+| **Design token** | A named value, such as `--color-accent`, kept in one place so the whole interface stays consistent. |
 | **TLS / HTTPS** | Encryption for data in transit. HTTPS is ordinary HTTP sent inside a TLS connection. |
 | **TLS handshake** | The first moments of a TLS connection: the two sides agree a version and cipher, the server proves its identity with its certificate, and they agree the keys for the session. |
 | **Certificate** | A public document that says "this public key belongs to `localhost`" (or to a website), signed by someone who vouches for it. |
