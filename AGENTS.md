@@ -46,7 +46,10 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 | Agent tests | `cd agent; .\.venv\Scripts\python.exe -m pytest` (never uses a real model) |
 | Run agent | `cd agent; .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001 --no-server-header` |
 | Use the local AI model | Install Ollama (ollama.com, "Download manually"), then `ollama pull qwen3:8b` once, and set `LLM_PROVIDER=ollama` in `.env` (ADR-15). Without it the agent uses the fixed plan |
-| Dashboard | `cd dashboard; npm run dev` (from Step 16) |
+| Dashboard: one-time setup | `cd dashboard; npm ci` (needs Node 24 and the certificate from `setup-https.ps1`) |
+| Dashboard tests | `cd dashboard; npm test` (no gateway or certificate needed); `npm run typecheck` for types |
+| Run dashboard | `cd dashboard; npm run dev` (https://localhost:5173; needs the gateway running) |
+| Run the built dashboard under the strict page policy | `cd dashboard; npm run build; npm run preview` |
 
 Maven is not installed globally; always use the wrapper `mvnw.cmd`.
 
@@ -55,7 +58,7 @@ Maven is not installed globally; always use the wrapper `mvnw.cmd`.
 ```
 gateway/     Spring Boot 4.1 (Java 25). Package root: com.securityanalyst.gateway, organised by feature.
 agent/       Python 3.14 FastAPI service (app/, tests/). Called only by the gateway; no database access.
-dashboard/   React + TypeScript (not created yet)
+dashboard/   React + TypeScript with Vite (src/api.ts, src/components/, src/styles/). Talks only to the gateway, through its own server.
 docs/        All project documents
 ```
 
@@ -88,6 +91,6 @@ docs/        All project documents
 - The risk score exists twice, `agent/app/verdict.py` and the gateway's `RiskScore` (ADR-43): change both together, and both must still match `testdata/risk-score-cases.json`. The gateway, never the agent, sets an incident's final status.
 - Mock threat-intel and test data use only reserved example names: `.example` domains, IPs from 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, and 555-01xx phone numbers. Never label a real site, network or number as malicious.
 - Tests that need the agent use a fake one (see `InvestigationTest`); `PostgresIntegrationTest` points `agent.base-url` at port 1 so no test reaches a real agent by accident.
-- React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens.
+- React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens; no links built from incident data; nothing in browser storage (`src/test/rules.test.ts` checks these). Every call to the gateway goes through `src/api.ts`, which shares one session refresh (ADR-48). Hiding a control from a role is a convenience: the gateway's check is the control. npm packages are pinned to exact versions, at least two weeks old, with install scripts off (`.npmrc`). No setting reaches the page: product code never reads `import.meta.env`.
 - CI (`.github/workflows/ci.yml`) runs on every pull request and must stay green; a new test suite (agent, dashboard) gets its own job there. Actions are pinned to full commit SHAs with the version in a comment, and the workflow token stays `contents: read`.
 - A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.

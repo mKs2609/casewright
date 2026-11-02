@@ -530,6 +530,24 @@ class InvestigationTest extends PostgresIntegrationTest {
     }
 
     @Test
+    void theIncidentListShowsTheVerdictAndScoreOnlyOnceThereIsAVerdict() throws Exception {
+        agentAnswers(MALICIOUS_EVIDENCE + verdict("malicious", "phishing", 70, "\"E1\"") + COMPLETE_ONLY);
+        Integer decided = submitAnEmailIncident();
+        assertThat(finalStatusOf(decided)).isEqualTo("needs_review");
+
+        // No verdict event at all: the investigation ends in error, with nothing to show.
+        agentAnswers(THOUGHT);
+        Integer undecided = submitAnotherEmailIncident();
+        assertThat(finalStatusOf(undecided)).isEqualTo("error");
+
+        String list = mvc.perform(get("/api/incidents").cookie(analyst)).andReturn().getResponse().getContentAsString();
+        assertThat((List<String>) JsonPath.read(list, "$[?(@.id == " + decided + ")].verdict")).containsExactly("malicious");
+        assertThat((List<Integer>) JsonPath.read(list, "$[?(@.id == " + decided + ")].riskScore")).containsExactly(70);
+        assertThat((List<Object>) JsonPath.read(list, "$[?(@.id == " + undecided + ")].verdict")).containsOnlyNulls();
+        assertThat((List<Object>) JsonPath.read(list, "$[?(@.id == " + undecided + ")].riskScore")).containsOnlyNulls();
+    }
+
+    @Test
     void anInvestigationLedByTheAiModelIsStoredWithItsEngine() throws Exception {
         agentAnswers(MALICIOUS_EVIDENCE + verdict("malicious", "phishing", 70, "\"E1\"")
                 + COMPLETE_ONLY.replace("\"rules\"", "\"llm\""));

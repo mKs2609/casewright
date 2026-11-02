@@ -355,3 +355,17 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the agent reads attacker-written text, so nothing it says can authorise anything. Enforcing this at the gateway means a fully compromised agent can still only ask.
 **Alternatives considered:** the AI also proposing actions (little gain from a small model, and one more path for injected text); requiring a second person to approve (stronger, but unusable with one analyst); ending the investigation in error on a bad proposal (would let one bad proposal hide a verdict).
 **Trade-offs:** one analyst can both submit and approve; a real deployment would want a second person. An analyst could approve something unwise: the policy limits what can be proposed, not human judgement. Expiry means a report nobody looks at within 24 hours gets no action.
+
+## ADR-48: The dashboard: one origin, its own page policy, and Server-Sent Events for the live feed
+**Status:** Accepted (the live channel and splitting the step by Mohit, 2026-11-02). Replaces the WebSocket first planned in the PRD and architecture.
+**Decision:**
+- **The live feed uses Server-Sent Events (step 16b).** It only flows from server to browser; decisions already go through ordinary requests. It is a normal authenticated GET, so it passes through the same filters as every other request.
+- **The browser talks to one origin.** The dashboard's server forwards `/api` to the gateway and checks the gateway's certificate against ours, so CORS stays closed. `security.allowed-origins` already lists `https://localhost:5173`, so the origin check (ADR-25) works unchanged.
+- **The page has its own security policy** (`dashboard/pagePolicy.ts`): nothing loads or runs except this server's own scripts and styles, and nothing inline. `npm run dev` allows inline code because hot reloading needs it; `npm run preview` serves the built app under the strict policy.
+- **Incident text is only ever text.** No HTML rendering and no links from incident data. Both are checked by tests, and the policy is a second layer if a mistake gets through.
+- **One refresh at a time.** Refresh tokens work once (ADR-26), so requests in one tab share a refresh, and a browser lock covers other tabs.
+- **The server decides.** Hiding the approval buttons from viewers is a convenience; the gateway's role check is the control.
+
+**Why:** a two-way WebSocket would mean building login checks and session expiry by hand on the open connection, for a direction we would not use. Forwarding avoids opening the gateway to another origin at all.
+**Alternatives considered:** WebSocket (the earlier plan; more to secure for no gain here); refreshing every few seconds (nothing new to secure, but steps arrive in jumps); CORS between two origins (a wider door than this needs).
+**Trade-offs:** a Server-Sent Events connection holds an HTTP connection open per viewer, and browsers cap those per site when not on HTTP/2. How the app is served in production is decided at deployment; only the development and preview servers exist today.

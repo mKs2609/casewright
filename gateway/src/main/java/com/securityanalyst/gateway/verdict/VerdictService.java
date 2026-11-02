@@ -1,6 +1,8 @@
 package com.securityanalyst.gateway.verdict;
 
+import java.sql.PreparedStatement;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +47,10 @@ public class VerdictService {
     public record View(String verdict, String attackType, int riskScore, String agentVerdict, int agentRiskScore,
             boolean disagreement, String engine, JsonNode citedEvidence, String counterfactual, JsonNode socReport,
             JsonNode plainReport, Instant createdAt) {
+    }
+
+    /** The short version of a verdict, for one line in the incident list. */
+    public record Outcome(String verdict, int riskScore) {
     }
 
     private final EvidenceService evidence;
@@ -107,6 +113,21 @@ public class VerdictService {
                         jsonOrNull(rs.getString("soc")), jsonOrNull(rs.getString("plain")),
                         rs.getTimestamp("created_at").toInstant()),
                 incidentId).stream().findFirst();
+    }
+
+    /** The verdict and score of each incident that has one, in one query (for the incident list). */
+    @Transactional(readOnly = true)
+    public Map<Long, Outcome> outcomes(List<Long> incidentIds) {
+        Map<Long, Outcome> found = new HashMap<>();
+        jdbc.query(con -> {
+            PreparedStatement query = con.prepareStatement(
+                    "SELECT incident_id, verdict, risk_score FROM verdicts WHERE incident_id = ANY(?)");
+            query.setArray(1, con.createArrayOf("bigint", incidentIds.toArray()));
+            return query;
+        }, rs -> {
+            found.put(rs.getLong("incident_id"), new Outcome(rs.getString("verdict"), rs.getInt("risk_score")));
+        });
+        return found;
     }
 
     private JsonNode jsonOrNull(String text) {

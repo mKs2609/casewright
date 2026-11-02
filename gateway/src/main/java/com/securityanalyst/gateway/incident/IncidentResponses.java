@@ -16,14 +16,15 @@ final class IncidentResponses {
     private IncidentResponses() {
     }
 
-    /** One line in the incident list: no payload, so the list stays small. */
+    /** One line in the incident list: no payload, so the list stays small. The verdict and score are null until there is a verdict. */
     record Summary(Long id, String kind, String subjectIdentity, String subjectName, String status,
-            String source, String createdBy, Instant createdAt) {
+            String source, String createdBy, Instant createdAt, String verdict, Integer riskScore) {
 
-        static Summary from(Incident incident) {
+        static Summary from(Incident incident, VerdictService.Outcome outcome) {
             return new Summary(incident.getId(), incident.getKind(), incident.getSubject().getIdentity(),
                     incident.getSubject().getDisplayName(), incident.getStatus(), incident.getSource(),
-                    incident.getCreatedBy().getUsername(), incident.getCreatedAt());
+                    incident.getCreatedBy().getUsername(), incident.getCreatedAt(),
+                    outcome == null ? null : outcome.verdict(), outcome == null ? null : outcome.riskScore());
         }
     }
 
@@ -38,7 +39,7 @@ final class IncidentResponses {
 
         static Detail from(Incident incident, JsonMapper json, List<EvidenceService.View> evidence,
                 VerdictService.View verdict, List<ActionService.View> actions) {
-            Summary s = Summary.from(incident);
+            Summary s = Summary.from(incident, null);
             return new Detail(s.id(), s.kind(), s.subjectIdentity(), s.subjectName(), s.status(), s.source(),
                     s.createdBy(), s.createdAt(), json.readTree(incident.getPayload()), evidence, verdict, actions);
         }
