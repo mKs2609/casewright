@@ -3,34 +3,31 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-04
 
 ---
 
 ## Now
 
-### Step 16a: Dashboard (on `feature/dashboard`)
-- [x] React and TypeScript app in `dashboard/`, with design tokens from the design system
-- [x] Login, session renewal (one refresh at a time, across tabs) and logout
-- [x] Incident list with verdict, status and risk score (the gateway's list gained the last two)
-- [x] Investigation view: steps, blocked calls, risk meter, clickable evidence chips
-- [x] Both reports, side by side with the evidence
-- [x] Approval card: evidence above the buttons; the gateway has the last word
-- [x] Page security policy; incident text is only ever text
-- [x] Tests: dashboard 73, gateway 288 (both test orders), agent 302; 26 mutation checks with controls
-- [x] "Dashboard tests" job in CI
-- [x] Checked in a real browser against a fake gateway, and the HTTPS forwarding against the real one (no login)
-- [x] Live: logged in on the real gateway, opened an AI-led incident and approved its block; simulated enforcement recorded, chain valid
-- [ ] Merged, and "Dashboard tests" added to the required checks
+### Step 16b: Live stream (on `feature/live-stream`)
+- [x] `GET /api/incidents/events`: incident numbers only, announced from the audit log after each commit (ADR-49)
+- [x] The feed closes when its access token expires; access tokens no longer get a 60-second grace period
+- [x] Limits: 3 feeds per user, 200 in total; keep-alive; a slow or vanished browser is dropped without holding anything up
+- [x] Errors stay JSON for a request that asked for the stream; a browser leaving is not logged as an error
+- [x] Dashboard follows the feed through `src/api.ts`, reconnects with backoff, merges reloads; live badge; Refresh still works
+- [x] Tests: gateway 311 (both test orders), dashboard 87, agent unchanged (302, left to CI); 28 mutation checks with controls (15 dashboard, 13 gateway)
+- [x] Checked through the dashboard's forwarding: messages arrive as sent, nothing held back; a browser leaving reaches the server
+- [x] Live: two AI-led incidents investigated on screen as they ran (Live badge, no Refresh); a block approved in the browser; no gateway errors; audit chain valid
+- [ ] Merged
 
 ## Next
 
-### Step 16b: Live stream
-Steps appear as they happen, over Server-Sent Events (ADR-48).
+### Step 17: Demo scenarios and red-team probe
+See `ROADMAP.md`.
 
 ## Later
 
-See `ROADMAP.md` steps 17–18.
+See `ROADMAP.md` step 18.
 
 ## Open questions
 
@@ -41,6 +38,7 @@ See `ROADMAP.md` steps 17–18.
 
 ## Done
 
+- **2026-11-03:** Step 16a (dashboard) merged: PR #16. "Dashboard tests" is now a required check on `main`.
 - **2026-11-02:** Step 15 (human approval) merged: PR #15.
 - **2026-10-31:** Step 14 (audit log) merged: PR #14.
 - **2026-10-30:** Step 13 (dual explanation) merged: PR #13.

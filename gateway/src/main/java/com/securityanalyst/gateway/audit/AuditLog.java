@@ -21,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,9 @@ import tools.jackson.databind.json.JsonMapper;
  * {@link #record} joins the caller's transaction, so an action and its entry are saved together
  * or not at all. The chain cannot show the newest entries being cut off the end, because nothing
  * comes after them, so the latest entry number and hash also go to the log file after each commit.
+ *
+ * Every change to an incident is recorded here, so each entry is also announced as {@link Recorded}:
+ * the live feed listens for those (after the commit) to tell dashboards which incident changed.
  */
 @Service
 public class AuditLog {
@@ -63,6 +67,10 @@ public class AuditLog {
             String prevHash, String hash) {
     }
 
+    /** Announced for every entry, inside the transaction that recorded it. incidentId is null for logins and the like. */
+    public record Recorded(String event, Long incidentId) {
+    }
+
     /** The result of walking the chain. brokenAt and problem are set only when valid is false. */
     public record Verification(boolean valid, long entries, Long headSeq, String headHash, Long brokenAt,
             String problem) {
@@ -71,10 +79,13 @@ public class AuditLog {
     private final JdbcTemplate jdbc;
     private final JsonMapper json;
     private final SecretKeySpec key;
+    private final ApplicationEventPublisher events;
 
-    public AuditLog(JdbcTemplate jdbc, JsonMapper json, @Value("${security.audit.hmac-key}") String base64Key) {
+    public AuditLog(JdbcTemplate jdbc, JsonMapper json, @Value("${security.audit.hmac-key}") String base64Key,
+            ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.json = json;
+        this.events = events;
         byte[] raw;
         try {
             raw = Base64.getDecoder().decode(base64Key);
@@ -112,6 +123,7 @@ public class AuditLog {
                 log.info("Audit head: seq={} hash={}", seq, hash);
             }
         });
+        events.publishEvent(new Recorded(event, incidentId));
     }
 
     /** The newest entries, newest first. */

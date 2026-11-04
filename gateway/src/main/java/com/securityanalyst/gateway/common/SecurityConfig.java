@@ -86,6 +86,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Lets Spring's internal error handling finish, so a 404 stays a 404.
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                // Lets a long-running response (the live feed) finish. An async dispatch only ever continues
+                // a request that already passed these rules when it arrived; a caller cannot start one.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 // Open to everyone:
                 .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login",

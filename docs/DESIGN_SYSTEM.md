@@ -97,7 +97,8 @@ Layout: three columns on desktop (incidents 290px · investigation 1.25fr · rep
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **App bar** | Product name, audit-chain badge, live-connection badge (step 16b), user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
+| **App bar** | Product name, audit-chain badge, user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
+| **Live badge** | Beside the incident list's title: Live, Connecting, or Live updates paused | Icon + word, read out politely to screen readers (`role="status"`). Refresh stays available. |
 | **Scenario buttons** | Fire simulated incidents | One primary "Attempt breach"; others secondary. Disabled for `VIEWER`. |
 | **Incident list item** | One incident in the feed | Verdict icon + colour dot, kind icon, `#id`, subject, status text, risk number. Selected state uses accent border. |
 | **Risk meter** | Running risk score | Big number + bar. Updates on every step. `role="meter"` with `aria-valuenow`. |

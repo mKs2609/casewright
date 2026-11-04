@@ -8,7 +8,7 @@
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
-**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard to read them and decide. The live stream, demo scenarios and evaluation are next. See the [roadmap](docs/ROADMAP.md).
+**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard that updates live as an investigation runs. Demo scenarios and evaluation are next. See the [roadmap](docs/ROADMAP.md).
 
 ## What it does today
 
@@ -160,7 +160,7 @@ The dashboard needs Node 24 and the development certificate from `setup-https.ps
 npm ci
 ```
 
-Start it, then open https://localhost:5173 and log in. New investigations appear when you refresh; the live stream comes next.
+Start it, then open https://localhost:5173 and log in. Investigations update on screen as they run; the badge by the incident list says whether live updates are on, and Refresh always works.
 
 ```bash
 npm run dev

@@ -29,8 +29,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 13 | **Dual explanation** | Generating two views from one source | SOC and plain reports are produced; every finding cites existing evidence | ✅ |
 | 14 | **Audit log** | Hash chains, HMAC | Every event is logged; editing a row makes verification fail | ✅ |
 | 15 | **Human approval** | State machines, separation of duties | High-risk actions wait as `pending`; approve/reject is audited; expiry and self-approval rules hold | ✅ |
-| 16a | **Dashboard** | React, TypeScript, safe rendering, the design system, a page security policy | Steps are clickable; both reports render; approval works from the UI; incident text can never run as code | 🟡 |
-| 16b | **Live stream** | Server-Sent Events, keeping an open connection authorised | The investigation appears live, step by step | ⬜ |
+| 16a | **Dashboard** | React, TypeScript, safe rendering, the design system, a page security policy | Steps are clickable; both reports render; approval works from the UI; incident text can never run as code | ✅ |
+| 16b | **Live stream** | Server-Sent Events, keeping an open connection authorised | The investigation appears live, step by step | 🟡 |
 | 17 | **Demo scenarios + red-team probe** | Building a reliable demo | "Attempt breach" and the other scenarios run from the UI; the probe shows every hijack attempt blocked | ⬜ |
 | 18 | **CI security gate + evaluation** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, measuring accuracy | Every push runs tests and scans; evaluation numbers are in the README; `SECURITY.md` fully ticked | ⬜ |
 

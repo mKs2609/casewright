@@ -307,6 +307,10 @@ pre {
   gap: var(--space-2);
 }
 
+.live-state {
+  margin-left: auto;
+}
+
 .card {
   display: flex;
   flex-direction: column;

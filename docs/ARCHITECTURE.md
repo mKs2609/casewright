@@ -51,17 +51,20 @@ sequenceDiagram
         A->>A: validate arguments, run tool
         A-->>G: stream event: step
         G->>DB: insert evidence + audit entry
-        G-->>B: Server-Sent Event: step
+        G-->>B: Server-Sent Event: incident changed (a number only)
+        B->>G: GET /api/incidents/{id}
     end
     A-->>G: stream event: verdict (reports, proposed actions)
     G->>G: validate schema, re-check action policy
     G->>DB: insert verdict, actions (high-risk = pending), audit
-    G-->>B: Server-Sent Event: verdict
+    G-->>B: Server-Sent Event: incident changed
     B->>G: POST /api/actions/{id}/decision
     G->>DB: update action, audit entry
 ```
 
 The gateway never trusts the agent's output: it parses it against a schema and re-applies the action allow-list before anything is saved (ADR-5).
+
+The live feed (ADR-49) carries only incident numbers. It learns of changes from the audit log, after each commit, and the browser fetches the changed incident like any other request. A feed closes when the access token it was opened with expires.
 
 ## 3. Repository layout
 
@@ -75,7 +78,7 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │       ├── agent/        client that calls the agent service
 │       ├── action/       proposed actions, approvals
 │       ├── audit/        hash-chained audit log
-│       ├── realtime/     live feed (Server-Sent Events, step 16b)
+│       ├── live/         live feed (Server-Sent Events, ADR-49)
 │       └── common/       error handling, validation, rate limiting, security config
 ├── agent/          Python FastAPI service
 │   └── app/
@@ -93,6 +96,7 @@ The gateway never trusts the agent's output: it parses it against a schema and r
 │   ├── pagePolicy.ts    the page's security policy
 │   └── src/
 │       ├── api.ts           every call to the gateway; one session refresh at a time
+│       ├── live.ts          follows the live feed and reconnects
 │       ├── meaning.tsx      each state's word, icon and colour
 │       ├── components/      login, incident list, investigation, reports, approval
 │       └── styles/          design tokens and the styles built on them

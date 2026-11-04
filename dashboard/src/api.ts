@@ -36,23 +36,28 @@ function refreshOnce(): Promise<boolean> {
   return refreshing;
 }
 
-async function send(path: string, body?: unknown): Promise<Response> {
+async function send(path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
   try {
     return await fetch(`/api${path}`, {
       method: body === undefined && !path.startsWith("/auth/") ? "GET" : "POST",
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
-  } catch {
+  } catch (failure) {
+    if (signal?.aborted) {
+      throw failure;
+    }
     throw new ApiError(0, "Could not reach the server. Check that the gateway is running, then try again.");
   }
 }
 
-async function request<T>(path: string, body?: unknown): Promise<T> {
-  let response = await send(path, body);
+/** Sends a request, renewing the session once if it has expired. Any refusal becomes an ApiError. */
+async function authorised(path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
+  let response = await send(path, body, signal);
   if (response.status === 401 && !path.startsWith("/auth/")) {
     if (await refreshOnce()) {
-      response = await send(path, body);
+      response = await send(path, body, signal);
     }
     if (response.status === 401) {
       onSessionLost();
@@ -61,6 +66,11 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   if (!response.ok) {
     throw new ApiError(response.status, await errorMessage(response));
   }
+  return response;
+}
+
+async function request<T>(path: string, body?: unknown): Promise<T> {
+  const response = await authorised(path, body);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
@@ -84,4 +94,12 @@ export const api = {
   incident: (id: number) => request<IncidentDetail>(`/incidents/${id}`),
   decide: (id: number, decision: "approve" | "reject") => request<Action>(`/actions/${id}/decision`, { decision }),
   auditCheck: () => request<AuditCheck>("/audit/verify"),
+  /** The live feed (ADR-49): an open response that the gateway keeps adding to. */
+  openFeed: async (signal: AbortSignal) => {
+    const response = await authorised("/incidents/events", undefined, signal);
+    if (!response.body) {
+      throw new ApiError(0, "Live updates are not available in this browser.");
+    }
+    return response.body;
+  },
 };
