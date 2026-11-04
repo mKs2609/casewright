@@ -98,6 +98,10 @@ Plain-language meanings of the terms used in this project.
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A two-way connection that stays open, so both sides can send at any time. We chose Server-Sent Events instead (ADR-48). |
 | **Server-Sent Events (SSE)** | A one-way feed: the browser opens an ordinary request, and the server keeps sending updates down it. |
+| **Keep-alive (heartbeat)** | A small message sent on an idle connection so neither side, nor anything between them, thinks it has died. Writing it is also how the server notices a browser that has gone. |
+| **Async dispatch** | When a server finishes a long-running response later, on another thread, it passes the request back through its own machinery once more. It continues a request that was already checked; a caller cannot start one. |
+| **Clock skew** | How far two computers' clocks disagree. Token libraries allow some by default; a server that both issues and checks its tokens needs none. |
+| **Exponential backoff** | Waiting longer after each failed attempt (2 s, 4 s, 8 s ...), so a broken server is not hammered. |
 | **Origin** | The scheme, host and port of a page, such as `https://localhost:5173`. Browsers limit what a page can do with other origins. |
 | **CORS** | Rules that let a server open itself to pages from other origins. We avoid needing it by forwarding requests through one origin. |
 | **Proxy (forwarding)** | A server that passes requests on to another server. The dashboard's server forwards `/api` to the gateway. |

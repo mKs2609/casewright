@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, setSessionLostHandler } from "./api";
+import { followIncidents, type LiveState } from "./live";
 import { Actions } from "./components/Actions";
 import { AppBar } from "./components/AppBar";
 import { IncidentList } from "./components/IncidentList";
@@ -10,6 +11,31 @@ import { Reports } from "./components/Reports";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
 
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : "Something went wrong. Try again.");
+
+/** Time between live reloads, so a burst of changes becomes a few reloads instead of dozens. */
+const RELOAD_GAP_MS = 300;
+
+/** Runs work one at a time. Calls that arrive while it runs become one more run afterwards. */
+function coalesced(work: () => Promise<void>): () => void {
+  let running = false;
+  let again = false;
+  const run = async () => {
+    running = true;
+    do {
+      again = false;
+      await work();
+      await new Promise((resolve) => setTimeout(resolve, RELOAD_GAP_MS));
+    } while (again);
+    running = false;
+  };
+  return () => {
+    if (running) {
+      again = true;
+    } else {
+      void run();
+    }
+  };
+}
 
 /** The selected incident lives in the address (#/incidents/57), so a reload keeps your place. */
 function selectedFromAddress(): number | null {
@@ -25,17 +51,28 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [audit, setAudit] = useState<AuditCheck | null>(null);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [live, setLive] = useState<LiveState>("connecting");
   const latestRequest = useRef(0);
+  // What the live feed compares changes with; it outlives any one render, so it reads this instead of "selected".
+  const selectedNow = useRef(selected);
+  useEffect(() => {
+    selectedNow.current = selected;
+  }, [selected]);
 
-  const loadList = useCallback(async () => {
+  const loadIncidents = useCallback(async () => {
     try {
       setIncidents(await api.incidents());
       setListError(null);
     } catch (failure) {
       setListError(message(failure));
     }
-    api.auditCheck().then(setAudit, () => setAudit(null));
   }, []);
+
+  // Walks the whole audit chain on the server, so not on every live change: on load, Refresh and decisions.
+  const loadList = useCallback(async () => {
+    await loadIncidents();
+    api.auditCheck().then(setAudit, () => setAudit(null));
+  }, [loadIncidents]);
 
   const loadDetail = useCallback(async (id: number | null) => {
     // Only the newest request counts, so a slow answer can't replace the incident you moved on to.
@@ -68,6 +105,26 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     void loadDetail(selected);
   }, [selected, loadDetail]);
 
+  // Live updates: the feed only says which incident changed, and that is fetched like any other request.
+  useEffect(() => {
+    const reloadList = coalesced(loadIncidents);
+    const reloadDetail = coalesced(() => loadDetail(selectedNow.current));
+    return followIncidents({
+      onState: setLive,
+      // Every (re)connection starts here: reload, in case something changed while there was no feed.
+      onReady: () => {
+        reloadList();
+        reloadDetail();
+      },
+      onChanged: (id) => {
+        reloadList();
+        if (id === selectedNow.current) {
+          reloadDetail();
+        }
+      },
+    });
+  }, [loadIncidents, loadDetail]);
+
   useEffect(() => {
     const follow = () => setSelected(selectedFromAddress());
     window.addEventListener("hashchange", follow);
@@ -99,6 +156,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
             setSelected(id);
           }}
           onRefresh={refresh}
+          live={live}
         />
         {detail && detail.id === selected ? (
           <>

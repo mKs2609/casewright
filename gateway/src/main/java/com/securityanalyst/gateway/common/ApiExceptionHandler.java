@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +18,7 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import tools.jackson.databind.exc.InvalidTypeIdException;
 
@@ -24,7 +26,8 @@ import tools.jackson.databind.exc.InvalidTypeIdException;
  * Turns exceptions into consistent JSON error responses.
  * Rules: say WHICH field is wrong and WHY, but never repeat the value that was
  * sent; never send internal details (stack traces, SQL, class names) to the
- * caller; always include the trace ID.
+ * caller; always include the trace ID. Always JSON, whatever the request asked for: a request
+ * for the live feed accepts only text/event-stream, and its refusals must still be readable.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -37,12 +40,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> handleTooManyRequests(TooManyRequestsException e) {
         return ResponseEntity.status(e.getStatus())
                 .header("Retry-After", e.retryAfterHeader())
-                .body(ApiError.of(e.getMessage()));
+                .contentType(MediaType.APPLICATION_JSON).body(ApiError.of(e.getMessage()));
     }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException e) {
-        return ResponseEntity.status(e.getStatus()).body(ApiError.of(e.getMessage()));
+        return ResponseEntity.status(e.getStatus()).contentType(MediaType.APPLICATION_JSON).body(ApiError.of(e.getMessage()));
     }
 
     /** A request body broke a rule declared on a request record (@Size, @Pattern, ...). */
@@ -52,7 +55,7 @@ public class ApiExceptionHandler {
         for (FieldError fieldError : e.getBindingResult().getFieldErrors()) {
             fields.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
         }
-        return ResponseEntity.badRequest().body(ApiError.withFields("Validation failed", fields));
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(ApiError.withFields("Validation failed", fields));
     }
 
     /** The body was not valid JSON, had the wrong types, or contained unknown fields. */
@@ -67,13 +70,18 @@ public class ApiExceptionHandler {
             }
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiError.of("Request body is missing, malformed, or contains unknown fields"));
+                .contentType(MediaType.APPLICATION_JSON).body(ApiError.of("Request body is missing, malformed, or contains unknown fields"));
     }
 
     /** A value in the URL had the wrong type, e.g. /users/abc where a number is expected. */
     @ExceptionHandler(TypeMismatchException.class)
     public ResponseEntity<ApiError> handleTypeMismatch(TypeMismatchException e) {
-        return ResponseEntity.badRequest().body(ApiError.of("A value in the request has the wrong type"));
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON).body(ApiError.of("A value in the request has the wrong type"));
+    }
+
+    /** The browser went away in the middle of a long response (the live feed): nobody to answer, nothing wrong here. */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientGone() {
     }
 
     /**
@@ -94,10 +102,10 @@ public class ApiExceptionHandler {
             HttpStatusCode status = frameworkError.getStatusCode();
             HttpStatus known = HttpStatus.resolve(status.value());
             String message = known != null ? known.getReasonPhrase() : "Request could not be processed";
-            return ResponseEntity.status(status).headers(frameworkError.getHeaders()).body(ApiError.of(message));
+            return ResponseEntity.status(status).headers(frameworkError.getHeaders()).contentType(MediaType.APPLICATION_JSON).body(ApiError.of(message));
         }
         log.error("Unexpected error while handling a request", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.of("Something went wrong on our side. If it keeps happening, report the trace ID."));
+                .contentType(MediaType.APPLICATION_JSON).body(ApiError.of("Something went wrong on our side. If it keeps happening, report the trace ID."));
     }
 }

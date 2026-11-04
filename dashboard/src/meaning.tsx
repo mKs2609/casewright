@@ -8,11 +8,15 @@ import {
   Mail,
   OctagonX,
   Phone,
+  Radio,
   Search,
   TriangleAlert,
   UserRoundCheck,
+  WifiOff,
   type LucideIcon,
 } from "lucide-react";
+
+import type { LiveState } from "./live";
 
 export type Tone = "benign" | "suspicious" | "malicious" | "accent" | "muted";
 
@@ -45,11 +49,18 @@ const ACTION_STATUSES: Record<string, Meaning> = {
   expired: { word: "Expired", tone: "muted", Icon: Clock },
 };
 
+const LIVE: Record<LiveState, Meaning> = {
+  live: { word: "Live", tone: "benign", Icon: Radio },
+  connecting: { word: "Connecting", tone: "muted", Icon: Clock },
+  paused: { word: "Live updates paused", tone: "suspicious", Icon: WifiOff },
+};
+
 const UNKNOWN: Meaning = { word: "Unknown", tone: "muted", Icon: CircleAlert };
 
 export const verdictMeaning = (verdict: string): Meaning => VERDICTS[verdict] ?? UNKNOWN;
 export const statusMeaning = (status: string): Meaning => STATUSES[status] ?? UNKNOWN;
 export const actionStatusMeaning = (status: string): Meaning => ACTION_STATUSES[status] ?? UNKNOWN;
+export const liveMeaning = (state: LiveState): Meaning => LIVE[state];
 
 export const KIND_ICONS: Record<string, LucideIcon> = { email: Mail, call_transcript: Phone, login: LogIn };
 export const KIND_WORDS: Record<string, string> = { email: "Email", call_transcript: "Phone call", login: "Sign-ins" };

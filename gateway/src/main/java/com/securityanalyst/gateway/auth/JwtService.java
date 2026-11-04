@@ -17,6 +17,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.stereotype.Service;
@@ -45,7 +47,11 @@ public class JwtService {
         SecretKey key = new SecretKeySpec(decodeKey(base64Key), "HmacSHA256");
         this.encoder = new NimbusJwtEncoder(new ImmutableSecret<>(key));
         // The decoder accepts HS256 only, so a token claiming "alg: none" or another algorithm is refused.
-        this.decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        NimbusJwtDecoder nimbus = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        // No grace period after expiry (the library allows 60 s by default, for servers whose clocks differ).
+        // This server both issues and checks its tokens with one clock, so expired means expired.
+        nimbus.setJwtValidator(JwtValidators.createDefaultWithValidators(new JwtTimestampValidator(Duration.ZERO)));
+        this.decoder = nimbus;
         this.lifetime = Duration.ofMinutes(lifetimeMinutes);
     }
 
@@ -71,6 +77,15 @@ public class JwtService {
                     jwt.getClaimAsString("username"),
                     Role.valueOf(jwt.getClaimAsString("role"))));
         } catch (JwtException | IllegalArgumentException | NullPointerException e) {
+            return Optional.empty();
+        }
+    }
+
+    /** When a valid token stops working, or empty if it is forged, altered, expired or malformed. */
+    public Optional<Instant> expiryOf(String token) {
+        try {
+            return Optional.ofNullable(decoder.decode(token).getExpiresAt());
+        } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }
     }

@@ -110,7 +110,7 @@ export const incident: IncidentDetail = {
   ],
 };
 
-type Answer = { status: number; body?: unknown } | (() => { status: number; body?: unknown });
+type Answer = { status: number; body?: unknown } | (() => { status: number; body?: unknown } | Response);
 
 /** A stand-in for the gateway: "METHOD /path" -> answer. Unlisted calls fail the test loudly. */
 export function fakeGateway(routes: Record<string, Answer>) {
@@ -120,15 +120,49 @@ export function fakeGateway(routes: Record<string, Answer>) {
     if (!route) {
       throw new Error(`Unexpected request: ${key}`);
     }
-    const { status, body } = typeof route === "function" ? route() : route;
+    const answer = typeof route === "function" ? route() : route;
+    if (answer instanceof Response) {
+      return answer;
+    }
+    const { status, body } = answer;
     return new Response(body === undefined ? null : JSON.stringify(body), { status });
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
 
+/**
+ * A live feed the test controls: send() writes to the newest connection, end() closes it as the
+ * gateway does when a login expires. connections counts how often the dashboard has connected.
+ */
+export function liveFeed() {
+  const encoder = new TextEncoder();
+  let current: ReadableStreamDefaultController<Uint8Array> | null = null;
+  const feed = {
+    connections: 0,
+    route: () => {
+      feed.connections += 1;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            current = controller;
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    },
+    send: (text: string) => current?.enqueue(encoder.encode(text)),
+    end: () => current?.close(),
+  };
+  return feed;
+}
+
+/** A feed that stays open and says nothing: the dashboard as it was before live updates. */
+const quietFeed = () => new Response(new ReadableStream<Uint8Array>(), { status: 200 });
+
 export const loggedInAs = (user: User, detail: IncidentDetail = incident) => ({
   "GET /api/me": { status: 200, body: user },
+  "GET /api/incidents/events": quietFeed as Answer,
   "GET /api/incidents": { status: 200, body: [summary] },
   [`GET /api/incidents/${detail.id}`]: { status: 200, body: detail },
   "GET /api/audit/verify": { status: 200, body: { valid: true, entries: 24, headSeq: 24, brokenAt: null } },

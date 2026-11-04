@@ -148,7 +148,7 @@ class AuditChainTest extends PostgresIntegrationTest {
     void anEntryAddedWithoutTheKeyIsCaught() {
         // Someone with full database access, and this code, but not the key.
         String otherKey = Base64.getEncoder().encodeToString("an-attacker-chosen-key-of-32-byt".getBytes());
-        new AuditLog(jdbc, json, otherKey).record("asha.rao", "test.forged", null, Map.of());
+        new AuditLog(jdbc, json, otherKey, event -> { }).record("asha.rao", "test.forged", null, Map.of());
 
         assertBroken(last + 1, "Entry " + (last + 1) + " has been changed");
     }
@@ -195,9 +195,9 @@ class AuditChainTest extends PostgresIntegrationTest {
 
     @Test
     void aMissingOrShortKeyStopsTheApplication() {
-        assertThatThrownBy(() -> new AuditLog(jdbc, json, Base64.getEncoder().encodeToString(new byte[31])))
+        assertThatThrownBy(() -> new AuditLog(jdbc, json, Base64.getEncoder().encodeToString(new byte[31]), event -> { }))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("at least 32 bytes");
-        assertThatThrownBy(() -> new AuditLog(jdbc, json, "not base64!"))
+        assertThatThrownBy(() -> new AuditLog(jdbc, json, "not base64!", event -> { }))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("Base64");
     }
 
