@@ -4,6 +4,7 @@ import {
   CircleAlert,
   CircleCheck,
   Clock,
+  FlaskConical,
   LogIn,
   Mail,
   OctagonX,
@@ -56,6 +57,9 @@ const LIVE: Record<LiveState, Meaning> = {
 };
 
 const UNKNOWN: Meaning = { word: "Unknown", tone: "muted", Icon: CircleAlert };
+
+/** On incidents fired from the demo buttons, so a made-up incident is never mistaken for a real one. */
+export const SIMULATED: Meaning = { word: "Simulated", tone: "muted", Icon: FlaskConical };
 
 export const verdictMeaning = (verdict: string): Meaning => VERDICTS[verdict] ?? UNKNOWN;
 export const statusMeaning = (status: string): Meaning => STATUSES[status] ?? UNKNOWN;

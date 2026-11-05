@@ -1,6 +1,6 @@
 import { ShieldX } from "lucide-react";
 
-import { KIND_WORDS, riskBand, statusMeaning, verdictMeaning, when } from "../meaning";
+import { KIND_WORDS, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { Evidence, IncidentDetail } from "../types";
 import { SignalChip, StatusChip } from "./Chips";
 
@@ -98,12 +98,13 @@ export function Investigation({ incident, highlighted }: Props) {
         {verdict && (
           <span className="chip tone-muted">{verdict.engine === "llm" ? "Led by the AI model" : "Fixed plan"}</span>
         )}
+        {incident.source === "demo" && <StatusChip meaning={SIMULATED} />}
       </div>
       {verdict && <RiskMeter score={verdict.riskScore} />}
       {verdict?.disagreement && (
         <p className="notice">The agent's verdict did not match the evidence, so a person must review this.</p>
       )}
-      {unfinished && <p className="notice">This investigation is still running. Refresh to see new steps.</p>}
+      {unfinished && <p className="notice">This investigation is still running. New steps appear as they happen.</p>}
       {status === "error" && <p className="notice">This investigation stopped before finishing. Any evidence so far is below.</p>}
 
       <details className="payload">

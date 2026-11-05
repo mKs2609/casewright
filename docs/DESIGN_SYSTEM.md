@@ -99,7 +99,8 @@ Layout: three columns on desktop (incidents 290px · investigation 1.25fr · rep
 |---|---|---|
 | **App bar** | Product name, audit-chain badge, user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
 | **Live badge** | Beside the incident list's title: Live, Connecting, or Live updates paused | Icon + word, read out politely to screen readers (`role="status"`). Refresh stays available. |
-| **Scenario buttons** | Fire simulated incidents | One primary "Attempt breach"; others secondary. Disabled for `VIEWER`. |
+| **Scenario buttons** | Fire simulated incidents, in a strip under the app bar | One primary "Attempt breach"; others secondary; the description on hover and to screen readers. Disabled for `VIEWER`, with a note why. Hidden when the gateway has demos off. |
+| **Simulated badge** | On demo incidents, in the list and the investigation header | Muted chip with icon + "Simulated", so a made-up incident is never mistaken for a real one. |
 | **Incident list item** | One incident in the feed | Verdict icon + colour dot, kind icon, `#id`, subject, status text, risk number. Selected state uses accent border. |
 | **Risk meter** | Running risk score | Big number + bar. Updates on every step. `role="meter"` with `aria-valuenow`. |
 | **Step card** | One tool call | Evidence chip (`E3`), tool name, arguments, one-line summary, signal chips, expandable raw evidence. |

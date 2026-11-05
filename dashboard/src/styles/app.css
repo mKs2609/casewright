@@ -267,6 +267,16 @@ pre {
   font-size: var(--text-small);
 }
 
+/* Demo scenario buttons, under the app bar */
+.demo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--border-thin) solid var(--color-border);
+}
+
 /* The three columns; one column on smaller screens. */
 .columns {
   display: grid;

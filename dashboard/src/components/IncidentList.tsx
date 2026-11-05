@@ -1,7 +1,7 @@
 import { CircleHelp, RefreshCw } from "lucide-react";
 
 import type { LiveState } from "../live";
-import { KIND_ICONS, KIND_WORDS, liveMeaning, statusMeaning, verdictMeaning, when } from "../meaning";
+import { KIND_ICONS, KIND_WORDS, liveMeaning, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { IncidentSummary } from "../types";
 import { StatusChip } from "./Chips";
 
@@ -54,6 +54,7 @@ export function IncidentList({ incidents, selected, error, onSelect, onRefresh, 
                 <span className="incident-line">
                   {incident.verdict ? <StatusChip meaning={verdictMeaning(incident.verdict)} /> : null}
                   <StatusChip meaning={statusMeaning(incident.status)} />
+                  {incident.source === "demo" && <StatusChip meaning={SIMULATED} />}
                 </span>
                 <span className="small muted">{when(incident.createdAt)}</span>
               </button>
