@@ -99,6 +99,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole("ANALYST", "ADMIN")
                 // Deciding actions: the same. The server checks this; a hidden button is no control.
                 .requestMatchers(HttpMethod.POST, "/api/actions/**").hasAnyRole("ANALYST", "ADMIN")
+                // Firing a demo scenario submits an incident, so the same roles.
+                .requestMatchers(HttpMethod.POST, "/api/demo/**").hasAnyRole("ANALYST", "ADMIN")
                 // Everything else, including URLs that don't exist: must be logged in.
                 .anyRequest().authenticated())
 

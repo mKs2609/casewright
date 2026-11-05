@@ -50,6 +50,7 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 | Dashboard tests | `cd dashboard; npm test` (no gateway or certificate needed); `npm run typecheck` for types |
 | Run dashboard | `cd dashboard; npm run dev` (https://localhost:5173; needs the gateway running) |
 | Run the built dashboard under the strict page policy | `cd dashboard; npm run build; npm run preview` |
+| Rewrite the demo scenarios file after changing `agent/tests/scenarios.py` | `agent\.venv\Scripts\python.exe scripts\make-demo-scenarios.py` |
 
 Maven is not installed globally; always use the wrapper `mvnw.cmd`.
 
@@ -92,6 +93,8 @@ docs/        All project documents
 - Mock threat-intel and test data use only reserved example names: `.example` domains, IPs from 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, and 555-01xx phone numbers. Never label a real site, network or number as malicious.
 - Tests that need the agent use a fake one (see `InvestigationTest`); `PostgresIntegrationTest` points `agent.base-url` at port 1 so no test reaches a real agent by accident.
 - React: no `dangerouslySetInnerHTML`; colours, sizes and durations only from design tokens; no links built from incident data; nothing in browser storage (`src/test/rules.test.ts` checks these). Every call to the gateway goes through `src/api.ts`, which shares one session refresh (ADR-48). Hiding a control from a role is a convenience: the gateway's check is the control. npm packages are pinned to exact versions, at least two weeks old, with install scripts off (`.npmrc`). No setting reaches the page: product code never reads `import.meta.env`.
+- Demo scenarios (ADR-50) live in `gateway/src/main/resources/demo/scenarios.json`, generated from `agent/tests/scenarios.py` by `scripts/make-demo-scenarios.py`; never edit the JSON by hand (`test_demo_scenarios.py` checks they match). Demo incidents are stored with `source = demo`; the browser only ever sends a scenario's name.
+- `@Transactional` works only on calls from outside the class (Spring's proxy). Never have one method of a service call another `@Transactional` method of the same class; give callers the one method instead. Tests marked `@Transactional` hide this mistake, so a change to how something is saved also needs a test that commits (like `DemoInvestigationTest`).
 - The live feed (ADR-49) learns of changes from `AuditLog.record`: a change to an incident that is not audited with its incident id never reaches the dashboard. The feed sends incident numbers only; never put incident data in it. It closes when the access token it opened with expires.
 - CI (`.github/workflows/ci.yml`) runs on every pull request and must stay green; a new test suite (agent, dashboard) gets its own job there. Actions are pinned to full commit SHAs with the version in a comment, and the workflow token stays `contents: read`.
 - A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.

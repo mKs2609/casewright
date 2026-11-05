@@ -101,6 +101,13 @@ export interface IncidentDetail extends Omit<IncidentSummary, "verdict" | "riskS
   actions: Action[];
 }
 
+/** A demo button. The incident behind it stays on the gateway. */
+export interface DemoScenario {
+  name: string;
+  title: string;
+  description: string;
+}
+
 export interface AuditCheck {
   valid: boolean;
   entries: number;

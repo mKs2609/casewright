@@ -65,6 +65,7 @@ flowchart LR
 | **D**enial of service | Flooding endpoints or the live feed | Tiered rate limits; 3 live feeds per user and 200 in total; a slow browser has its own writer and is dropped when far behind (ADR-49); investigation concurrency cap | 6, 16b |
 | **E**levation of privilege | Viewer approves an action | Role checks server-side; UI state is never the control | 4, 15 |
 | Spoofing | A session that ends while a live feed stays open | The feed closes when the access token it opened with expires, with no grace period; the browser must reconnect with a valid one (ADR-49) | 16b |
+| Tampering | The demo route used to submit an arbitrary incident, or a demo incident taken for a real one | No body is read: only a fixed, validated scenario can be fired, by ANALYST+; demo incidents are stored and shown as simulated; `demo.enabled=false` removes the routes (ADR-50) | 17a |
 | Information disclosure | Attacker text reaching the page through the live feed | The feed carries incident numbers only; the dashboard accepts only digits and fetches the incident through the ordinary API (ADR-49) | 16b |
 | Spoofing | Two tabs refresh at once, and reuse detection logs the person out | One refresh at a time, shared within a tab and locked across tabs (ADR-48) | 16a |
 

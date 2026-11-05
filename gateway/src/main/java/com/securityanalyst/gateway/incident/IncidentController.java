@@ -37,7 +37,7 @@ public class IncidentController {
     @PostMapping
     public ResponseEntity<IncidentResponses.Detail> submit(@Valid @RequestBody IncidentRequest request,
             @AuthenticationPrincipal AuthenticatedUser user) {
-        IncidentResponses.Detail created = incidents.submit(request, user);
+        IncidentResponses.Detail created = incidents.submit(request, user, Incident.SOURCE_API);
         return ResponseEntity.accepted().location(URI.create("/api/incidents/" + created.id())).body(created);
     }
 

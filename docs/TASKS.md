@@ -3,27 +3,26 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-04
+**Last updated:** 2026-11-05
 
 ---
 
 ## Now
 
-### Step 16b: Live stream (on `feature/live-stream`)
-- [x] `GET /api/incidents/events`: incident numbers only, announced from the audit log after each commit (ADR-49)
-- [x] The feed closes when its access token expires; access tokens no longer get a 60-second grace period
-- [x] Limits: 3 feeds per user, 200 in total; keep-alive; a slow or vanished browser is dropped without holding anything up
-- [x] Errors stay JSON for a request that asked for the stream; a browser leaving is not logged as an error
-- [x] Dashboard follows the feed through `src/api.ts`, reconnects with backoff, merges reloads; live badge; Refresh still works
-- [x] Tests: gateway 311 (both test orders), dashboard 87, agent unchanged (302, left to CI); 28 mutation checks with controls (15 dashboard, 13 gateway)
-- [x] Checked through the dashboard's forwarding: messages arrive as sent, nothing held back; a browser leaving reaches the server
-- [x] Live: two AI-led incidents investigated on screen as they ran (Live badge, no Refresh); a block approved in the browser; no gateway errors; audit chain valid
+### Step 17a: Demo scenarios (on `feature/demo-scenarios`)
+- [x] `GET /api/demo/scenarios` and `POST /api/demo/{scenario}`: the browser names a scenario, the gateway submits its own copy (ADR-50)
+- [x] The six tested scenarios, generated from the agent's (`scripts/make-demo-scenarios.py`) and checked to match; validated at startup
+- [x] Demo incidents stored as `source = demo`, audited as such, shown as "Simulated"; `demo.enabled` switch
+- [x] Dashboard: demo buttons under the app bar, "Attempt breach" first; viewers see them disabled; the new incident opens and fills in live
+- [x] Fixed on the way: a submit that ran without a transaction (Spring proxy); the stale "Refresh to see new steps" notice; the API table's old WebSocket row
+- [x] Tests: gateway 325 (both orders), dashboard 95, agent 315; mutation checks with controls: 22 of 23 caught by the named test (the other cannot change a demo's verdict)
+- [x] Live: all six fired from the dashboard (AI-led) reached their expected verdicts; stored and audited as demo; the injected note's target never proposed; no gateway errors; audit chain valid
 - [ ] Merged
 
 ## Next
 
-### Step 17: Demo scenarios and red-team probe
-See `ROADMAP.md`.
+### Step 17b: Red-team probe
+A hijacked model's attempts replayed against the real guardrails, each shown blocked (FR-27).
 
 ## Later
 
@@ -38,6 +37,7 @@ See `ROADMAP.md` step 18.
 
 ## Done
 
+- **2026-11-05:** Step 16b (live stream) merged: PR #17.
 - **2026-11-03:** Step 16a (dashboard) merged: PR #16. "Dashboard tests" is now a required check on `main`.
 - **2026-11-02:** Step 15 (human approval) merged: PR #15.
 - **2026-10-31:** Step 14 (audit log) merged: PR #14.

@@ -77,6 +77,7 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── incident/     ingestion, listing, detail
 │       ├── agent/        client that calls the agent service
 │       ├── action/       proposed actions, approvals
+│       ├── demo/         demo scenarios (ADR-50)
 │       ├── audit/        hash-chained audit log
 │       ├── live/         live feed (Server-Sent Events, ADR-49)
 │       └── common/       error handling, validation, rate limiting, security config
@@ -98,7 +99,7 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── api.ts           every call to the gateway; one session refresh at a time
 │       ├── live.ts          follows the live feed and reconnects
 │       ├── meaning.tsx      each state's word, icon and colour
-│       ├── components/      login, incident list, investigation, reports, approval
+│       ├── components/      login, demo buttons, incident list, investigation, reports, approval
 │       └── styles/          design tokens and the styles built on them
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
@@ -161,8 +162,9 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | POST | `/api/actions/{id}/decision` | ANALYST+ | `{"decision": "approve"}` or `"reject"`. `409` if already decided or expired; `403` on your own account |
 | GET | `/api/audit?limit=100` | any | Recent audit entries, newest first (at most 500) |
 | GET | `/api/audit/verify` | any | Walk the hash chain: valid or not, entries, head entry and hash, where it broke |
-| POST | `/api/demo/{scenario}` | ANALYST+ | Fire a simulated incident |
-| WS | `/ws` | any | Live event stream |
+| GET | `/api/incidents/events` | any | Live feed: Server-Sent Events carrying incident numbers only (ADR-49) |
+| GET | `/api/demo/scenarios` | any | The demo buttons: names, titles and descriptions (ADR-50) |
+| POST | `/api/demo/{scenario}` | ANALYST+ | Fire a demo scenario: no body; the gateway submits its own copy, marked `demo` (`202 Accepted`) |
 
 ### 5.2 Internal API (agent, port 8001, bound to localhost)
 

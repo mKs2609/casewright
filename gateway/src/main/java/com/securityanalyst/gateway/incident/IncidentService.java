@@ -48,8 +48,12 @@ public class IncidentService {
         this.actions = actions;
     }
 
+    /**
+     * source: where the incident came from, Incident.SOURCE_API or SOURCE_DEMO. One method only, called
+     * from outside: a call from inside this class would skip Spring's proxy, and with it the transaction.
+     */
     @Transactional
-    public IncidentResponses.Detail submit(IncidentRequest request, AuthenticatedUser submittedBy) {
+    public IncidentResponses.Detail submit(IncidentRequest request, AuthenticatedUser submittedBy, String source) {
         MonitoredIdentity subject = identities.find(request.subjectIdentity())
                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Unknown monitored identity"));
 
@@ -62,11 +66,10 @@ public class IncidentService {
 
         // Written as an IncidentRequest so the "kind" field is included in the stored JSON.
         String payload = json.writerFor(IncidentRequest.class).writeValueAsString(request);
-        Incident incident = new Incident(kind, subject, payload, Incident.SOURCE_API,
-                users.getReferenceById(submittedBy.id()));
+        Incident incident = new Incident(kind, subject, payload, source, users.getReferenceById(submittedBy.id()));
         Incident saved = incidents.saveAndFlush(incident);
         audit.record(submittedBy.username(), "incident.submitted", saved.getId(),
-                Map.of("kind", kind, "subject", subject.getIdentity()));
+                Map.of("kind", kind, "subject", subject.getIdentity(), "source", source));
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
         return IncidentResponses.Detail.from(saved, json, List.of(), null, List.of());

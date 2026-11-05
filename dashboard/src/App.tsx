@@ -8,6 +8,7 @@ import { IncidentList } from "./components/IncidentList";
 import { Investigation } from "./components/Investigation";
 import { Login } from "./components/Login";
 import { Reports } from "./components/Reports";
+import { Scenarios } from "./components/Scenarios";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
 
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : "Something went wrong. Try again.");
@@ -146,6 +147,15 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   return (
     <div className="app">
       <AppBar user={user} audit={audit} onLogout={onLogout} />
+      <Scenarios
+        user={user}
+        onStarted={(started) => {
+          // Open the new incident at once; the live feed fills in its steps.
+          window.location.hash = `#/incidents/${started.id}`;
+          setSelected(started.id);
+          void loadIncidents();
+        }}
+      />
       <div className="columns">
         <IncidentList
           incidents={incidents}

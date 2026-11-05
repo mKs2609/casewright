@@ -384,3 +384,16 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the feed holds a connection open for a long time, so it must not outlive the login that opened it, use up the server, or carry anything an attacker wrote.
 **Alternatives considered:** sending the changed data down the feed (a second path for untrusted text, and a missed message would leave the screen wrong); announcing changes from each service (easy to forget one); PostgreSQL `LISTEN/NOTIFY` (works across several gateways, but needs its own database connection for a single gateway); the browser's `EventSource` (it cannot see a 401, so it cannot use the shared session refresh).
 **Trade-offs:** open feeds live in one gateway's memory, so running several gateways would need a shared channel (`LISTEN/NOTIFY` or a message broker). Every change reloads the incident list for every viewer; fine at this scale. Each tab reconnects once per access token, every 15 minutes.
+
+## ADR-50: Demo scenarios
+**Status:** Accepted (2026-11-05; splitting step 17 into 17a and 17b by Mohit)
+**Decision:**
+- **The gateway keeps the scenarios; the browser only names one.** `POST /api/demo/{scenario}` takes no body. The gateway submits its own copy from `demo/scenarios.json` through the same `IncidentService.submit` as `POST /api/incidents`: same validation, audit entry and investigation. Firing one needs ANALYST or ADMIN; any logged-in user may list them (`GET /api/demo/scenarios`, names and descriptions only).
+- **The scenarios are the tested ones.** `scripts/make-demo-scenarios.py` writes the file from `agent/tests/scenarios.py`, whose verdicts are known, and an agent test fails if the two differ. Another checks that each scenario fired a second time, when it is related to the first (ADR-42), keeps its verdict.
+- **A broken scenario stops the gateway.** Each is read and validated like an API request at startup, so it cannot fail in front of an audience.
+- **Demo incidents are marked.** They are stored with `source = demo`, the audit entry says so, and the dashboard shows "Simulated" on them.
+- **They can be switched off.** `demo.enabled=false` removes the demo URLs entirely. It is on for local use.
+
+**Why:** a demo button must be reliable and must not become a way to submit arbitrary incidents or to mistake a made-up incident for a real one.
+**Alternatives considered:** the dashboard sending the incident JSON (a second door for arbitrary content); a separate copy of the scenarios written by hand (it would drift from the tested ones); a script outside the app (no button, which the demo needs).
+**Trade-offs:** fired repeatedly, the attack scenarios link to each other as related incidents and score 1 to 3 points higher (all stay Attack); Normal sign-in does not link. Each fired scenario runs a real investigation, so it counts against the AI model's daily limit (ADR-15).

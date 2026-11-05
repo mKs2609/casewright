@@ -11,7 +11,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /** What the incident endpoints send back. Built from the entity, never the entity itself. */
-final class IncidentResponses {
+public final class IncidentResponses {
 
     private IncidentResponses() {
     }
@@ -33,7 +33,7 @@ final class IncidentResponses {
      * evidence gathered so far, in order (E1, E2, ... and any refused calls R1, R2, ...), and
      * the verdict once the investigation has finished (null until then), and its actions.
      */
-    record Detail(Long id, String kind, String subjectIdentity, String subjectName, String status,
+    public record Detail(Long id, String kind, String subjectIdentity, String subjectName, String status,
             String source, String createdBy, Instant createdAt, JsonNode payload, List<EvidenceService.View> evidence,
             VerdictService.View verdict, List<ActionService.View> actions) {
 

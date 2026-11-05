@@ -25,7 +25,9 @@ import jakarta.persistence.Table;
 public class Incident {
 
     static final String STATUS_QUEUED = "queued";
-    static final String SOURCE_API = "api";
+    public static final String SOURCE_API = "api";
+    /** A simulated incident fired from the dashboard's demo buttons (FR-26). */
+    public static final String SOURCE_DEMO = "demo";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,4 +1,4 @@
-import type { Action, AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
+import type { Action, AuditCheck, DemoScenario, IncidentDetail, IncidentSummary, User } from "./types";
 
 /** A refusal from the server, with its own message (which never repeats what was sent). */
 export class ApiError extends Error {
@@ -11,6 +11,8 @@ export class ApiError extends Error {
 }
 
 let onSessionLost: () => void = () => {};
+
+const SCENARIO_NAME = /^[a-z_]{1,40}$/;
 
 /** Called when the session has ended and cannot be renewed, so the app can show the login screen. */
 export function setSessionLostHandler(handler: () => void): void {
@@ -36,10 +38,12 @@ function refreshOnce(): Promise<boolean> {
   return refreshing;
 }
 
-async function send(path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
+type Method = "GET" | "POST";
+
+async function send(path: string, body?: unknown, signal?: AbortSignal, method?: Method): Promise<Response> {
   try {
     return await fetch(`/api${path}`, {
-      method: body === undefined && !path.startsWith("/auth/") ? "GET" : "POST",
+      method: method ?? (body === undefined && !path.startsWith("/auth/") ? "GET" : "POST"),
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
@@ -53,11 +57,11 @@ async function send(path: string, body?: unknown, signal?: AbortSignal): Promise
 }
 
 /** Sends a request, renewing the session once if it has expired. Any refusal becomes an ApiError. */
-async function authorised(path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
-  let response = await send(path, body, signal);
+async function authorised(path: string, body?: unknown, signal?: AbortSignal, method?: Method): Promise<Response> {
+  let response = await send(path, body, signal, method);
   if (response.status === 401 && !path.startsWith("/auth/")) {
     if (await refreshOnce()) {
-      response = await send(path, body, signal);
+      response = await send(path, body, signal, method);
     }
     if (response.status === 401) {
       onSessionLost();
@@ -69,8 +73,8 @@ async function authorised(path: string, body?: unknown, signal?: AbortSignal): P
   return response;
 }
 
-async function request<T>(path: string, body?: unknown): Promise<T> {
-  const response = await authorised(path, body);
+async function request<T>(path: string, body?: unknown, method?: Method): Promise<T> {
+  const response = await authorised(path, body, undefined, method);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
@@ -94,6 +98,16 @@ export const api = {
   incident: (id: number) => request<IncidentDetail>(`/incidents/${id}`),
   decide: (id: number, decision: "approve" | "reject") => request<Action>(`/actions/${id}/decision`, { decision }),
   auditCheck: () => request<AuditCheck>("/audit/verify"),
+  /** The demo buttons. Names that are not plain lowercase words are dropped: they become part of a URL. */
+  demoScenarios: async () =>
+    (await request<DemoScenario[]>("/demo/scenarios")).filter((scenario) => SCENARIO_NAME.test(scenario.name)),
+  /** Fires a demo scenario. Only its name is sent; the gateway submits its own copy. */
+  runScenario: (name: string) => {
+    if (!SCENARIO_NAME.test(name)) {
+      return Promise.reject(new ApiError(0, "That is not a demo scenario."));
+    }
+    return request<IncidentDetail>(`/demo/${name}`, undefined, "POST");
+  },
   /** The live feed (ADR-49): an open response that the gateway keeps adding to. */
   openFeed: async (signal: AbortSignal) => {
     const response = await authorised("/incidents/events", undefined, signal);
