@@ -108,6 +108,21 @@ export interface DemoScenario {
   description: string;
 }
 
+/** One attempt of the red-team run's hijacked model, judged by the gateway from what it stored. */
+export interface RedTeamRow {
+  attempt: string;
+  stoppedBy: string;
+  outcome: "blocked" | "not_blocked" | "waiting";
+}
+
+export interface RedTeamCard {
+  incidentId: number;
+  state: "running" | "finished" | "failed";
+  blocked: number;
+  attempts: number;
+  rows: RedTeamRow[];
+}
+
 export interface AuditCheck {
   valid: boolean;
   entries: number;

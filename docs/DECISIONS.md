@@ -397,3 +397,17 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** a demo button must be reliable and must not become a way to submit arbitrary incidents or to mistake a made-up incident for a real one.
 **Alternatives considered:** the dashboard sending the incident JSON (a second door for arbitrary content); a separate copy of the scenarios written by hand (it would drift from the tested ones); a script outside the app (no button, which the demo needs).
 **Trade-offs:** fired repeatedly, the attack scenarios link to each other as related incidents and score 1 to 3 points higher (all stay Attack); Normal sign-in does not link. Each fired scenario runs a real investigation, so it counts against the AI model's daily limit (ADR-15).
+
+## ADR-51: The red-team probe
+**Status:** Accepted (2026-11-06; storing runs as incidents, and a hijacked model only, by Mohit)
+**Decision:**
+- **A scripted, hijacked model plays the AI.** `agent/app/redteam.py` follows the hidden note in the prompt-injection demo email: a tool off the allow-list (`block_ip` on 10.0.0.5), lookups of an address and a person the incident does not contain, arguments that are not plain named values, skipping the standard checks, a verdict citing evidence that was never recorded, a verdict of "benign", and a summary line saying the email is safe. It goes through exactly the checks the real model does, then through everything the gateway does.
+- **Only the gateway can ask for it.** `POST /api/red-team` (ANALYST+) submits that email as an incident with `source = red_team`; the investigation runner sets `redTeam` on the agent request only for such incidents. Nothing a caller sends can set it, and the agent accepts requests only with the service token. Red-team runs have their own budget, so they never use the real model's daily allowance.
+- **Every outcome is read from the record.** `GET /api/red-team/{id}` returns a scorecard the gateway builds from what it stored: refused and accepted tool calls, the verdict, the reports and the actions. An attempt not yet shown blocked is "waiting" while the run goes on and "not blocked" once it has finished, so a check that stopped working would show. The dashboard only displays it.
+- **Runs are stored as incidents**, so the refusals, the overruled verdict and the actions waiting for a person show on the normal screens and in the audit log.
+- **Only attempts the record can judge are listed.** A verdict with an invented "approved by the security team" field was left out of the script: the agent refuses it, but nothing the gateway stores could show that.
+- **A demo feature:** it exists only with `demo.enabled`.
+
+**Why:** showing that a guardrail holds is only convincing if the answer comes from the system's own record, not from text written to say "blocked".
+**Alternatives considered:** a probe that stores nothing (it could not show the gateway's checks or be opened like an incident); also attacking the gateway as a compromised agent (about twice the work; those attacks are covered by the gateway's tests); letting the dashboard judge the outcomes (the browser is not the place for a security check).
+**Trade-offs:** the script's values exist in two places (`redteam.py` and `RedTeamScorecard`), kept in step by tests on both sides. Each run stays in the development history for good, because the audit log cannot be cleaned. The probe shows the checks hold against this script; it does not prove they hold against every possible attack.

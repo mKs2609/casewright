@@ -98,6 +98,7 @@ Plain-language meanings of the terms used in this project.
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A two-way connection that stays open, so both sides can send at any time. We chose Server-Sent Events instead (ADR-48). |
 | **Server-Sent Events (SSE)** | A one-way feed: the browser opens an ordinary request, and the server keeps sending updates down it. |
+| **Red-team probe** | A deliberate attack on your own system to show its defences hold. Here, a scripted, hijacked model follows a trick email's hidden note, and the gateway shows what stopped each attempt (ADR-51). |
 | **Demo scenario** | A fixed, made-up incident the dashboard can fire to show an investigation. The gateway keeps it; the browser only names it (ADR-50). |
 | **Proxy (Spring)** | A wrapper Spring puts around a class to add behaviour such as transactions. It only works when a method is called from outside the class; a call from inside skips it. |
 | **Keep-alive (heartbeat)** | A small message sent on an idle connection so neither side, nor anything between them, thinks it has died. Writing it is also how the server notices a browser that has gone. |

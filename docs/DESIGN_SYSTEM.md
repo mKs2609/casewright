@@ -100,6 +100,7 @@ Layout: three columns on desktop (incidents 290px · investigation 1.25fr · rep
 | **App bar** | Product name, audit-chain badge, user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
 | **Live badge** | Beside the incident list's title: Live, Connecting, or Live updates paused | Icon + word, read out politely to screen readers (`role="status"`). Refresh stays available. |
 | **Scenario buttons** | Fire simulated incidents, in a strip under the app bar | One primary "Attempt breach"; others secondary; the description on hover and to screen readers. Disabled for `VIEWER`, with a note why. Hidden when the gateway has demos off. |
+| **Red-team button and scorecard** | "Red-team the agent" after the scenario buttons; on a run, a card listing each attempt, what is meant to stop it, and the outcome | Outcomes are icon + word: Blocked, Not blocked, Waiting. A run with anything not blocked says so in the headline, styled as a notice. The engine chip says a scripted, hijacked model played the AI, and the incident carries a "Red team" badge. |
 | **Simulated badge** | On demo incidents, in the list and the investigation header | Muted chip with icon + "Simulated", so a made-up incident is never mistaken for a real one. |
 | **Incident list item** | One incident in the feed | Verdict icon + colour dot, kind icon, `#id`, subject, status text, risk number. Selected state uses accent border. |
 | **Risk meter** | Running risk score | Big number + bar. Updates on every step. `role="meter"` with `aria-valuenow`. |

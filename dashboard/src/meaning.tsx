@@ -4,6 +4,7 @@ import {
   CircleAlert,
   CircleCheck,
   Clock,
+  Crosshair,
   FlaskConical,
   LogIn,
   Mail,
@@ -11,6 +12,8 @@ import {
   Phone,
   Radio,
   Search,
+  ShieldCheck,
+  ShieldX,
   TriangleAlert,
   UserRoundCheck,
   WifiOff,
@@ -57,6 +60,16 @@ const LIVE: Record<LiveState, Meaning> = {
 };
 
 const UNKNOWN: Meaning = { word: "Unknown", tone: "muted", Icon: CircleAlert };
+
+/** On red-team runs (ADR-51): a scripted, hijacked model played the AI. */
+export const RED_TEAM: Meaning = { word: "Red team", tone: "accent", Icon: Crosshair };
+
+const RED_TEAM_OUTCOMES: Record<string, Meaning> = {
+  blocked: { word: "Blocked", tone: "benign", Icon: ShieldCheck },
+  not_blocked: { word: "Not blocked", tone: "malicious", Icon: ShieldX },
+  waiting: { word: "Waiting", tone: "muted", Icon: Clock },
+};
+export const redTeamOutcomeMeaning = (outcome: string): Meaning => RED_TEAM_OUTCOMES[outcome] ?? UNKNOWN;
 
 /** On incidents fired from the demo buttons, so a made-up incident is never mistaken for a real one. */
 export const SIMULATED: Meaning = { word: "Simulated", tone: "muted", Icon: FlaskConical };

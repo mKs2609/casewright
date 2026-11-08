@@ -111,7 +111,7 @@ Priority: **P0** = must have for the demo · **P1** = should have · **P2** = st
 | FR-24 | Live stream of investigation steps over an authenticated connection (Server-Sent Events, ADR-48, ADR-49). | P0 |
 | FR-25 | Animated investigation view; click any step for full detail. | P0 |
 | FR-26 | "Attempt breach" button and other simulated scenarios (phishing, vishing, impossible travel, prompt-injection email), marked as simulated (ADR-50). | P0 |
-| FR-27 | "Red-team the agent" action that replays what a hijacked model would attempt and shows every attempt blocked. | P1 |
+| FR-27 | "Red-team the agent" action that replays what a hijacked model would attempt and shows every attempt blocked, judged from the stored record (ADR-51). | P1 |
 | FR-28 | Replay a finished investigation step by step. | P2 |
 
 ## 7. Non-functional requirements

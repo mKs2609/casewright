@@ -101,6 +101,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/actions/**").hasAnyRole("ANALYST", "ADMIN")
                 // Firing a demo scenario submits an incident, so the same roles.
                 .requestMatchers(HttpMethod.POST, "/api/demo/**").hasAnyRole("ANALYST", "ADMIN")
+                // Starting a red-team run submits an incident too.
+                .requestMatchers(HttpMethod.POST, "/api/red-team").hasAnyRole("ANALYST", "ADMIN")
                 // Everything else, including URLs that don't exist: must be logged in.
                 .anyRequest().authenticated())
 

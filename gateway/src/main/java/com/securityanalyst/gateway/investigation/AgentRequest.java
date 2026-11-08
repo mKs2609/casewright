@@ -12,8 +12,11 @@ import tools.jackson.databind.JsonNode;
  * The baseline is decrypted here, in the gateway, and travels only over this machine.
  * The recent indicators (step 10b) carry values and incident numbers only, never who
  * those incidents were about.
+ * redTeam asks the agent to play its scripted, hijacked model instead of the AI (ADR-51). It is set
+ * only for incidents the red-team route created; nothing a caller sends can set it.
  */
-public record AgentRequest(IncidentPart incident, Baseline baseline, List<IndicatorService.Recent> recentIndicators) {
+public record AgentRequest(IncidentPart incident, Baseline baseline, List<IndicatorService.Recent> recentIndicators,
+        boolean redTeam) {
 
     public record IncidentPart(Long id, String kind, String subjectIdentity, JsonNode payload) {
     }

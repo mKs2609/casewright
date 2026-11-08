@@ -267,6 +267,30 @@ pre {
   font-size: var(--text-small);
 }
 
+/* Red-team scorecard */
+.red-team {
+  border-color: var(--color-accent);
+}
+
+.red-team-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.red-team-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.red-team-row .chip {
+  flex-shrink: 0;
+}
+
 /* Demo scenario buttons, under the app bar */
 .demo-bar {
   display: flex;

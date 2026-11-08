@@ -83,7 +83,7 @@ public class IncidentService {
     }
 
     /** What an investigation needs to know about one incident. */
-    public record InvestigationInput(Long id, String kind, String subjectIdentity, String payloadJson) {
+    public record InvestigationInput(Long id, String kind, String subjectIdentity, String payloadJson, String source) {
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +91,7 @@ public class IncidentService {
         Incident incident = incidents.findWithDetailsById(id)
                 .orElseThrow(() -> new IllegalStateException("Incident " + id + " does not exist"));
         return new InvestigationInput(incident.getId(), incident.getKind(), incident.getSubject().getIdentity(),
-                incident.getPayload());
+                incident.getPayload(), incident.getSource());
     }
 
     /** Moves an incident to a new status. The database refuses any status not in its list. */

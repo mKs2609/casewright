@@ -50,6 +50,8 @@ class DemoDisabledTest extends PostgresIntegrationTest {
 
         mvc.perform(get("/api/demo/scenarios").cookie(admin)).andExpect(status().isNotFound());
         mvc.perform(post("/api/demo/credential_stuffing").cookie(admin)).andExpect(status().isNotFound());
+        mvc.perform(post("/api/red-team").cookie(admin)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/red-team/1").cookie(admin)).andExpect(status().isNotFound());
         assertThat(context.getBeanNamesForType(DemoScenarios.class)).isEmpty();
     }
 }
