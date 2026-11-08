@@ -66,6 +66,7 @@ flowchart LR
 | **E**levation of privilege | Viewer approves an action | Role checks server-side; UI state is never the control | 4, 15 |
 | Spoofing | A session that ends while a live feed stays open | The feed closes when the access token it opened with expires, with no grace period; the browser must reconnect with a valid one (ADR-49) | 16b |
 | Tampering | The demo route used to submit an arbitrary incident, or a demo incident taken for a real one | No body is read: only a fixed, validated scenario can be fired, by ANALYST+; demo incidents are stored and shown as simulated; `demo.enabled=false` removes the routes (ADR-50) | 17a |
+| Elevation of privilege | A caller switching the agent to the scripted model, or a probe result that only claims a check held | `redTeam` is set by the gateway from the stored source, never from a request; scorecard outcomes are read from the stored record, and an attempt not shown blocked is reported as not blocked (ADR-51) | 17b |
 | Information disclosure | Attacker text reaching the page through the live feed | The feed carries incident numbers only; the dashboard accepts only digits and fetches the incident through the ordinary API (ADR-49) | 16b |
 | Spoofing | Two tabs refresh at once, and reuse detection logs the person out | One refresh at a time, shared within a tab and locked across tabs (ADR-48) | 16a |
 

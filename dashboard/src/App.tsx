@@ -7,6 +7,7 @@ import { AppBar } from "./components/AppBar";
 import { IncidentList } from "./components/IncidentList";
 import { Investigation } from "./components/Investigation";
 import { Login } from "./components/Login";
+import { RedTeamCard } from "./components/RedTeamCard";
 import { Reports } from "./components/Reports";
 import { Scenarios } from "./components/Scenarios";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
@@ -172,6 +173,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
           <>
             <Investigation incident={detail} highlighted={highlighted} />
             <section className="panel reports" aria-label="Reports and actions">
+              {detail.source === "red_team" && <RedTeamCard incident={detail} />}
               <Actions
                 actions={detail.actions}
                 evidence={detail.evidence}

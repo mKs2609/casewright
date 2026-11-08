@@ -31,8 +31,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 15 | **Human approval** | State machines, separation of duties | High-risk actions wait as `pending`; approve/reject is audited; expiry and self-approval rules hold | ✅ |
 | 16a | **Dashboard** | React, TypeScript, safe rendering, the design system, a page security policy | Steps are clickable; both reports render; approval works from the UI; incident text can never run as code | ✅ |
 | 16b | **Live stream** | Server-Sent Events, keeping an open connection authorised | The investigation appears live, step by step | ✅ |
-| 17a | **Demo scenarios** | Building a reliable demo | "Attempt breach" and the other scenarios run from the UI, each reaching its tested verdict | 🟡 |
-| 17b | **Red-team probe** | Showing the guardrails hold | The probe shows every hijack attempt blocked | ⬜ |
+| 17a | **Demo scenarios** | Building a reliable demo | "Attempt breach" and the other scenarios run from the UI, each reaching its tested verdict | ✅ |
+| 17b | **Red-team probe** | Showing the guardrails hold | The probe shows every hijack attempt blocked | 🟡 |
 | 18 | **CI security gate + evaluation** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, measuring accuracy | Every push runs tests and scans; evaluation numbers are in the README; `SECURITY.md` fully ticked | ⬜ |
 
 ## Suggested pace (8 weeks)

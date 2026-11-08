@@ -23,7 +23,7 @@ describe("demo scenarios", () => {
 
     await screen.findByRole("button", { name: "Attempt breach" });
     const buttons = within(demoBar()).getAllByRole("button");
-    expect(buttons.map((b) => b.textContent)).toEqual(["Attempt breach", "Phishing email", "Normal sign-in"]);
+    expect(buttons.map((b) => b.textContent)).toEqual(["Attempt breach", "Phishing email", "Normal sign-in", "Red-team the agent"]);
     expect(buttons[0]).toHaveClass("button-primary");
     expect(buttons[1]).not.toHaveClass("button-primary");
     expect(buttons[0]).toHaveAccessibleDescription("Password guessing, then a way in.");
@@ -82,7 +82,7 @@ describe("demo scenarios", () => {
     render(<App />);
 
     await screen.findByRole("button", { name: "Phishing email" });
-    expect(within(demoBar()).getAllByRole("button")).toHaveLength(1);
+    expect(within(demoBar()).getAllByRole("button").map((b) => b.textContent)).toEqual(["Phishing email", "Red-team the agent"]);
     expect(screen.queryByText("Sneaky")).not.toBeInTheDocument();
   });
 

@@ -3,30 +3,30 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-05
+**Last updated:** 2026-11-06
 
 ---
 
 ## Now
 
-### Step 17a: Demo scenarios (on `feature/demo-scenarios`)
-- [x] `GET /api/demo/scenarios` and `POST /api/demo/{scenario}`: the browser names a scenario, the gateway submits its own copy (ADR-50)
-- [x] The six tested scenarios, generated from the agent's (`scripts/make-demo-scenarios.py`) and checked to match; validated at startup
-- [x] Demo incidents stored as `source = demo`, audited as such, shown as "Simulated"; `demo.enabled` switch
-- [x] Dashboard: demo buttons under the app bar, "Attempt breach" first; viewers see them disabled; the new incident opens and fills in live
-- [x] Fixed on the way: a submit that ran without a transaction (Spring proxy); the stale "Refresh to see new steps" notice; the API table's old WebSocket row
-- [x] Tests: gateway 325 (both orders), dashboard 95, agent 315; mutation checks with controls: 22 of 23 caught by the named test (the other cannot change a demo's verdict)
-- [x] Live: all six fired from the dashboard (AI-led) reached their expected verdicts; stored and audited as demo; the injected note's target never proposed; no gateway errors; audit chain valid
+### Step 17b: Red-team probe (on `feature/red-team-probe`)
+- [x] Agent: a scripted, hijacked model (`app/redteam.py`) used only for requests marked `redTeam`, with its own budget
+- [x] Gateway: `POST /api/red-team` submits the trick email as a `red_team` incident; only those ask the agent for the script
+- [x] Gateway: `GET /api/red-team/{id}`, a scorecard judged from the stored record; anything not shown blocked is reported (ADR-51)
+- [x] Dashboard: "Red-team the agent" button, "Red team" badge, the scorecard following the live feed
+- [x] README: the probe added to the evidence and the limitations
+- [x] Tests: gateway 345 (both orders), dashboard 102, agent 324; 28 of 28 mutation checks caught with controls (14 gateway, 10 dashboard, 4 agent)
+- [x] Live: two runs from the dashboard, 10 of 10 attempts blocked each; stored record agrees; no gateway errors; audit chain valid
 - [ ] Merged
 
 ## Next
 
-### Step 17b: Red-team probe
-A hijacked model's attempts replayed against the real guardrails, each shown blocked (FR-27).
+### Step 18: CI security gate and evaluation
+See `ROADMAP.md`.
 
 ## Later
 
-See `ROADMAP.md` step 18.
+Step 19: the final handbook.
 
 ## Open questions
 
@@ -37,6 +37,7 @@ See `ROADMAP.md` step 18.
 
 ## Done
 
+- **2026-11-06:** Step 17a (demo scenarios) merged: PR #18. The README now covers the safety approach, evidence and limitations.
 - **2026-11-05:** Step 16b (live stream) merged: PR #17.
 - **2026-11-03:** Step 16a (dashboard) merged: PR #16. "Dashboard tests" is now a required check on `main`.
 - **2026-11-02:** Step 15 (human approval) merged: PR #15.

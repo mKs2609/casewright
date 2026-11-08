@@ -10,6 +10,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.securityanalyst.gateway.action.ActionService;
 import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
+import com.securityanalyst.gateway.incident.Incident;
 import com.securityanalyst.gateway.incident.IncidentService;
 import com.securityanalyst.gateway.incident.IncidentSubmitted;
 import com.securityanalyst.gateway.verdict.VerdictService;
@@ -210,6 +211,7 @@ public class InvestigationRunner {
         var baseline = identities.baselineOf(incident.subjectIdentity())
                 .orElseThrow(() -> new IllegalStateException("No baseline for " + incident.subjectIdentity()));
         return new AgentRequest(new AgentRequest.IncidentPart(incident.id(), incident.kind(), incident.subjectIdentity(),
-                json.readTree(incident.payloadJson())), baseline, indicators.recentExcept(incidentId));
+                json.readTree(incident.payloadJson())), baseline, indicators.recentExcept(incidentId),
+                Incident.SOURCE_RED_TEAM.equals(incident.source()));
     }
 }

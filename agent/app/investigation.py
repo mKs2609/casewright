@@ -11,7 +11,7 @@ from app.case import Case
 from app.llm import ChatModel
 from app.models import (ActionsEvent, CompleteEvent, Event, IndicatorItem, IndicatorsEvent, InvestigateRequest, LlmVerdict,
                         ReportEvent, ThoughtEvent, VerdictEvent)
-from app import actions, reasoning, report, summary
+from app import actions, reasoning, redteam, report, summary
 from app import verdict as decide
 from app.tools import ToolBox
 
@@ -109,6 +109,10 @@ def investigate(request: InvestigateRequest, model: ChatModel | None = None,
     # Reported to the gateway, which keeps them so later incidents can be compared (step 10b).
     yield IndicatorsEvent(indicators=[IndicatorItem(type=t, value=v) for t, v in found.items()])
 
+    if request.red_team:
+        # Its own budget: probe runs never use up the real model's daily allowance.
+        model, budget = redteam.HijackedModel(), DailyBudget()
+        yield ThoughtEvent(text="Red-team run: a scripted, hijacked model plays the AI. Every check runs as usual.")
     model = model or reasoning.configured_model()
     claim: LlmVerdict | None = None
     if model is not None:

@@ -1,4 +1,4 @@
-import type { Action, AuditCheck, DemoScenario, IncidentDetail, IncidentSummary, User } from "./types";
+import type { Action, AuditCheck, DemoScenario, IncidentDetail, IncidentSummary, RedTeamCard, User } from "./types";
 
 /** A refusal from the server, with its own message (which never repeats what was sent). */
 export class ApiError extends Error {
@@ -108,6 +108,9 @@ export const api = {
     }
     return request<IncidentDetail>(`/demo/${name}`, undefined, "POST");
   },
+  /** Starts a red-team run: the trick email, investigated by a scripted, hijacked model. */
+  startRedTeam: () => request<IncidentDetail>("/red-team", undefined, "POST"),
+  redTeamScorecard: (incidentId: number) => request<RedTeamCard>(`/red-team/${incidentId}`),
   /** The live feed (ADR-49): an open response that the gateway keeps adding to. */
   openFeed: async (signal: AbortSignal) => {
     const response = await authorised("/incidents/events", undefined, signal);

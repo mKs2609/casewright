@@ -61,6 +61,9 @@ class InvestigateRequest(Strict):
     # From the gateway, which keeps the history (ADR-3): indicators of incidents from the
     # last few days, so correlation can spot the same attacker in several reports.
     recent_indicators: Annotated[list[RecentIndicator], Field(max_length=1000)] = []
+    # Set by the gateway only for incidents its red-team route created (ADR-51): the scripted,
+    # hijacked model (app/redteam.py) plays the AI instead of the configured one.
+    red_team: bool = False
 
 
 # ---------------------------------------------------------------- what the agent sends back

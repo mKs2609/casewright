@@ -195,7 +195,7 @@ class InvestigationTest extends PostgresIntegrationTest {
     private AgentRequest someRequest() {
         Baseline baseline = new Baseline(List.of("IN"), 3, 15, List.of(), List.of(), List.of(), "Bengaluru");
         return new AgentRequest(new AgentRequest.IncidentPart(1L, "email", "priya.sharma", json.readTree("{}")), baseline,
-                List.of());
+                List.of(), false);
     }
 
     private Cookie analyst;
@@ -246,6 +246,23 @@ class InvestigationTest extends PostgresIntegrationTest {
         assertThat((String) JsonPath.read(call.body(), "$.incident.payload.sender")).isEqualTo("security@paypa1.example");
         assertThat((String) JsonPath.read(call.body(), "$.baseline.homeCity")).isEqualTo("Bengaluru");
         assertThat((List<String>) JsonPath.read(call.body(), "$.baseline.usualCountries")).containsExactly("IN");
+    }
+
+    @Test
+    void onlyARedTeamRunAsksTheAgentForItsScriptedModel() throws Exception {
+        Integer ordinary = submitAnEmailIncident();
+        finalStatusOf(ordinary);
+        String created = mvc.perform(post("/api/red-team").cookie(analyst))
+                .andExpect(status().isAccepted())
+                .andReturn().getResponse().getContentAsString();
+        Integer run = JsonPath.read(created, "$.id");
+        finalStatusOf(run);
+
+        assertThat(RECEIVED).hasSize(2);
+        assertThat((Integer) JsonPath.read(RECEIVED.get(0).body(), "$.incident.id")).isEqualTo(ordinary);
+        assertThat((Boolean) JsonPath.read(RECEIVED.get(0).body(), "$.redTeam")).isFalse();
+        assertThat((Integer) JsonPath.read(RECEIVED.get(1).body(), "$.incident.id")).isEqualTo(run);
+        assertThat((Boolean) JsonPath.read(RECEIVED.get(1).body(), "$.redTeam")).isTrue();
     }
 
     @Test

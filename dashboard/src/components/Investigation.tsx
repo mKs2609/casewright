@@ -1,6 +1,6 @@
 import { ShieldX } from "lucide-react";
 
-import { KIND_WORDS, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
+import { KIND_WORDS, RED_TEAM, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { Evidence, IncidentDetail } from "../types";
 import { SignalChip, StatusChip } from "./Chips";
 
@@ -96,9 +96,16 @@ export function Investigation({ incident, highlighted }: Props) {
         {verdict && <StatusChip meaning={verdictMeaning(verdict.verdict)} />}
         <StatusChip meaning={statusMeaning(status)} />
         {verdict && (
-          <span className="chip tone-muted">{verdict.engine === "llm" ? "Led by the AI model" : "Fixed plan"}</span>
+          <span className="chip tone-muted">
+            {incident.source === "red_team"
+              ? "A scripted, hijacked model played the AI"
+              : verdict.engine === "llm"
+                ? "Led by the AI model"
+                : "Fixed plan"}
+          </span>
         )}
         {incident.source === "demo" && <StatusChip meaning={SIMULATED} />}
+        {incident.source === "red_team" && <StatusChip meaning={RED_TEAM} />}
       </div>
       {verdict && <RiskMeter score={verdict.riskScore} />}
       {verdict?.disagreement && (

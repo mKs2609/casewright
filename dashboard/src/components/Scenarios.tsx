@@ -1,8 +1,11 @@
-import { Play } from "lucide-react";
+import { Crosshair, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api } from "../api";
 import type { DemoScenario, IncidentDetail, User } from "../types";
+
+/** Not a scenario name (those are lowercase words), so it can never clash with one. */
+const RED_TEAM = "Red team";
 
 interface Props {
   user: User;
@@ -32,7 +35,7 @@ export function Scenarios({ user, onStarted }: Props) {
     setRunning(name);
     setError(null);
     try {
-      onStarted(await api.runScenario(name));
+      onStarted(await (name === RED_TEAM ? api.startRedTeam() : api.runScenario(name)));
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Could not start the scenario. Try again.");
     } finally {
@@ -58,6 +61,16 @@ export function Scenarios({ user, onStarted }: Props) {
             {running === scenario.name ? "Starting..." : scenario.title}
           </button>
         ))}
+        <button
+          type="button"
+          className="button"
+          disabled={!allowed || running !== null}
+          title="A scripted, hijacked model follows the trick email's hidden note. Every attempt it makes is shown, with what stopped it."
+          onClick={() => void run(RED_TEAM)}
+        >
+          <Crosshair aria-hidden="true" size={16} />
+          {running === RED_TEAM ? "Starting..." : "Red-team the agent"}
+        </button>
       </div>
       <p className="small muted">
         {allowed ? "Made-up incidents about fictional employees, investigated for real." : "Only analysts and admins can run scenarios."}

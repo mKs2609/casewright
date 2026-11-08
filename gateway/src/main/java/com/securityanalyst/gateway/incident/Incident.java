@@ -28,6 +28,8 @@ public class Incident {
     public static final String SOURCE_API = "api";
     /** A simulated incident fired from the dashboard's demo buttons (FR-26). */
     public static final String SOURCE_DEMO = "demo";
+    /** A red-team run (FR-27, ADR-51): the agent plays a scripted, hijacked model instead of the AI. */
+    public static final String SOURCE_RED_TEAM = "red_team";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

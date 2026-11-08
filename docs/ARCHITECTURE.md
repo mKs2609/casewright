@@ -78,6 +78,7 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── agent/        client that calls the agent service
 │       ├── action/       proposed actions, approvals
 │       ├── demo/         demo scenarios (ADR-50)
+│       ├── redteam/      the red-team probe and its scorecard (ADR-51)
 │       ├── audit/        hash-chained audit log
 │       ├── live/         live feed (Server-Sent Events, ADR-49)
 │       └── common/       error handling, validation, rate limiting, security config
@@ -92,7 +93,8 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── verdict.py       risk score, verdict, attack type
 │       ├── report.py        the SOC and plain reports, from the evidence
 │       ├── actions.py       proposed actions, from the findings
-│       └── summary.py       the one checked AI summary line
+│       ├── summary.py       the one checked AI summary line
+│       └── redteam.py       the scripted, hijacked model for the red-team probe
 ├── dashboard/      React app
 │   ├── pagePolicy.ts    the page's security policy
 │   └── src/
@@ -165,6 +167,8 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | GET | `/api/incidents/events` | any | Live feed: Server-Sent Events carrying incident numbers only (ADR-49) |
 | GET | `/api/demo/scenarios` | any | The demo buttons: names, titles and descriptions (ADR-50) |
 | POST | `/api/demo/{scenario}` | ANALYST+ | Fire a demo scenario: no body; the gateway submits its own copy, marked `demo` (`202 Accepted`) |
+| POST | `/api/red-team` | ANALYST+ | Start a red-team run: the trick email, investigated by a scripted, hijacked model (ADR-51) |
+| GET | `/api/red-team/{id}` | any | A run's scorecard: each attempt and whether the stored record shows it blocked |
 
 ### 5.2 Internal API (agent, port 8001, bound to localhost)
 
