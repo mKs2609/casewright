@@ -1,0 +1,11 @@
+{
+  "about": "CodeQL findings reviewed and accepted, each for a stated reason (ADR-52). The CodeQL gate fails on any finding not listed here. Add an entry only with a decision record and the owner's approval; match a rule in one file only.",
+  "reviewed": [
+    {
+      "rule": "java/spring-disabled-csrf-protection",
+      "file": "gateway/src/main/java/com/securityanalyst/gateway/common/SecurityConfig.java",
+      "reason": "Spring's CSRF tokens are replaced, not dropped: OriginCheckFilter refuses state-changing requests from other sites (Origin and Sec-Fetch-Site), the session cookies are SameSite=Strict, and request bodies are JSON only. See ADR-25.",
+      "reviewed": "2026-11-09"
+    }
+  ]
+}

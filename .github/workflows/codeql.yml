@@ -53,11 +53,8 @@ jobs:
           category: /language:${{ matrix.language }}
           output: codeql-results
 
-      # Uploading alone never fails a pull request; this makes any finding a failure, so CodeQL is a
-      # gate and not only a report. Each finding is listed in the job log and the Security tab.
-      - name: Fail if CodeQL found anything
-        run: |
-          found=$(jq -s '[.[].runs[].results[]] | length' codeql-results/*.sarif)
-          jq -r '.runs[].results[] | "\(.ruleId): \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine)"' codeql-results/*.sarif
-          echo "CodeQL findings: $found"
-          test "$found" -eq 0
+      # Uploading alone never fails a pull request; this makes any new finding a failure, so CodeQL is
+      # a gate and not only a report. Findings reviewed and accepted for a stated reason are listed in
+      # .github/codeql-reviewed.json (one rule in one file each); everything else fails the job.
+      - name: Fail if CodeQL found anything new
+        run: python3 .github/scripts/codeql_gate.py codeql-results

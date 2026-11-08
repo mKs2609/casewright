@@ -13,7 +13,8 @@ Updated at the start and end of every step.
 - [x] First audit of all 328 libraries: 13 known vulnerabilities in Tomcat, Jackson and certifi, fixed by upgrading Spring Boot to 4.1.2 and certifi to 2026.10.18 (findings in `SECURITY.md`)
 - [x] Python packages hash-pinned (`scripts/hash-requirements.py`), installed with `--require-hashes`
 - [x] CI: dependency audit (OSV-Scanner), dependency review, secret scan (gitleaks), CodeQL; any finding fails; weekly runs (ADR-52)
-- [ ] The new checks pass on GitHub
+- [x] First run on GitHub: tests, dependency audit, dependency review (after switching on the dependency graph) and secret scan passed; CodeQL found one thing, Spring's CSRF tokens being off, which ADR-25 replaced on purpose: recorded as reviewed in `.github/codeql-reviewed.json`, the gate fails on anything else
+- [ ] All checks pass on GitHub after that change
 - [ ] Push protection switched on; the new checks added to the required checks
 - [ ] Merged
 
