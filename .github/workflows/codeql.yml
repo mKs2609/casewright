@@ -1,0 +1,60 @@
+# Static analysis with CodeQL (step 18a, ADR-52): GitHub's analyser reads the code itself and traces
+# untrusted data to dangerous places (SQL, files, HTML, commands). It covers the gateway (Java), the
+# agent (Python), the dashboard (TypeScript) and these workflow files themselves.
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 3 * * 1'  # every Monday 03:30 UTC, with the newest version of the checks
+  workflow_dispatch:
+
+# Read-only by default, as in ci.yml.
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The one exception to read-only (ADR-52): uploading results to the repository's Security tab.
+    # It cannot push code, comment or change settings.
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # build-mode none: CodeQL reads the source without building it, for all four.
+        language: [java-kotlin, python, javascript-typescript, actions]
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:${{ matrix.language }}
+          output: codeql-results
+
+      # Uploading alone never fails a pull request; this makes any new finding a failure, so CodeQL is
+      # a gate and not only a report. Findings reviewed and accepted for a stated reason are listed in
+      # .github/codeql-reviewed.json (one rule in one file each); everything else fails the job.
+      - name: Fail if CodeQL found anything new
+        run: python3 .github/scripts/codeql_gate.py codeql-results

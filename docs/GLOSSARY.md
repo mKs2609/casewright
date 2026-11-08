@@ -98,6 +98,11 @@ Plain-language meanings of the terms used in this project.
 | **Object-level authorisation** | Checking that *this* user may access *this specific* record. |
 | **WebSocket** | A two-way connection that stays open, so both sides can send at any time. We chose Server-Sent Events instead (ADR-48). |
 | **Server-Sent Events (SSE)** | A one-way feed: the browser opens an ordinary request, and the server keeps sending updates down it. |
+| **Dependency audit** | Checking every library a project uses against a database of published vulnerabilities. Here, OSV-Scanner against the OSV database (ADR-52). |
+| **Static analysis** | Reading the code, without running it, to find dangerous patterns such as untrusted data reaching a database query. Here, CodeQL. |
+| **Hash pinning** | Recording the fingerprint (SHA-256) of each package's files, so an install refuses a file that has been changed. |
+| **Supply chain** | Everything the project depends on but did not write: libraries, build tools, CI actions. An attack on any of them reaches the project. |
+| **Push protection** | A GitHub setting that refuses a push containing something that looks like a known kind of secret. |
 | **Red-team probe** | A deliberate attack on your own system to show its defences hold. Here, a scripted, hijacked model follows a trick email's hidden note, and the gateway shows what stopped each attempt (ADR-51). |
 | **Demo scenario** | A fixed, made-up incident the dashboard can fire to show an investigation. The gateway keeps it; the browser only names it (ADR-50). |
 | **Proxy (Spring)** | A wrapper Spring puts around a class to add behaviour such as transactions. It only works when a method is called from outside the class; a call from inside skips it. |

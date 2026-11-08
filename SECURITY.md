@@ -34,9 +34,19 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | Item | Status | Notes |
 |---|---|---|
 | All secrets in env vars, never in code | 🟡 | `.gitignore` blocks `.env`, keys and certs. Database credentials and the token-signing key come from `.env` / environment only; the gateway refuses to start if any is missing, or if the signing key is shorter than 32 bytes. `AUDIT_HMAC_KEY` follows the same rules. Tests use their own random keys. |
-| Pre-commit secret scanning | ⬜ | |
+| Pre-commit secret scanning | 🟡 | gitleaks scans the whole git history on every pull request, every push to `main` and every Monday, and fails on any finding, with the value kept out of the log (ADR-52). GitHub's push protection, which refuses a push containing a known kind of secret, is a repository setting to switch on. |
 | Nothing sensitive in the frontend bundle | ✅ | No setting reaches the page: the code reads no environment values, and the server only reads the keystore password for itself. Tokens stay in cookies the page cannot read, and nothing goes in browser storage. Tests: `dashboard/src/test/rules.test.ts`. The built files were also searched for the keystore password by hand, with none found. |
-| Dependency audit (Maven, pip, npm) with findings table | ⬜ | Python packages are pinned to exact versions, including indirect ones (`agent/requirements*.txt`). npm packages are pinned the same way through the lockfile, with install scripts off; `npm audit` was clean when added. Audit and hash pinning in step 18. |
+| Dependency audit (Maven, pip, npm) with findings table | ✅ | OSV-Scanner checks every library (Maven with its indirect ones, pip, npm) in CI and every Monday, and GitHub's dependency review checks what each pull request adds; any known vulnerability fails (ADR-52). Python packages are pinned to exact versions and to the SHA-256 of their files, installed with `--require-hashes`; npm packages through the lockfile, with install scripts off. Findings below. |
+
+### Dependency audit findings
+
+| Found | Library | Version | Advisories | Severity | Fixed by |
+|---|---|---|---|---|---|
+| 2026-11-08 | Tomcat (`tomcat-embed-core`), gateway | 11.0.24 | GHSA-9xv2-5v5q-p794, GHSA-f525-44xv-f2qj, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 | Critical | Spring Boot 4.1.2 (Tomcat 11.0.27) |
+| 2026-11-08 | Jackson (`jackson-core`, `jackson-databind`), gateway | 3.1.5 | GHSA-7hhh-6rmp-j9qf, GHSA-p6pp-m3f8-5c89, GHSA-cxp5-3px4-pw24, GHSA-gx83-3vf8-gh7j, GHSA-q4xh-88c3-wmh7, GHSA-wjgm-6hv5-3cvf, GHSA-wv8q-qhhj-9h54 | High, moderate | Spring Boot 4.1.2 (Jackson 3.1.7) |
+| 2026-11-08 | certifi, agent | 2026.7.22 | GHSA-6q48-6c7w-9gw2 (PYSEC-2026-4320) | Critical | certifi 2026.10.18 |
+
+All 13 were fixed before the audit became a required check; a recheck of all 328 libraries found none.
 
 ## D. Error handling & data protection
 | Item | Status | Notes |
@@ -71,5 +81,5 @@ Each item is ticked only when it is implemented **and** covered by a test.
 ## G. Operational
 | Item | Status | Notes |
 |---|---|---|
-| CI: tests + dependency audit + static analysis on every push | 🟡 | GitHub Actions runs the full test suite on every pull request and every push to `main`; `main` is protected so a pull request cannot merge while it fails. Least-privilege token (`contents: read`), actions pinned to exact commits. Dependency audit and static analysis come in step 18. |
+| CI: tests + dependency audit + static analysis on every push | ✅ | Every pull request and push to `main`: the three test suites, the dependency audit and review, the secret scan, and CodeQL on Java, Python, TypeScript and the workflows; the audit, secret scan and CodeQL also run every Monday. Any finding fails. `main` is protected so a pull request cannot merge while a required check fails. Read-only token except CodeQL's permission to upload results; actions pinned to exact commits; scanners downloaded and checked against their SHA-256 (ADR-52). CodeQL findings accepted for a stated reason are listed in `.github/codeql-reviewed.json` (one so far: Spring's CSRF tokens, replaced by ADR-25's defences). |
 | This file kept current | 🟡 | |

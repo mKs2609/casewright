@@ -48,6 +48,8 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 | Agent (Python) | 324 | The six demo scenarios reaching their verdicts with and without the AI; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
 | Dashboard (TypeScript) | 102 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed |
 
+**Security checks in CI.** Every pull request also runs a dependency audit (OSV-Scanner on every library, plus GitHub's dependency review), a secret scan of the whole git history (gitleaks) and static analysis (CodeQL on Java, Python, TypeScript and the workflows); any finding fails it, and the scans repeat every Monday. Python packages are pinned by hash. The first audit found 13 known vulnerabilities in three libraries, all fixed by upgrades; see [SECURITY.md](SECURITY.md).
+
 **Checking the tests themselves.** In the later steps, each new test suite was checked by breaking the code on purpose, one change at a time (for example, removing the role check on approvals or letting the live feed outlive a login), and confirming a named test failed. The last four steps: 26 of 26, 28 of 28, 22 of 23 (the 23rd could not change any outcome), and 28 of 28 for the red-team probe, including removing the tool allow-list itself.
 
 **Design records.** Every significant choice is written down with its reasons and trade-offs in [DECISIONS.md](docs/DECISIONS.md); the agent's defences are described in [AGENT_DESIGN.md](docs/AGENT_DESIGN.md).
@@ -61,7 +63,6 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 - **Local development only.** HTTPS uses a self-signed certificate, the setup scripts are for Windows, and the live feed keeps its connections in one gateway's memory, so several gateways would need a shared channel.
 - **The audit log is tamper-evident, not tamper-proof.** Someone with both database access and the signing key could rewrite it; the log file records the latest entry outside the database as a second check.
 - **The red-team probe plays one script.** It shows the checks hold against those attempts, not against every possible attack; a compromised agent attacking the gateway directly is covered by the gateway's tests, not by the probe.
-- **Not yet in CI:** dependency audits, static analysis and secret scanning (planned in step 18).
 
 ## What it does today
 
@@ -184,7 +185,7 @@ python -m venv .venv
 ```
 
 ```bash
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install --require-hashes -r requirements-dev.txt
 ```
 
 Start it (keep it running alongside the gateway):
