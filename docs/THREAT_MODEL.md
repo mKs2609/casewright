@@ -112,9 +112,11 @@ flowchart LR
 
 | Threat | Control | Step |
 |---|---|---|
-| Vulnerable dependency | Dependency audit for Maven, pip and npm in CI | 18 |
-| Secret committed to git | `.gitignore` from day one; pre-commit secret scanning | 1, 18 |
-| Insecure code merged | Static analysis in CI; tests required | 18 |
+| Vulnerable dependency | OSV-Scanner on every library in CI and weekly; GitHub dependency review on every pull request (ADR-52) | 18a |
+| Tampered package download | Python packages hash-pinned and installed with `--require-hashes`; npm from its lockfile with install scripts off; CI's scanners checked against their SHA-256 | 18a |
+| Secret committed to git | `.gitignore` from day one; gitleaks over the whole history in CI; GitHub push protection | 1, 18a |
+| Insecure code merged | CodeQL in CI, failing on any finding; tests required | 18a |
+| A compromised CI action | Actions pinned to full commit SHAs; read-only token except CodeQL's results upload | 5a, 18a |
 
 ## 6. Accepted risks (for a student project)
 

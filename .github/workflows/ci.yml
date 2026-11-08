@@ -6,6 +6,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: '30 3 * * 1'  # every Monday 03:30 UTC, so a vulnerability published after a merge is still noticed
   workflow_dispatch:    # adds a "Run workflow" button on the Actions tab
 
 # The workflow may only read the repository. It cannot push, comment or change
@@ -75,9 +77,10 @@ jobs:
           cache: pip                   # reuse downloaded packages between runs
           cache-dependency-path: agent/requirements-dev.txt
 
-      # Every package, including indirect ones, is pinned to an exact version in these files.
+      # Every package, including indirect ones, is pinned to an exact version and to the SHA-256 of
+      # its files. --require-hashes makes pip refuse anything without a matching fingerprint.
       - name: Install the pinned packages
-        run: python -m pip install --disable-pip-version-check --no-input -r requirements-dev.txt
+        run: python -m pip install --disable-pip-version-check --no-input --require-hashes -r requirements-dev.txt
 
       - name: Run all tests
         run: python -m pytest
@@ -113,3 +116,68 @@ jobs:
       # Includes the type check. Needs no certificate: only the local servers do.
       - name: Check that it builds
         run: npm run build
+
+  # --------------------------------------------------------------- security checks (step 18a, ADR-52)
+  # The scanners below are downloaded from their official releases and refused unless their SHA-256
+  # matches the one written here: a pinned version, checked before anything runs.
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Get OSV-Scanner v2.7.0 and check it
+        run: |
+          curl -sSfL -o osv-scanner https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64
+          echo "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b  osv-scanner" | sha256sum --check --strict
+          chmod +x osv-scanner
+
+      # Every library of all three parts, against the OSV vulnerability database. For pom.xml the
+      # scanner works out the indirect libraries too. Any known vulnerability fails the job.
+      - name: Check every library for known vulnerabilities
+        run: >-
+          ./osv-scanner scan source
+          --lockfile=gateway/pom.xml
+          --lockfile=agent/requirements.txt
+          --lockfile=agent/requirements-dev.txt
+          --lockfile=dashboard/package-lock.json
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # GitHub's own check of what a pull request adds or changes: a new or updated package with a
+      # known vulnerability of moderate severity or worse fails it.
+      - name: Review the changed dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code, with its whole history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0               # every commit, not just the latest
+          persist-credentials: false
+
+      - name: Get gitleaks v8.30.1 and check it
+        run: |
+          curl -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+
+      # Every commit ever made, not only this change: a secret deleted later is still in the history.
+      # --redact keeps anything found out of the log.
+      - name: Look for secrets in the whole history
+        run: ./gitleaks git --redact --verbose --exit-code 1 .

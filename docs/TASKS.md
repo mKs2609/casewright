@@ -3,26 +3,24 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-06
+**Last updated:** 2026-11-08
 
 ---
 
 ## Now
 
-### Step 17b: Red-team probe (on `feature/red-team-probe`)
-- [x] Agent: a scripted, hijacked model (`app/redteam.py`) used only for requests marked `redTeam`, with its own budget
-- [x] Gateway: `POST /api/red-team` submits the trick email as a `red_team` incident; only those ask the agent for the script
-- [x] Gateway: `GET /api/red-team/{id}`, a scorecard judged from the stored record; anything not shown blocked is reported (ADR-51)
-- [x] Dashboard: "Red-team the agent" button, "Red team" badge, the scorecard following the live feed
-- [x] README: the probe added to the evidence and the limitations
-- [x] Tests: gateway 345 (both orders), dashboard 102, agent 324; 28 of 28 mutation checks caught with controls (14 gateway, 10 dashboard, 4 agent)
-- [x] Live: two runs from the dashboard, 10 of 10 attempts blocked each; stored record agrees; no gateway errors; audit chain valid
+### Step 18a: CI security gate (on `feature/ci-security-gate`)
+- [x] First audit of all 328 libraries: 13 known vulnerabilities in Tomcat, Jackson and certifi, fixed by upgrading Spring Boot to 4.1.2 and certifi to 2026.10.18 (findings in `SECURITY.md`)
+- [x] Python packages hash-pinned (`scripts/hash-requirements.py`), installed with `--require-hashes`
+- [x] CI: dependency audit (OSV-Scanner), dependency review, secret scan (gitleaks), CodeQL; any finding fails; weekly runs (ADR-52)
+- [ ] The new checks pass on GitHub
+- [ ] Push protection switched on; the new checks added to the required checks
 - [ ] Merged
 
 ## Next
 
-### Step 18: CI security gate and evaluation
-See `ROADMAP.md`.
+### Step 18b: Evaluation
+A labelled set of incidents and the accuracy numbers (PRD section 8). First decision: where the data comes from (open question 2).
 
 ## Later
 
@@ -37,6 +35,7 @@ Step 19: the final handbook.
 
 ## Done
 
+- **2026-11-08:** Step 17b (red-team probe) merged: PR #19.
 - **2026-11-06:** Step 17a (demo scenarios) merged: PR #18. The README now covers the safety approach, evidence and limitations.
 - **2026-11-05:** Step 16b (live stream) merged: PR #17.
 - **2026-11-03:** Step 16a (dashboard) merged: PR #16. "Dashboard tests" is now a required check on `main`.
