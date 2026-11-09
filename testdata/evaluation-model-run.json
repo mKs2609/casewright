@@ -1,0 +1,606 @@
+{
+  "model": "qwen3:8b",
+  "date": "2026-11-09",
+  "results": {
+    "email-kyc-update": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 53,
+      "engine": "llm"
+    },
+    "email-ceo-gift-cards": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 65,
+      "engine": "llm"
+    },
+    "email-vendor-bank-change": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 42,
+      "engine": "llm"
+    },
+    "email-password-expiry": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 65,
+      "engine": "llm"
+    },
+    "email-document-share": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 37,
+      "engine": "llm"
+    },
+    "email-qr-code-mfa": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 46,
+      "engine": "llm"
+    },
+    "email-injection-disregard": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 62,
+      "engine": "llm"
+    },
+    "email-injection-hidden-chars": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 80,
+      "engine": "llm"
+    },
+    "email-tax-refund": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 46,
+      "engine": "llm"
+    },
+    "email-job-offer-fee": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 32,
+      "engine": "llm"
+    },
+    "email-parcel-customs-fee": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "email-refund-callback-known-domain": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 72,
+      "engine": "llm"
+    },
+    "email-it-maintenance": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "email-hr-holidays": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "email-real-password-reset": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "email-otp-awareness": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 35,
+      "engine": "llm"
+    },
+    "email-newsletter": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 28,
+      "engine": "llm"
+    },
+    "email-bank-statement": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "email-deck-review": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "rules"
+    },
+    "email-review-invite": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "email-real-invoice": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 15,
+      "engine": "rules"
+    },
+    "email-phishing-training": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 49,
+      "engine": "llm"
+    },
+    "email-order-shipped": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 15,
+      "engine": "rules"
+    },
+    "email-travel-itinerary": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "login-password-spray": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 60,
+      "engine": "llm"
+    },
+    "login-distributed-spray": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 51,
+      "engine": "rules"
+    },
+    "login-brute-force": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 71,
+      "engine": "llm"
+    },
+    "login-brute-force-success": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 74,
+      "engine": "llm"
+    },
+    "login-impossible-travel-london": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 55,
+      "engine": "llm"
+    },
+    "login-new-country-at-night": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 39,
+      "engine": "llm"
+    },
+    "login-stolen-creds-same-city": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 10,
+      "engine": "llm"
+    },
+    "login-stuffing-known-address": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 90,
+      "engine": "llm"
+    },
+    "login-burst-then-success": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 46,
+      "engine": "llm"
+    },
+    "login-travel-then-takeover": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 60,
+      "engine": "llm"
+    },
+    "login-normal-morning": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "login-two-typos": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "login-office-morning-rush": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "login-evening-work": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 10,
+      "engine": "llm"
+    },
+    "login-dubai-trip": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "login-new-laptop": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 10,
+      "engine": "llm"
+    },
+    "login-forgot-password-after-leave": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 40,
+      "engine": "llm"
+    },
+    "login-company-vpn-exit": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 55,
+      "engine": "llm"
+    },
+    "login-laptop-and-phone": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "login-through-the-day": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "call-digital-arrest": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 52,
+      "engine": "llm"
+    },
+    "call-tech-support": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 34,
+      "engine": "llm"
+    },
+    "call-bank-otp": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 48,
+      "engine": "llm"
+    },
+    "call-helpdesk-mfa": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 48,
+      "engine": "llm"
+    },
+    "call-electricity-cutoff": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 19,
+      "engine": "llm"
+    },
+    "call-upi-collect": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 35,
+      "engine": "llm"
+    },
+    "call-cloned-ceo-voice": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 39,
+      "engine": "llm"
+    },
+    "call-known-scam-number": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 58,
+      "engine": "llm"
+    },
+    "call-helpdesk-ticket": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "call-real-fraud-alert": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 19,
+      "engine": "llm"
+    },
+    "call-running-late": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "call-delivery-at-gate": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "call-hr-onboarding": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "call-clinic-reminder": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 5,
+      "engine": "rules"
+    },
+    "call-customer-renewal": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 24,
+      "engine": "llm"
+    },
+    "call-laptop-swap": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-benefits-enrolment": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-new-sign-in-lure": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 59,
+      "engine": "llm"
+    },
+    "held-email-prize-draw": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 37,
+      "engine": "llm"
+    },
+    "held-email-payroll-diversion": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-macro-invoice": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-injection-summarise": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-crypto-investment": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 32,
+      "engine": "llm"
+    },
+    "held-email-drive-deletion": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 65,
+      "engine": "llm"
+    },
+    "held-email-real-enrolment": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "rules"
+    },
+    "held-email-real-sign-in-alert": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "held-email-conference-confirmation": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-expense-approved": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 8,
+      "engine": "llm"
+    },
+    "held-email-partner-notes": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-email-real-password-expiry": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "held-email-charity-drive": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 20,
+      "engine": "llm"
+    },
+    "held-email-real-debit-alert": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-login-proxy-stuffing": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 51,
+      "engine": "rules"
+    },
+    "held-login-slow-guessing": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 41,
+      "engine": "llm"
+    },
+    "held-login-stolen-session-us": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 25,
+      "engine": "llm"
+    },
+    "held-login-impossible-travel-moscow": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 55,
+      "engine": "llm"
+    },
+    "held-login-local-takeover": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 40,
+      "engine": "llm"
+    },
+    "held-login-overnight-script": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 39,
+      "engine": "llm"
+    },
+    "held-login-ordinary-day": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "held-login-business-trip": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 25,
+      "engine": "llm"
+    },
+    "held-login-four-typos": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "held-login-office-sso": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 0,
+      "engine": "llm"
+    },
+    "held-login-on-call-night": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 10,
+      "engine": "llm"
+    },
+    "held-login-cached-old-password": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 46,
+      "engine": "llm"
+    },
+    "held-call-hr-bank-details": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "held-call-sim-swap": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 38,
+      "engine": "llm"
+    },
+    "held-call-insurance-refund": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 24,
+      "engine": "llm"
+    },
+    "held-call-family-emergency": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 54,
+      "engine": "llm"
+    },
+    "held-call-bank-security-app": {
+      "flagged": true,
+      "verdict": "malicious",
+      "risk": 43,
+      "engine": "llm"
+    },
+    "held-call-investment-advisor": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "held-call-it-mfa-desk": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 15,
+      "engine": "llm"
+    },
+    "held-call-relationship-manager": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 19,
+      "engine": "llm"
+    },
+    "held-call-recruiter": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "held-call-courier-real": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 5,
+      "engine": "llm"
+    },
+    "held-call-colleague-quote": {
+      "flagged": false,
+      "verdict": "benign",
+      "risk": 5,
+      "engine": "rules"
+    },
+    "held-call-passport-police-check": {
+      "flagged": true,
+      "verdict": "suspicious",
+      "risk": 19,
+      "engine": "llm"
+    }
+  }
+}

@@ -14,6 +14,8 @@ Plain-language meanings of the terms used in this project.
 | **Vishing** | Phishing by phone call. |
 | **Credential stuffing** | Trying many stolen username/password pairs against many accounts. |
 | **Brute force** | Guessing one account's password over and over. |
+| **Password spraying** | Trying one or two common passwords on many accounts, slowly or from many addresses, so no single account gets locked and no single address looks busy. |
+| **Business email compromise (BEC)** | A message that pretends to come from a boss, colleague or supplier to get money sent or details changed, often with no link at all. |
 | **Account takeover** | An attacker successfully logging in as someone else. |
 | **Impossible travel** | The same account used in two places too far apart for the time between them. |
 | **Look-alike domain** | A web address made to resemble a real one, such as `paypa1.com`. |
@@ -152,6 +154,12 @@ Plain-language meanings of the terms used in this project.
 | **Red team** | Deliberately attacking your own system to find weaknesses. |
 | **Hijacked model** | A model that has been talked into following an attacker's instructions (e.g. by prompt injection). The defences must hold even then. |
 | **Fence (in a prompt)** | Tags around untrusted text, so the model can tell data from instructions; the text inside is escaped so it cannot close the fence. |
+| **Labelled set** | Examples whose right answer is known in advance, used to measure how often a system gets it right. |
+| **Detection rate (recall)** | Of the real attacks, the share the system flagged. A missed attack is a *false negative*. |
+| **False-alarm rate (false-positive rate)** | Of the harmless cases, the share the system flagged anyway. |
+| **Development set / held-out set** | The examples used while improving a system, and separate ones kept aside and run only at the end. Only the held-out result is a fair estimate, because the improvements were shaped by the development set. |
+| **Overfitting** | Tuning a system so closely to the examples you have that it looks better on them than it really is. |
+| **Confidence interval (95% range)** | The range the true rate probably lies in, given how few examples were measured. The Wilson score interval is one way to work it out that behaves well with small sets. |
 
 ## Project and tooling terms
 

@@ -46,6 +46,30 @@ def test_attempts_faster_than_a_person_can_type_are_automation() -> None:
     assert "AUTOMATION" in ids(signals)
 
 
+def test_a_spray_spread_over_many_addresses_is_found_together() -> None:
+    # 10 addresses, 2 accounts each: no single address looks like stuffing or brute force.
+    events = [event(f"user{2 * n + k:02d}", ip=f"198.51.100.{n}", minute=3 * n + k) for n in range(10) for k in range(2)]
+
+    _, _, signals = correlate(events)
+
+    assert ids(signals) == {"PASSWORD-SPRAY"}
+    assert next(s for s in signals).label == "Failed sign-ins on 20 accounts from 10 addresses"
+
+
+def test_a_busy_shared_office_address_is_not_a_spray() -> None:
+    # Many people signing in successfully, a couple of typos among them.
+    events = [event(f"user{i:02d}", ip=f"192.0.2.{i % 4}", minute=i, ok=i % 6 != 0) for i in range(24)]
+
+    assert "PASSWORD-SPRAY" not in ids(correlate(events)[2])
+
+
+def test_a_spray_from_one_address_is_reported_once_as_credential_stuffing() -> None:
+    _, _, signals = correlate([event(f"user{i:02d}", minute=i) for i in range(12)]
+                              + [event(f"other{i}", ip=f"198.51.100.{i}") for i in range(3)])
+
+    assert "CRED-STUFFING" in ids(signals) and "PASSWORD-SPRAY" not in ids(signals)
+
+
 def test_a_few_ordinary_logins_raise_nothing() -> None:
     _, _, signals = correlate([event("arjun.mehta", ok=True), event("arjun.mehta", minute=30, ok=True)])
 
