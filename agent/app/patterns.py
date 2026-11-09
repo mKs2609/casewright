@@ -35,13 +35,22 @@ def _rx(pattern: str) -> re.Pattern[str]:
 
 
 # (id, technical label, plain explanation, weight 0-100, MITRE technique, pattern)
-SIGNATURES: list[tuple[str, str, str, int, str, re.Pattern[str]]] = [
+SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
     ("SIG-URGENCY", "Urgency or threat language",
      "The message tries to rush you with a deadline or a threat.", 15, "T1566",
-     _rx(r"\b(urgent|immediately|within \d+ (hours|minutes)|act now|will be (suspended|locked|closed|deleted|blocked))\b")),
+     _rx(r"\b(urgent(ly)?|immediately|within \d+ (hours?|minutes?|days?)|act now|do it (fast|now)"
+         r"|(will|would) be (suspended|locked|closed|deleted|blocked|disconnected|cancell?ed|canceled|frozen|cut off"
+         r"|terminated)|(expires?|disconnected) (today|tonight))\b")),
     ("SIG-CRED-REQ", "Asks to confirm credentials",
      "It asks you to confirm your password or account details.", 25, "T1566.002",
-     _rx(r"\b(verify|confirm|update|validate|re-?enter) (your )?(account|password|identity|login|credentials)\b")),
+     _rx(r"\b((verify|confirm|update|validate|re-?enter) (your )?(account|password|identity|login|credentials)"
+         r"|(enter|provide|submit|share|send|type) (your |the )?(work |email |account )?(password|credentials|login details)"
+         r"|(sign|log) ?in with your [\w ]{0,25}password)\b")),
+    ("SIG-FINANCIAL-DETAILS", "Asks for card or bank details",
+     "It asks for your card or bank details, which a real company would never need this way.", 25, "T1598",
+     _rx(r"\b(enter|submit|provide|share|send|confirm|update|give|tell|read)( me| us)? (your |the )?[\w ,]{0,30}?"
+         r"(card (number|details)|cvv|card pin|atm pin|bank account (number|details)|account number"
+         r"|net ?banking (password|details))\b")),
     ("SIG-OTP-REQ", "Asks for a one-time code",
      "It asks for a one-time code. Real banks and support staff never ask for these.", 35, "T1111",
      # Either a one-time kind of code named outright, or any code asked for "to me / to us".
@@ -52,10 +61,18 @@ SIGNATURES: list[tuple[str, str, str, int, str, re.Pattern[str]]] = [
     ("SIG-PAYMENT", "Payment or gift-card pressure",
      "It pushes you to send money, gift cards or cryptocurrency.", 20, "T1657",
      _rx(r"\b(gift ?cards?|wire transfer|bitcoin|crypto(currency)?|upi (id|pin))\b")),
-    ("SIG-IMPERSONATION", "Claims to be an authority (bank, IT, security)",
+    ("SIG-IMPERSONATION", "Claims to be an authority (bank, IT, security, police)",
      "The sender claims to be a bank, a support team or an official to win your trust.", 15, "T1656",
-     _rx(r"\b(this is|from|with) (the |your )?[\w ]{0,20}(bank|it department|it support|security team|"
-         r"fraud department|helpdesk|help desk)\b")),
+     _rx(r"\b(this is|i am|i'm|from|with) (the |your )?[\w ,]{0,25}(bank|it department|it support|security team|"
+         r"fraud department|helpdesk|help desk|police|cyber ?crime|customs|income tax|tax department)\b")),
+    ("SIG-THREAT", "Threatens arrest or legal action",
+     "It threatens you with the police or arrest to scare you into acting.", 25, None,
+     _rx(r"\b(arrest(ed)?|legal action|police case|case (has been |is )?(registered|filed)|warrant)\b")),
+    ("SIG-SECRECY", "Asks to keep it secret",
+     "It asks you to keep this secret, so nobody can warn you.", 20, "T1656",
+     _rx(r"\b(keep (this|it) (between us|to yourself|confidential|secret|quiet)|tell no ?one"
+         r"|(don['’]?t|do not) (tell|inform|mention (this|it) to|discuss (this |it )?with)"
+         r"|(it['’]?s|this is) (strictly )?confidential)\b")),
     ("SIG-REMOTE-TOOL", "Asks to install remote-access software",
      "It asks you to install software that lets a stranger control your computer.", 30, "T1219",
      _rx(r"\b(anydesk|teamviewer|quick ?support|remote access|screen ?share)\b")),
@@ -69,6 +86,23 @@ SIGNATURES: list[tuple[str, str, str, int, str, re.Pattern[str]]] = [
          r"|classify (this|it) (email |message |incident )?as (safe|benign|legitimate|harmless)"
          r"|pre-?approved by (the )?security team)")),
 ]
+
+# Requests that genuine messages mention only to say they never make them ("we will never ask
+# for your PIN or OTP"). For these, a mention straight after such a statement is not a request.
+# Deliberately narrow: the statement must end right before the match ("never ask for your PIN or
+# OTP"), so an attacker cannot switch the finding off with a "never" somewhere earlier in the
+# sentence ("we never ask for your OTP, but read me the code" is still a request).
+REQUESTS = {"SIG-CRED-REQ", "SIG-OTP-REQ", "SIG-FINANCIAL-DETAILS"}
+NEVER_ASKED = _rx(r"(\bnever|\bnot|n['’]t) (ask|request|need)s?( you)?( for| to( (share|give|send|tell|enter|read out))?)?"
+                  r"( your| the| a| any)?( \w+ (or|and)( your)?)? ?$")
+
+
+def _first_request(sid: str, pattern: re.Pattern[str], text: str) -> re.Match[str] | None:
+    for found in pattern.finditer(text):
+        if sid not in REQUESTS or not NEVER_ASKED.search(text[max(0, found.start() - 80):found.start()]):
+            return found
+    return None
+
 
 HIDDEN = ("SIG-HIDDEN-TEXT", "Contains invisible characters",
           "The text hides invisible characters, a trick to sneak words past filters.", 10, "T1027")
@@ -104,7 +138,7 @@ def pattern_match(case: Case, args: dict[str, str]) -> ToolResult:
             hidden_in.append(name)
     for sid, label, plain, weight, mitre, pattern in SIGNATURES:
         for name, text in normalised.items():
-            found = pattern.search(text)
+            found = _first_request(sid, pattern, text)
             if found:
                 matches.append({"signature": sid, "field": name, "snippet": _snippet(text, found.start(), found.end())})
                 signals.append(Signal(id=sid, label=f"{label} (in the {name})", plain=plain, weight=weight, mitre=mitre))

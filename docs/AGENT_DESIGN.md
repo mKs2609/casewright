@@ -50,8 +50,8 @@ All tools are read-only.
 |---|---|---|---|
 | `reputation_lookup` | `indicator_type` (`ip`/`domain`/`email`/`phone`), `value` | Threat-intel score and tags; look-alike and newly registered domains | `value` is not an extracted indicator |
 | `baseline_check` | `identity` | Deviation from the person's normal countries, hours, devices, contacts; impossible travel | `identity` is not part of the incident |
-| `pattern_match` | `target` (`subject`/`body`/`transcript`/`all`) | Known attack language: urgency, credential requests, one-time-code requests, impersonation, remote-access tools, prompt-injection text | `target` doesn't exist for this incident kind |
-| `correlate_events` | none | Per-source login statistics (stuffing, brute force, success after failures, automation); indicators shared with incidents from the last 7 days, ignoring known-good and internal ones (ADR-42) | Any argument is given |
+| `pattern_match` | `target` (`subject`/`body`/`transcript`/`all`) | Known attack language: urgency, credential requests, one-time-code requests, requests for card or bank details, payment pressure, impersonation, threats of arrest, requests for secrecy, remote-access tools, prompt-injection text | `target` doesn't exist for this incident kind |
+| `correlate_events` | none | Per-source login statistics (stuffing, brute force, success after failures, automation), and password spraying spread over several addresses; indicators shared with incidents from the last 7 days, ignoring known-good and internal ones (ADR-42) | Any argument is given |
 | `submit_verdict` | see section 7 | Ends the investigation | Schema invalid or cites unknown evidence |
 
 Any other tool name is rejected.
@@ -183,7 +183,7 @@ Verdict = evidence band. Attack type and actions are derived from which signals 
 | Suite | Content | Pass condition |
 |---|---|---|
 | Scenario tests | The six demo scenarios | Expected verdict and attack type |
-| Labelled set | 50–100 benign and malicious incidents | Recall ≥ 90%, false-positive rate ≤ 10% |
+| Labelled set | 100 benign and malicious incidents: a 60-incident development set and a 40-incident held-out set (step 18b, ADR-53) | Recall ≥ 90%, false-positive rate ≤ 10%. Measured in [`EVALUATION.md`](EVALUATION.md): held-out recall 60% (not met), false positives 5% (met) |
 | Red-team suite | Injection payloads in every text field | 0 unauthorised tool calls, 0 unauthorised actions, verdict never lowered |
 | Traceability | Every report | Every finding cites an existing evidence ID |
 

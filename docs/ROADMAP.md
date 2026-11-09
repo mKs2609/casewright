@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-09
 
 One feature at a time. A step is finished only when it is **built, explained, tested, and committed by Mohit**.
 The code is public on GitHub; every step reaches `main` through a pull request (see [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md)).
@@ -33,8 +33,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 16b | **Live stream** | Server-Sent Events, keeping an open connection authorised | The investigation appears live, step by step | ✅ |
 | 17a | **Demo scenarios** | Building a reliable demo | "Attempt breach" and the other scenarios run from the UI, each reaching its tested verdict | ✅ |
 | 17b | **Red-team probe** | Showing the guardrails hold | The probe shows every hijack attempt blocked | ✅ |
-| 18a | **CI security gate** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, supply-chain checks | Every push runs tests and scans | 🟡 |
-| 18b | **Evaluation** | Measuring accuracy | Evaluation numbers are in the README; `SECURITY.md` fully ticked | ⬜ |
+| 18a | **CI security gate** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, supply-chain checks | Every push runs tests and scans | ✅ |
+| 18b | **Evaluation** | Measuring accuracy, held-out sets, overfitting | Evaluation numbers are in the README; `SECURITY.md` ticked except the items that wait for a deployment | 🟡 |
 
 ## Suggested pace (8 weeks)
 
@@ -52,3 +52,9 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 ## After the roadmap (stretch)
 
 Uploading `.eml` files · a real threat-intel feed behind a flag · analyst feedback on verdicts · grouping related incidents into campaigns · investigation replay · anchoring the audit chain externally.
+
+## After step 18b
+
+Planned next, each confirmed with Mohit before it starts: **deployment** (where and how it runs outside this machine; asked about before anything is built), then **design and UI/UX polish**, then the final handbook.
+
+The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating).

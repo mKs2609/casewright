@@ -47,7 +47,7 @@ def attack_type(kind: str, signals: list[Signal]) -> str:
         return "none"
     if "CRED-STUFFING" in ids:
         return "credential_stuffing"
-    if "BRUTE-FORCE" in ids:
+    if ids & {"BRUTE-FORCE", "PASSWORD-SPRAY"}:
         return "brute_force"
     if "IMPOSSIBLE-TRAVEL" in ids:
         return "impossible_travel"
@@ -55,9 +55,11 @@ def attack_type(kind: str, signals: list[Signal]) -> str:
         return "account_takeover"
     if "SIG-AI-INJECTION" in ids:
         return "prompt_injection"
-    if kind == "call_transcript" and ids & {"SIG-OTP-REQ", "SIG-IMPERSONATION", "SIG-REMOTE-TOOL", "REP-MALICIOUS"}:
+    if kind == "call_transcript" and ids & {"SIG-OTP-REQ", "SIG-IMPERSONATION", "SIG-REMOTE-TOOL", "SIG-FINANCIAL-DETAILS",
+                                            "REP-MALICIOUS"}:
         return "vishing"
-    if kind == "email" and ids & {"LOOKALIKE-DOMAIN", "SIG-CRED-REQ", "REP-MALICIOUS", "REPLY-TO-MISMATCH"}:
+    if kind == "email" and ids & {"LOOKALIKE-DOMAIN", "SIG-CRED-REQ", "SIG-FINANCIAL-DETAILS", "REP-MALICIOUS",
+                                  "REPLY-TO-MISMATCH"}:
         return "phishing"
     return "other"
 

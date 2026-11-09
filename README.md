@@ -8,7 +8,7 @@
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
-**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard that updates live as an investigation runs, demo buttons that fire made-up attacks, and a red-team probe that plays a hijacked AI. Evaluation is next. See the [roadmap](docs/ROADMAP.md). It is a portfolio project, not a production system: see [Limitations](#limitations).
+**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard that updates live as an investigation runs, demo buttons that fire made-up attacks, and a red-team probe that plays a hijacked AI. Its accuracy is measured on 100 labelled incidents ([results](docs/EVALUATION.md)). See the [roadmap](docs/ROADMAP.md). It is a portfolio project, not a production system: see [Limitations](#limitations).
 
 ## The problem
 
@@ -40,12 +40,23 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 
 **Red-team probe.** **Red-team the agent** on the dashboard replays a scripted, hijacked model against the trick email: a tool off the allow-list, lookups outside the incident, smuggled arguments, skipped checks, invented evidence, a false "safe" verdict and a reassuring summary line. The gateway judges each attempt from what it stored, and any attempt that got through would be shown as **Not blocked**. See [ADR-51](docs/DECISIONS.md).
 
-**Automated tests** (counts at step 17b; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
+**Accuracy.** Measured on 100 made-up incidents with known answers, each attack modelled on a published pattern (MITRE ATT&CK, FBI IC3, the RBI and others), with the rule engine alone:
+
+| Set | Attacks caught | False alarms | PRD target |
+|---|---|---|---|
+| **Held-out** (40, written after the fixes and run once) | **12 of 20 (60%)** | **1 of 20 (5%)** | caught ≥ 90%, false alarms ≤ 10% |
+| Development (60), first run | 22 of 30 (73%) | 6 of 30 (20%) | |
+| Development, after fixing the gaps it showed | 27 of 30 (90%) | 4 of 30 (13%) | |
+| Held-out, with the local AI model (one recorded run) | 20 of 20 (100%) | 13 of 20 (65%) | |
+
+The held-out set is the honest number: the rule engine rarely cries wolf, but misses calm requests that use no tell-tale words, no link and nothing the threat list knows. The detection target is not met. With the local AI model the opposite happens: it caught every attack but called most harmless incidents "suspicious" too, so neither setting meets both targets yet. Every miss and false alarm, the 95% ranges and the method are in [EVALUATION.md](docs/EVALUATION.md) and [ADR-53](docs/DECISIONS.md); CI fails if those published numbers stop matching what the agent does.
+
+**Automated tests** (counts at step 18b; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
 
 | Suite | Tests | Covers, among other things |
 |---|---|---|
 | Gateway (Java) | 345 | Approvals: role checks, two simultaneous approvals (one wins), expiry, deciding your own account; the action policy; the audit chain detecting edited, removed or forged entries; the gateway refusing malformed or out-of-order agent events; auth, rate limits and headers |
-| Agent (Python) | 324 | The six demo scenarios reaching their verdicts with and without the AI; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
+| Agent (Python) | 656 | The six demo scenarios reaching their verdicts with and without the AI; the 100-incident evaluation; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
 | Dashboard (TypeScript) | 102 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed |
 
 **Security checks in CI.** Every pull request also runs a dependency audit (OSV-Scanner on every library, plus GitHub's dependency review), a secret scan of the whole git history (gitleaks) and static analysis (CodeQL on Java, Python, TypeScript and the workflows); any finding fails it, and the scans repeat every Monday. Python packages are pinned by hash. The first audit found 13 known vulnerabilities in three libraries, all fixed by upgrades; see [SECURITY.md](SECURITY.md).
@@ -57,7 +68,7 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 ## Limitations
 
 - **Nothing is enforced for real.** Approved actions are recorded, not carried out, and the threat intelligence is a small built-in list using reserved example names. Connecting real firewalls or mail systems would need its own review.
-- **No accuracy figures yet.** The verdicts are tested on fixed scenarios, not measured on a real dataset; evaluation is the last roadmap step.
+- **Accuracy targets are not met.** On the held-out set the rule engine caught 60% of attacks against a 90% target; the local AI model caught all of them but raised false alarms on 65% of harmless incidents. The incidents are synthetic, in English, and written by the same author as the detectors, and 100 is a small set, so the numbers are a rough guide, not a benchmark.
 - **A small local model.** The AI runs on the same machine (Qwen3 8B through Ollama). It is often slow, and spotting injected instructions relies on pattern matching that new phrasing may evade. The other layers do not depend on detection, so the cost is a missed finding, not an unsafe action.
 - **One person can both submit and approve.** This keeps the demo usable with one analyst; a real deployment would want a second approver.
 - **Local development only.** HTTPS uses a self-signed certificate, the setup scripts are for Windows, and the live feed keeps its connections in one gateway's memory, so several gateways would need a shared channel.
@@ -127,6 +138,7 @@ Your account needs the `ANALYST` or `ADMIN` role, which `scripts\set-role.ps1` c
 | [Decisions](docs/DECISIONS.md) | Why each significant choice was made. |
 | [Glossary](docs/GLOSSARY.md) | Plain-language meanings of the terms used. |
 | [Security](SECURITY.md) | Status of every hardening item. |
+| [Evaluation](docs/EVALUATION.md) | How accurate is it? Every result on the labelled incidents, and how they were made. |
 
 ## Running the gateway
 
@@ -204,6 +216,12 @@ Optional: let a free local AI model choose the investigation steps. Install [Oll
 
 ```bash
 ollama pull qwen3:8b
+```
+
+Measure its accuracy on the labelled incidents (from the repository root; rewrites `docs/EVALUATION.md`, and with `--model` also runs them with the local AI model):
+
+```bash
+agent\.venv\Scripts\python.exe scripts\evaluate.py
 ```
 
 ## Running the dashboard

@@ -5,6 +5,8 @@
 - brute force: many failed guesses on one or two accounts;
 - success after failures: after many wrong guesses, a login worked, so an account may be taken over;
 - automation: attempts faster than a person can type.
+- password spraying spread over many addresses: each address tries only a few accounts, so none
+  looks busy on its own, but together they fail on many accounts.
 
 It also looks across incidents (step 10b): the gateway sends the indicators of recent
 incidents, and any that this incident shares (ignoring known-good and internal ones) mean
@@ -24,6 +26,9 @@ STUFFING_MIN_FAILURE_SHARE = 0.7
 BRUTE_FORCE_MIN_FAILURES = 8
 SUCCESS_AFTER_MIN_FAILURES = 5
 AUTOMATION_PER_MINUTE = 15
+SPRAY_MIN_ACCOUNTS = 10
+SPRAY_MIN_SOURCES = 3
+SPRAY_MIN_FAILURE_SHARE = 0.8
 
 # Bounds, so a 500-event batch from many addresses still gives a small, valid answer.
 MAX_SOURCES_IN_RESULT = 25
@@ -53,6 +58,21 @@ def _related_signal(related: dict[int, list[str]]) -> Signal:
                   plain="The same attacker details turned up in other recent reports, so this may be part of a "
                         "wider attack on several people.",
                   weight=15 if len(ids) >= 2 else 10, mitre="T1583")
+
+
+def _spread_out_spray(events: list[dict[str, Any]]) -> Signal | None:
+    """Failures on many accounts from several addresses, with almost nothing succeeding."""
+    failed = [e for e in events if not e.get("success")]
+    accounts = {str(e.get("username")) for e in failed}
+    sources = {str(e.get("ip")) for e in failed}
+    if (len(accounts) < SPRAY_MIN_ACCOUNTS or len(sources) < SPRAY_MIN_SOURCES
+            or len(failed) / len(events) < SPRAY_MIN_FAILURE_SHARE):
+        return None
+    return Signal(
+        id="PASSWORD-SPRAY", label=f"Failed sign-ins on {len(accounts)} accounts from {len(sources)} addresses",
+        plain="Many computers tried passwords on many different accounts at once, spread out so no single one "
+              "stands out.",
+        weight=40, mitre="T1110.003")
 
 
 def correlate_events(case: Case, args: dict[str, str]) -> ToolResult:
@@ -113,6 +133,10 @@ def correlate_events(case: Case, args: dict[str, str]) -> ToolResult:
             signals.append(Signal(
                 id="AUTOMATION", label=f"{ip}: {per_minute:.0f} attempts per minute",
                 plain="The attempts came faster than any person could type.", weight=10, indicator=ip))
+
+    spray = _spread_out_spray(events)
+    if spray and not any(s.id == "CRED-STUFFING" for s in signals):
+        signals.append(spray)
 
     # Strongest first; a flood from many addresses is summarised, not listed one by one.
     signals.sort(key=lambda s: -s.weight)

@@ -160,5 +160,5 @@ The step-by-step build order is in [`ROADMAP.md`](ROADMAP.md).
 |---|---|---|
 | 1 | ~~Final product name.~~ Decided: **Casewright** (ADR-30). | Done |
 | 2 | Which LLM model and budget for development vs demo. **Answered:** a free local model with per-run and daily limits (ADR-15). | Step 12 |
-| 3 | Source of evaluation data (public phishing corpora vs fully synthetic). | Step 18 |
+| 3 | Source of evaluation data (public phishing corpora vs fully synthetic). **Answered:** synthetic incidents modelled on published attack patterns, with a held-out set (ADR-53). | Step 18 |
 | 4 | Is HTTPS on localhost required for the demo, or is a reverse proxy acceptable? | Step 5 |
