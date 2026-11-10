@@ -103,6 +103,7 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── meaning.tsx      each state's word, icon and colour
 │       ├── components/      login, demo buttons, incident list, investigation, reports, approval
 │       └── styles/          design tokens and the styles built on them
+├── deploy/         containers for a server: compose.yaml, Caddyfile, scripts (ADR-54)
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
 ├── README.md
@@ -229,6 +230,10 @@ Nothing secret is committed. Each service reads environment variables; a `.env.e
 | Ollama (AI model) | 11434 (127.0.0.1 only) | Installed app, runs in the background. Once: `ollama pull qwen3:8b`; then `LLM_PROVIDER=ollama` in `.env` |
 | Dashboard | 5173 (HTTPS, `localhost` only; forwards `/api` to the gateway) | `cd dashboard; npm run dev`, or `npm run build` then `npm run preview` for the built app under the strict page policy. Uses the certificate from `scripts\setup-https.ps1` (ADR-48) |
 | PostgreSQL | 5432 | Windows service `postgresql-x64-16`. Database `secanalyst`, role `secanalyst_app`, created once by `scripts\setup-db.ps1` |
+
+### In production
+
+On a server everything runs in containers from `deploy/compose.yaml` (step 19a, ADR-54): Caddy in front (Let's Encrypt, the dashboard's files, `/api` to the gateway over HTTPS), the gateway and the agent sharing one internal network, PostgreSQL 16 on another, and no AI model. See [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## 9. Testing strategy
 

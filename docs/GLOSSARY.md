@@ -165,6 +165,17 @@ Plain-language meanings of the terms used in this project.
 
 | Term | Meaning |
 |---|---|
+| **Container** | A sealed box holding one program and everything it needs to run, isolated from the other programs on the same machine. |
+| **Image** | The read-only template a container starts from, built from a Dockerfile. |
+| **Dockerfile** | The recipe for an image: start from a base image, copy files in, run commands. |
+| **Docker Compose** | Starts several containers together from one file (`compose.yaml`), with their networks and volumes. |
+| **Volume** | Storage kept outside a container, so data survives when the container is replaced. |
+| **Image digest** | The exact fingerprint of an image (`sha256:...`). A tag like `2.11` can be moved; a digest cannot. |
+| **Reverse proxy** | A server in front of others that receives every request and passes it on (here Caddy, in front of the gateway). |
+| **DNS** | The internet's phone book: turns a name like `casewright.duckdns.org` into a server's address. |
+| **Let's Encrypt** | A free certificate authority; Caddy asks it for the site's HTTPS certificate and renews it automatically. |
+| **X-Forwarded-For** | A header a proxy adds with the visitor's real address. Only believable when it comes from your own proxy. |
+| **Linux capabilities** | Pieces of root's power (e.g. opening low ports); containers here drop all of them. |
 | **Spring Boot** | A Java framework for building web services. |
 | **Maven / `mvnw`** | The Java build tool, and the wrapper script that downloads it for you. |
 | **`pom.xml`** | The file listing a Java project's libraries and settings. |

@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { DEV_PAGE_POLICY, PAGE_POLICY, pageHeaders } from "../../pagePolicy";
+import { DEV_PAGE_POLICY, PAGE_POLICY, caddyHeaderLines, pageHeaders } from "../../pagePolicy";
 
 const DASHBOARD = resolve(import.meta.dirname, "../..");
 const SRC = join(DASHBOARD, "src");
@@ -88,6 +88,16 @@ describe("the page's security policy", () => {
     const config = read(join(DASHBOARD, "vite.config.ts"));
     expect(config).toMatch(/preview: \{[^\n]*pageHeaders\(PAGE_POLICY\)/);
     expect(config).toMatch(/server: \{[^\n]*pageHeaders\(DEV_PAGE_POLICY\)/);
+  });
+
+  it("is the policy production sends too, written as Caddyfile lines", () => {
+    const lines = caddyHeaderLines(PAGE_POLICY);
+    expect(lines).toContain(`header Content-Security-Policy "${PAGE_POLICY}"\n`);
+    expect(lines.trim().split("\n")).toHaveLength(Object.keys(pageHeaders(PAGE_POLICY)).length);
+    // A double quote inside a value would end it early in the Caddyfile.
+    expect(Object.values(pageHeaders(PAGE_POLICY)).join("")).not.toContain('"');
+    const dockerfile = read(join(DASHBOARD, "..", "deploy", "caddy.Dockerfile"));
+    expect(dockerfile).toMatch(/node scripts\/page-headers\.ts > \S*page-headers\.caddy/);
   });
 
   it("is sent with the other protective headers", () => {

@@ -52,6 +52,7 @@ An agentic AI security analyst: it investigates a suspicious event with tools, e
 | Run the built dashboard under the strict page policy | `cd dashboard; npm run build; npm run preview` |
 | Add hashes after changing a Python package version | `agent\.venv\Scripts\python.exe scripts\hash-requirements.py` |
 | Rewrite the demo scenarios file after changing `agent/tests/scenarios.py` | `agent\.venv\Scripts\python.exe scripts\make-demo-scenarios.py` |
+| Run the whole system in containers (a Linux machine with Docker; see `docs/DEPLOYMENT.md`) | `sh deploy/make-secrets.sh <site>` once, then `docker compose -f deploy/compose.yaml up -d --build` |
 | Measure accuracy and rewrite `docs/EVALUATION.md` (after any change to detection) | `agent\.venv\Scripts\python.exe scripts\evaluate.py` (`--model` also runs the local AI model; Ollama must be running) |
 
 Maven is not installed globally; always use the wrapper `mvnw.cmd`.
@@ -62,6 +63,7 @@ Maven is not installed globally; always use the wrapper `mvnw.cmd`.
 gateway/     Spring Boot 4.1 (Java 25). Package root: com.securityanalyst.gateway, organised by feature.
 agent/       Python 3.14 FastAPI service (app/, tests/). Called only by the gateway; no database access.
 dashboard/   React + TypeScript with Vite (src/api.ts, src/components/, src/styles/). Talks only to the gateway, through its own server.
+deploy/      Containers for a server (ADR-54): compose.yaml, Caddyfile, scripts. Images: gateway/Dockerfile, agent/Dockerfile, deploy/caddy.Dockerfile.
 docs/        All project documents
 ```
 
@@ -101,4 +103,5 @@ docs/        All project documents
 - `@Transactional` works only on calls from outside the class (Spring's proxy). Never have one method of a service call another `@Transactional` method of the same class; give callers the one method instead. Tests marked `@Transactional` hide this mistake, so a change to how something is saved also needs a test that commits (like `DemoInvestigationTest`).
 - The live feed (ADR-49) learns of changes from `AuditLog.record`: a change to an incident that is not audited with its incident id never reaches the dashboard. The feed sends incident numbers only; never put incident data in it. It closes when the access token it opened with expires.
 - CI (`.github/workflows/ci.yml`) runs on every pull request and must stay green; a new test suite (agent, dashboard) gets its own job there. Actions are pinned to full commit SHAs with the version in a comment, and the workflow token stays `contents: read`; the one exception is `security-events: write` on the CodeQL job (ADR-52). A tool downloaded in CI is checked against its SHA-256 before it runs. The dependency audit, secret scan and CodeQL fail on any finding: fix the cause (usually a version upgrade), never switch the check off. A CodeQL finding may be accepted only by adding it to `.github/codeql-reviewed.json` (one rule in one file, with the reason and a decision record) and only with Mohit's approval.
+- Containers (ADR-54): base images are pinned by digest with the version in the tag (the newest release at least two weeks old; update both together). Every container runs as an ordinary user with all capabilities dropped and `no-new-privileges`; only Caddy publishes ports, and the gateway, agent and database stay on internal networks. The gateway believes `X-Forwarded-For` only from Caddy's fixed address: `ProductionSettingsTest` keeps `application-production.properties` and `deploy/compose.yaml` in step. Never copy `.env`, certificates or personal files into an image (`.dockerignore`); secrets reach containers only at run time from `deploy/.env`. A change to the containers is checked by CI's "Containers" job (`deploy/smoke-test.sh`); a "cannot reach" check there is always paired with a "can reach" one.
 - A reference prototype exists outside this repo (see the local `docs/MEMORY.md`). Port ideas from it deliberately, one step at a time.

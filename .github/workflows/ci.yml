@@ -117,6 +117,36 @@ jobs:
       - name: Check that it builds
         run: npm run build
 
+  # --------------------------------------------------------------- the containers (step 19a, ADR-54)
+  containers:
+    name: Containers
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Fresh random secrets for this run only, exactly as on the server; "localhost" makes Caddy
+      # use its own small certificate authority instead of Let's Encrypt.
+      - name: Make throwaway secrets
+        run: sh deploy/make-secrets.sh localhost
+
+      - name: Build the images and start everything
+        run: docker compose -f deploy/compose.yaml up --detach --build
+
+      - name: Use it like a visitor, and check the walls between the containers
+        run: bash deploy/smoke-test.sh
+
+      - name: Show the containers' logs if something failed
+        if: failure()
+        run: docker compose -f deploy/compose.yaml logs --no-color --timestamps
+
+      - name: Stop and remove everything
+        if: always()
+        run: docker compose -f deploy/compose.yaml down --volumes
+
   # --------------------------------------------------------------- security checks (step 18a, ADR-52)
   # The scanners below are downloaded from their official releases and refused unless their SHA-256
   # matches the one written here: a pinned version, checked before anything runs.
