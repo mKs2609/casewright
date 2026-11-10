@@ -1,0 +1,50 @@
+# Caddy: the front door, and the only part of Casewright reachable from the internet (step 19a, ADR-54).
+# It gets and renews the site's certificate from Let's Encrypt by itself, serves the dashboard, and
+# passes /api to the gateway. SITE_ADDRESS comes from deploy/.env (e.g. casewright.duckdns.org).
+
+{
+	# Caddy's own admin interface is not needed and stays off.
+	admin off
+	# Inside the container Caddy uses ports it may open as an ordinary user; compose.yaml maps the
+	# internet's 80 and 443 onto them.
+	http_port 8080
+	https_port 8443
+	# Redirects to HTTPS are written below, so they point at the public port 443, not 8443.
+	auto_https disable_redirects
+	# For "localhost" (CI), Caddy makes its own small certificate authority; it must not try to add
+	# it to the system's trusted list (it couldn't as an ordinary user, and nothing needs it there).
+	skip_install_trust
+}
+
+http://{$SITE_ADDRESS} {
+	redir https://{host}{uri} permanent
+}
+
+{$SITE_ADDRESS} {
+	# Don't announce what software runs here.
+	header -Server
+
+	# The API: to the gateway, still over HTTPS, trusting exactly the gateway's own certificate for
+	# the name "gateway" and nothing else (deploy/make-gateway-certificate.sh). Caddy replaces any
+	# X-Forwarded-For a visitor sends with the visitor's real address, which the gateway believes
+	# only from Caddy (application-production.properties).
+	handle /api/* {
+		reverse_proxy https://gateway:8443 {
+			transport http {
+				tls_trusted_ca_certs /gateway-ca/gateway.crt
+				tls_server_name gateway
+			}
+		}
+	}
+
+	# Everything else: the dashboard's files, with the page's security policy (generated from
+	# dashboard/pagePolicy.ts) and "only ever use HTTPS for this site".
+	handle {
+		root * /srv
+		import /etc/caddy/page-headers.caddy
+		header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		encode zstd gzip
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -1,0 +1,29 @@
+# What Docker builds may never see (step 19a, ADR-54). The builds use the repository root as their
+# "context" (the files they can copy from); anything listed here is not even sent to the builder.
+
+# Secrets and personal files
+.env
+.env.*
+**/.env
+**/.env.*
+certs/
+**/*.p12
+**/*.pem
+**/*.key
+handbook/
+docs/MEMORY.md
+
+# Version control and editors
+.git/
+.github/
+.idea/
+.vscode/
+
+# Build output and installed packages: the images build their own
+**/target/
+**/node_modules/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/logs/
+*.log

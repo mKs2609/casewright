@@ -19,3 +19,13 @@ export const pageHeaders = (policy: string) => ({
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "no-referrer",
 });
+
+/**
+ * The same headers as lines of a Caddyfile, for the production web server (step 19a): the image
+ * build writes them to a file the Caddyfile imports (scripts/page-headers.ts), so the policy is
+ * written once, here, for the dev server, the preview and production alike.
+ */
+export const caddyHeaderLines = (policy: string) =>
+  Object.entries(pageHeaders(policy))
+    .map(([name, value]) => `header ${name} "${value}"`)
+    .join("\n") + "\n";

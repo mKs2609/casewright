@@ -117,6 +117,10 @@ flowchart LR
 | Secret committed to git | `.gitignore` from day one; gitleaks over the whole history in CI; GitHub push protection | 1, 18a |
 | Insecure code merged | CodeQL in CI, failing on any finding; tests required | 18a |
 | A compromised CI action | Actions pinned to full commit SHAs; read-only token except CodeQL's results upload | 5a, 18a |
+| A tampered or swapped base image | Base images pinned by digest; Maven's download checked against its SHA-256 (ADR-54) | 19a |
+| A secret baked into an image | `.dockerignore` excludes `.env`, certificates and personal files; multi-stage builds; secrets reach containers only at run time; CI checks no `.env` is inside any image | 19a |
+| Everyone sharing one rate limit behind the proxy, or a visitor faking their address | `X-Forwarded-For` believed only from Caddy's fixed address | 19a |
+| A taken-over container reaching further | Ordinary users, no capabilities, read-only file systems; the gateway, agent and database on internal networks with no internet; only Caddy reachable from outside | 19a |
 
 ## 6. Accepted risks (for a student project)
 
