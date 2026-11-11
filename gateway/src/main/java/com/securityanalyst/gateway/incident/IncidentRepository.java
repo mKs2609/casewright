@@ -1,5 +1,7 @@
 package com.securityanalyst.gateway.incident;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +22,9 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     @EntityGraph(attributePaths = { "subject", "createdBy" })
     Optional<Incident> findWithDetailsById(Long id);
+
+    /** Demo and red-team runs since a moment (the daily cap, step 19b). */
+    long countBySourceInAndCreatedAtGreaterThanEqual(Collection<String> sources, Instant since);
 
     @Modifying
     @Query("UPDATE Incident i SET i.status = :status WHERE i.id = :id")

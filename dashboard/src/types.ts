@@ -8,6 +8,12 @@ export interface User {
   role: Role;
 }
 
+/** What the login page may offer on this site (on the public demo: no sign-up, a "Try the demo" button). */
+export interface AuthOptions {
+  signupOpen: boolean;
+  demoLogin: boolean;
+}
+
 export interface IncidentSummary {
   id: number;
   kind: string;

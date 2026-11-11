@@ -65,6 +65,11 @@ public class User {
         return role;
     }
 
+    /** Only for the public demo account, whose password nobody knows (DemoAccount). */
+    void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public void setRole(Role role) {
         this.role = role;
     }

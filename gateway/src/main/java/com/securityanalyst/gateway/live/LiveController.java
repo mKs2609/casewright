@@ -50,7 +50,7 @@ public class LiveController {
         long remaining = Math.max(1, Duration.between(Instant.now(), expiry).toMillis());
 
         SseEmitter emitter = new SseEmitter(remaining);
-        LiveUpdates.Subscriber subscriber = live.subscribe(user.id(), new EmitterSink(emitter));
+        LiveUpdates.Subscriber subscriber = live.subscribe(user.id(), request.getRemoteAddr(), new EmitterSink(emitter));
         // However it ends (expiry, the browser leaving, a broken connection), it is closed and forgotten.
         emitter.onTimeout(subscriber::close);
         emitter.onCompletion(subscriber::close);

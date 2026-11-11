@@ -151,14 +151,16 @@ All responses are JSON. Errors use one shape: `{"error": "...", "fields": {...},
 | Method | Path | Role | Purpose |
 |---|---|---|---|
 | GET | `/api/health` | none | Liveness check |
-| POST | `/api/auth/signup` | none | Create account |
+| GET | `/api/auth/options` | none | What the login page may offer: `{signupOpen, demoLogin}` (ADR-55) |
+| POST | `/api/auth/signup` | none | Create account (`403` where sign-up is closed, as on the public demo) |
 | POST | `/api/auth/login` | none | Log in, set cookies |
+| POST | `/api/auth/demo-login` | none | Public demo only: a session as the shared demo analyst, no password (ADR-55) |
 | POST | `/api/auth/refresh` | cookie | Rotate tokens |
 | POST | `/api/auth/logout` | any | Revoke refresh token |
 | GET | `/api/me` | any | Current user |
 | GET | `/api/admin/users` | ADMIN | List users |
 | PUT | `/api/admin/users/{id}/role` | ADMIN | Change a user's role (never one's own) |
-| POST | `/api/incidents` | ANALYST+ | Submit an incident (`202 Accepted`, investigation queued) |
+| POST | `/api/incidents` | ANALYST+ (ADMIN on the public demo) | Submit an incident (`202 Accepted`, investigation queued) |
 | GET | `/api/incidents` | any | List incidents |
 | GET | `/api/incidents/{id}` | any | Incident + evidence (since step 9) + verdict + actions |
 | GET | `/api/actions?status=pending` | any | Actions by status, newest first (at most 100) |

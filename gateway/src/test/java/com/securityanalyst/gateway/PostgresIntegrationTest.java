@@ -24,6 +24,7 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 @TestPropertySource(properties = {
         "security.rate-limit.requests-per-minute=1000000",
         "security.rate-limit.credential-requests-per-minute=1000000",
+        "security.rate-limit.demo-runs-per-minute=1000000",
         "security.rate-limit.free-login-attempts=1000000",
         // No agent runs during tests: port 1 refuses at once. InvestigationTest starts a fake one.
         "agent.base-url=http://127.0.0.1:1",

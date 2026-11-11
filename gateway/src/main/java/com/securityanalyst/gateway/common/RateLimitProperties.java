@@ -18,6 +18,8 @@ import jakarta.validation.constraints.NotNull;
  * @param maxLoginBackoff            the longest wait between login attempts (it doubles up to this)
  * @param forgetLoginAttemptsAfter   a username's failed attempts are forgotten after this long without one
  * @param maxTrackedClients          upper bound on IP addresses / usernames held in memory at once
+ * @param demoRunsPerMinute          demo and red-team runs, per client IP address: each one starts a whole
+ *                                   investigation (step 19b)
  */
 @ConfigurationProperties("security.rate-limit")
 @Validated
@@ -27,5 +29,6 @@ public record RateLimitProperties(
         @Min(1) int freeLoginAttempts,
         @NotNull Duration maxLoginBackoff,
         @NotNull Duration forgetLoginAttemptsAfter,
-        @Min(1) int maxTrackedClients) {
+        @Min(1) int maxTrackedClients,
+        @Min(1) int demoRunsPerMinute) {
 }

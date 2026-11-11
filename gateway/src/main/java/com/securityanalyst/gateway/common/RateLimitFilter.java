@@ -19,6 +19,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * - Every request counts against a generous limit.
  * - Login and signup also count against a much stricter one: each runs the deliberately
  *   slow password hash, so they are the cheapest way to overload the server or guess passwords.
+ * - Demo and red-team runs count against their own: each starts a whole investigation and stores
+ *   an incident, so one visitor must not be able to fill the public demo (step 19b).
  *
  * The IP address is the connection's own (getRemoteAddr). An X-Forwarded-For header is
  * ignored: anyone can write one, so trusting it would let an attacker pick a fresh "IP"
@@ -27,14 +29,17 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    static final Set<String> CREDENTIAL_PATHS = Set.of("/api/auth/login", "/api/auth/signup");
+    static final Set<String> CREDENTIAL_PATHS = Set.of("/api/auth/login", "/api/auth/signup", "/api/auth/demo-login");
 
     private final KeyedRateLimiter allRequests;
     private final KeyedRateLimiter credentialRequests;
+    private final KeyedRateLimiter demoRuns;
 
-    public RateLimitFilter(KeyedRateLimiter allRequests, KeyedRateLimiter credentialRequests) {
+    public RateLimitFilter(KeyedRateLimiter allRequests, KeyedRateLimiter credentialRequests,
+            KeyedRateLimiter demoRuns) {
         this.allRequests = allRequests;
         this.credentialRequests = credentialRequests;
+        this.demoRuns = demoRuns;
     }
 
     @Override
@@ -45,6 +50,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (wait.isZero() && isCredentialRequest(request)) {
             wait = credentialRequests.tryAcquire(client);
         }
+        if (wait.isZero() && isDemoRun(request)) {
+            wait = demoRuns.tryAcquire(client);
+        }
         if (!wait.isZero()) {
             response.setHeader("Retry-After", TooManyRequestsException.retryAfterHeader(wait));
             SecurityErrors.write(response, HttpStatus.TOO_MANY_REQUESTS, "Too many requests. Try again later.");
@@ -54,7 +62,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private static boolean isCredentialRequest(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        return "POST".equals(request.getMethod()) && CREDENTIAL_PATHS.contains(path);
+        return "POST".equals(request.getMethod()) && CREDENTIAL_PATHS.contains(path(request));
+    }
+
+    private static boolean isDemoRun(HttpServletRequest request) {
+        String path = path(request);
+        return "POST".equals(request.getMethod()) && (path.startsWith("/api/demo/") || path.equals("/api/red-team"));
+    }
+
+    private static String path(HttpServletRequest request) {
+        return request.getRequestURI().substring(request.getContextPath().length());
     }
 }

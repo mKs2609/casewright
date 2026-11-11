@@ -45,18 +45,24 @@ location="$(curl --silent -o /dev/null -w '%{http_code} %{redirect_url}' "http:/
 [ "$location" = "301 https://localhost/api/health" ] || fail "plain HTTP is not redirected to HTTPS: $location"
 ok "plain HTTP is redirected to HTTPS on the standard port"
 
-# ---- A visitor's whole journey: sign up, log in, run a demo scenario, check the audit chain
-user="smoke.tester"
-password="$(openssl rand -hex 16)"
+# ---- A visitor's whole journey on the public demo (step 19b): no sign-up, "Try the demo", a demo
+# scenario investigated from start to finish, the audit chain
 post() { web -o "$work/body" -w '%{http_code}' -b "$work/cookies" -c "$work/cookies" -H "Origin: $site" \
     -H 'Content-Type: application/json' -X POST "$site$1" ${2:+--data "$2"}; }
 
-[ "$(post /api/auth/signup "{\"username\":\"$user\",\"password\":\"$password\"}")" = 201 ] || fail "signup failed"
-# New accounts are viewers; an administrator promotes them. Here, directly in the database.
-compose exec -T db psql --quiet --username postgres --dbname secanalyst \
-    -c "UPDATE app_users SET role = 'ANALYST' WHERE username = '$user'" >/dev/null
-[ "$(post /api/auth/login "{\"username\":\"$user\",\"password\":\"$password\"}")" = 200 ] || fail "login failed"
-ok "a new account can sign up and log in (cookies over HTTPS)"
+[ "$(web "$site/api/auth/options")" = '{"signupOpen":false,"demoLogin":true}' ] \
+    || fail "the login page is not told: no sign-up, a demo button"
+[ "$(post /api/auth/signup "{\"username\":\"smoke.tester\",\"password\":\"$(openssl rand -hex 16)\"}")" = 403 ] \
+    || fail "sign-up is open on the public site"
+ok "sign-up is closed, and the login page offers Try the demo"
+
+[ "$(post /api/auth/demo-login)" = 200 ] || fail "Try the demo failed: $(cat "$work/body")"
+[ "$(web -b "$work/cookies" "$site/api/me" | json "['role']")" = ANALYST ] || fail "the demo account is not an analyst"
+ok "Try the demo logs in as the shared analyst, with no password (cookies over HTTPS)"
+
+incident_body='{"kind":"email","subjectIdentity":"priya.sharma","sender":"a@b.example","subject":"Hi","body":"Text of my own"}'
+[ "$(post /api/incidents "$incident_body")" = 403 ] || fail "the demo account could submit text of its own"
+ok "the demo account cannot submit an incident of its own (only the fixed scenarios)"
 
 [ "$(post /api/demo/phishing_email)" = 202 ] || fail "the demo scenario was refused: $(cat "$work/body")"
 incident="$(json "['id']" <"$work/body")"

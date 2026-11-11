@@ -175,6 +175,7 @@ Plain-language meanings of the terms used in this project.
 | **DNS** | The internet's phone book: turns a name like `casewright.duckdns.org` into a server's address. |
 | **Let's Encrypt** | A free certificate authority; Caddy asks it for the site's HTTPS certificate and renews it automatically. |
 | **X-Forwarded-For** | A header a proxy adds with the visitor's real address. Only believable when it comes from your own proxy. |
+| **Login CSRF** | Another website quietly logging a visitor in to an account of its choosing; stopped here by the same cross-site check as other forged requests. |
 | **Linux capabilities** | Pieces of root's power (e.g. opening low ports); containers here drop all of them. |
 | **Spring Boot** | A Java framework for building web services. |
 | **Maven / `mvnw`** | The Java build tool, and the wrapper script that downloads it for you. |

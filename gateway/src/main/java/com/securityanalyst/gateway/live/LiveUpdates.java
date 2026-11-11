@@ -48,19 +48,25 @@ public class LiveUpdates {
         this.settings = settings;
     }
 
-    /** Opens a feed for this user, or refuses if they (or everyone together) already have too many. */
-    public Subscriber subscribe(Long userId, Sink sink) {
+    /**
+     * Opens a feed for this user, or refuses if they (or everyone together) already have too many.
+     * The per-user limit counts each visitor address separately (step 19b): on the public demo many
+     * people share the demo account, and each of them should get live updates. One person, from one
+     * browser, is still held to the limit.
+     */
+    public Subscriber subscribe(Long userId, String clientAddress, Sink sink) {
         Subscriber subscriber;
         // One at a time, so two requests arriving together cannot both take the last place.
         synchronized (open) {
             if (open.size() >= settings.maxConnections()) {
                 throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Live updates are busy. Use Refresh for now.");
             }
-            if (open.stream().filter(s -> s.userId.equals(userId)).count() >= settings.maxConnectionsPerUser()) {
+            if (open.stream().filter(s -> s.userId.equals(userId) && s.clientAddress.equals(clientAddress)).count()
+                    >= settings.maxConnectionsPerUser()) {
                 throw new ApiException(HttpStatus.TOO_MANY_REQUESTS,
                         "Too many dashboard tabs have live updates. Close one, or use Refresh.");
             }
-            subscriber = new Subscriber(userId, sink);
+            subscriber = new Subscriber(userId, clientAddress, sink);
             open.add(subscriber);
         }
         subscriber.wake();
@@ -95,6 +101,7 @@ public class LiveUpdates {
     public final class Subscriber {
 
         private final Long userId;
+        private final String clientAddress;
         private final Sink sink;
 
         // All guarded by "this".
@@ -105,8 +112,9 @@ public class LiveUpdates {
         private boolean writing;
         private boolean closed;
 
-        private Subscriber(Long userId, Sink sink) {
+        private Subscriber(Long userId, String clientAddress, Sink sink) {
             this.userId = userId;
+            this.clientAddress = clientAddress;
             this.sink = sink;
         }
 

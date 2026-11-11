@@ -89,7 +89,7 @@ class LiveUpdatesTest {
     @Test
     void aNewFeedIsGreetedThenToldWhichIncidentsChanged() throws Exception {
         FakeSink sink = new FakeSink();
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
 
         changed(live, 58L);
         changed(live, 59L);
@@ -101,7 +101,7 @@ class LiveUpdatesTest {
     @Test
     void entriesThatAreNotAboutAnIncidentAreNotSent() throws Exception {
         FakeSink sink = new FakeSink();
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
 
         live.onRecorded(new AuditLog.Recorded("auth.login", null));
         changed(live, 58L);
@@ -114,7 +114,7 @@ class LiveUpdatesTest {
     void repeatedChangesInABurstAreSentOnce() throws Exception {
         FakeSink sink = new FakeSink();
         sink.stall = new CountDownLatch(1);
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
         eventually(() -> sink.writing.get() == 1);   // the greeting is stuck in a slow browser
 
         // While the browser is busy, incident 58 changes three times and 59 once.
@@ -134,7 +134,7 @@ class LiveUpdatesTest {
         // Two writers on one connection could interleave or reorder messages.
         FakeSink sink = new FakeSink();
         sink.stall = new CountDownLatch(1);
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
         eventually(() -> sink.writing.get() == 1);   // the greeting is stuck in a slow browser
 
         changed(live, 58L);
@@ -151,7 +151,7 @@ class LiveUpdatesTest {
     void aSlowBrowserNeverHoldsUpTheCodeThatMadeTheChange() {
         FakeSink slow = new FakeSink();
         slow.stall = new CountDownLatch(1);   // never released during the test
-        live.subscribe(1L, slow);
+        live.subscribe(1L, "203.0.113.1", slow);
 
         // The investigation (or a request) commits and announces; it must return at once.
         assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
@@ -166,7 +166,7 @@ class LiveUpdatesTest {
     void aFeedThatFallsTooFarBehindIsClosedSoTheDashboardReloadsInstead() throws Exception {
         FakeSink slow = new FakeSink();
         slow.stall = new CountDownLatch(1);
-        live.subscribe(1L, slow);
+        live.subscribe(1L, "203.0.113.1", slow);
 
         for (long id = 1; id <= 6; id++) {   // one more than the 5 that may wait
             changed(live, id);
@@ -183,8 +183,8 @@ class LiveUpdatesTest {
         FakeSink stalled = new FakeSink();
         stalled.stall = new CountDownLatch(1);
         FakeSink quick = new FakeSink();
-        live.subscribe(1L, stalled);
-        live.subscribe(2L, quick);
+        live.subscribe(1L, "203.0.113.1", stalled);
+        live.subscribe(2L, "203.0.113.1", quick);
         eventually(() -> quick.sent.size() == 1);
 
         changed(live, 58L);
@@ -198,7 +198,7 @@ class LiveUpdatesTest {
     @Test
     void aBrokenConnectionIsForgottenWithoutWritingToItAgain() throws Exception {
         FakeSink sink = new FakeSink();
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
         eventually(() -> sink.sent.size() == 1);
 
         sink.broken = true;
@@ -215,7 +215,7 @@ class LiveUpdatesTest {
     @Test
     void aHeartbeatIsSentWhenThereIsNothingElse() throws Exception {
         FakeSink sink = new FakeSink();
-        live.subscribe(1L, sink);
+        live.subscribe(1L, "203.0.113.1", sink);
         eventually(() -> sink.sent.size() == 1);
 
         live.heartbeat();
@@ -226,26 +226,26 @@ class LiveUpdatesTest {
 
     @Test
     void oneUserMayOnlyHaveSoManyFeeds() {
-        live.subscribe(1L, new FakeSink());
-        LiveUpdates.Subscriber second = live.subscribe(1L, new FakeSink());
+        live.subscribe(1L, "203.0.113.1", new FakeSink());
+        LiveUpdates.Subscriber second = live.subscribe(1L, "203.0.113.1", new FakeSink());
 
-        assertThatThrownBy(() -> live.subscribe(1L, new FakeSink()))
+        assertThatThrownBy(() -> live.subscribe(1L, "203.0.113.1", new FakeSink()))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
         // Someone else is not affected, and closing a feed frees its place.
-        live.subscribe(2L, new FakeSink());
+        live.subscribe(2L, "203.0.113.1", new FakeSink());
         second.close();
         assertThat(live.openCount()).isEqualTo(2);
-        live.subscribe(1L, new FakeSink());
+        live.subscribe(1L, "203.0.113.1", new FakeSink());
     }
 
     @Test
     void thereIsALimitForEveryoneTogether() {
-        live.subscribe(1L, new FakeSink());
-        live.subscribe(2L, new FakeSink());
-        live.subscribe(3L, new FakeSink());
+        live.subscribe(1L, "203.0.113.1", new FakeSink());
+        live.subscribe(2L, "203.0.113.1", new FakeSink());
+        live.subscribe(3L, "203.0.113.1", new FakeSink());
 
-        assertThatThrownBy(() -> live.subscribe(4L, new FakeSink()))
+        assertThatThrownBy(() -> live.subscribe(4L, "203.0.113.1", new FakeSink()))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE));
         assertThat(live.openCount()).isEqualTo(3);
@@ -254,7 +254,7 @@ class LiveUpdatesTest {
     @Test
     void closingTwiceClosesTheConnectionOnce() throws Exception {
         FakeSink sink = new FakeSink();
-        LiveUpdates.Subscriber subscriber = live.subscribe(1L, sink);
+        LiveUpdates.Subscriber subscriber = live.subscribe(1L, "203.0.113.1", sink);
 
         subscriber.close();
         subscriber.close();
@@ -264,5 +264,22 @@ class LiveUpdatesTest {
         changed(live, 58L);
         TimeUnit.MILLISECONDS.sleep(50);
         assertThat(sink.sent).doesNotContain("incident 58");
+    }
+
+    @Test
+    void eachVisitorAddressHasItsOwnPerUserLimitButTheTotalStillHolds() throws Exception {
+        // Settings here: 2 feeds per user and address, 3 in total. Everyone is the same (demo) user.
+        live.subscribe(7L, "203.0.113.1", new FakeSink());
+        live.subscribe(7L, "203.0.113.1", new FakeSink());
+        assertThatThrownBy(() -> live.subscribe(7L, "203.0.113.1", new FakeSink()))
+                .isInstanceOf(ApiException.class).hasMessageContaining("Too many dashboard tabs");
+
+        // Another visitor on the same account still gets one.
+        live.subscribe(7L, "203.0.113.2", new FakeSink());
+        assertThat(live.openCount()).isEqualTo(3);
+
+        // The total limit protects the server whoever asks.
+        assertThatThrownBy(() -> live.subscribe(7L, "203.0.113.3", new FakeSink()))
+                .isInstanceOf(ApiException.class).hasMessageContaining("busy");
     }
 }

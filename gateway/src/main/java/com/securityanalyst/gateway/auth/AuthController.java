@@ -1,5 +1,6 @@
 package com.securityanalyst.gateway.auth;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,11 +28,24 @@ public class AuthController {
     private final AuthService authService;
     private final SessionService sessionService;
     private final AuthCookies cookies;
+    private final AuthOptions options;
 
-    public AuthController(AuthService authService, SessionService sessionService, AuthCookies cookies) {
+    /** What the login page may offer (step 19b): public, and says nothing secret. */
+    public record AuthOptions(boolean signupOpen, boolean demoLogin) {
+    }
+
+    public AuthController(AuthService authService, SessionService sessionService, AuthCookies cookies,
+            @Value("${security.signup-enabled}") boolean signupEnabled,
+            @Value("${demo.public-login.enabled}") boolean demoLogin) {
+        this.options = new AuthOptions(signupEnabled, demoLogin);
         this.authService = authService;
         this.sessionService = sessionService;
         this.cookies = cookies;
+    }
+
+    @GetMapping("/auth/options")
+    public AuthOptions options() {
+        return options;
     }
 
     @PostMapping("/auth/signup")

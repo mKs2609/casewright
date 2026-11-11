@@ -41,6 +41,7 @@ class RateLimitTest extends PostgresIntegrationTest {
         registry.add("security.rate-limit.requests-per-minute", () -> 20);
         registry.add("security.rate-limit.credential-requests-per-minute", () -> 4);
         registry.add("security.rate-limit.free-login-attempts", () -> 2);
+        registry.add("security.rate-limit.demo-runs-per-minute", () -> 3);
     }
 
     @Autowired
@@ -153,5 +154,32 @@ class RateLimitTest extends PostgresIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"forged.user5\",\"password\":\"some wrong password\"}"))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void oneAddressCanOnlyStartSoManyDemoRunsButOthersAreUnaffected() throws Exception {
+        // Counted before the login check, so even refused attempts use up the allowance.
+        String[] runs = { "/api/demo/phishing_email", "/api/red-team", "/api/demo/vishing_call" };
+        for (String run : runs) {
+            mvc.perform(post(run).with(request -> {
+                request.setRemoteAddr("10.0.6.1");
+                return request;
+            })).andExpect(status().isUnauthorized());
+        }
+
+        mvc.perform(post("/api/demo/phishing_email").with(request -> {
+            request.setRemoteAddr("10.0.6.1");
+            return request;
+        })).andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
+
+        // Another address still can, and reading the scenario list is not a run.
+        mvc.perform(post("/api/red-team").with(request -> {
+            request.setRemoteAddr("10.0.6.2");
+            return request;
+        })).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/demo/scenarios").with(request -> {
+            request.setRemoteAddr("10.0.6.1");
+            return request;
+        })).andExpect(status().isUnauthorized());
     }
 }

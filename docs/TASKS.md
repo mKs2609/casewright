@@ -3,27 +3,29 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-10
+**Last updated:** 2026-11-11
 
 ---
 
 ## Now
 
-### Step 19a: Containers (on `feature/containers`)
-- [x] Plan agreed: a live demo on Oracle Cloud's free server, a DuckDNS name (`casewright`), no AI model on the server, a demo account allowed to approve (ADR-54); deployment split into 19a, 19b, 19c
-- [x] The gateway believes visitors' addresses only from Caddy (Tomcat remote-IP settings in `application-production.properties`); tested on the real web server
-- [x] Images: gateway, agent, Caddy with the dashboard; base images pinned by digest; Maven's download checked against its SHA-256; `.dockerignore`
-- [x] `deploy/compose.yaml`: internal networks, the agent on the gateway's loopback, ordinary users, no capabilities, read-only file systems; the gateway's own certificate made at first start
-- [x] The page's security policy generated for Caddy from `pagePolicy.ts`
-- [x] CI job "Containers": starts everything and runs `deploy/smoke-test.sh`
-- [x] Tests: gateway 352 (both orders), dashboard 103, agent 656; 7 mutation checks, all caught
-- [ ] First run of the "Containers" job on GitHub (the containers have never run on this machine: no Docker here)
-- [ ] "Containers" added to the required checks
+### Step 19b: Public demo mode (on `feature/public-demo`)
+- [x] Sign-up switch (`security.signup-enabled`), off on the server
+- [x] "Try the demo": the shared `demo` analyst with a password nobody knows, reset at every start; `POST /api/auth/demo-login`; `GET /api/auth/options` for the login page (ADR-55)
+- [x] Incidents of one's own for admins only on the server (`security.incident-submitter-roles`)
+- [x] Demo runs limited per address (5 a minute) and per day for the site (300)
+- [x] The live feed's per-user limit counts each visitor address separately
+- [x] Login page: the "Try the demo" button where it exists
+- [x] Smoke test follows the public demo's path (no sign-up, the demo button)
+- [x] Fixed a timing-dependent dashboard test from step 16b (it compared with a measured delay)
+- [x] Tests: gateway 364 (both orders), dashboard 107, agent 656; 12 mutation checks, all caught
+- [x] Dashboard screenshot for the README and profile: `docs/images/dashboard.png` (incident #70, a phishing email with its evidence and two actions waiting for approval)
+- [ ] All checks pass on GitHub, including Containers
 - [ ] Merged
 
 ## Later
 
-Step 19b (public demo mode), 19c (going live), then design and UI/UX polish, then step 20: the final handbook.
+Step 19c (going live), then design and UI/UX polish, then step 20: the final handbook.
 
 ## Open questions
 
@@ -33,6 +35,7 @@ Step 19b (public demo mode), 19c (going live), then design and UI/UX polish, the
 
 ## Done
 
+- **2026-11-11:** Step 19a (containers) merged. "Containers" is the 11th required check on `main`.
 - **2026-11-10:** Step 18b (evaluation) merged: PR #21.
 - **2026-11-09:** Step 18a (CI security gate) merged: PR #20. All 10 checks are required on `main`.
 - **2026-11-08:** Step 17b (red-team probe) merged: PR #19.

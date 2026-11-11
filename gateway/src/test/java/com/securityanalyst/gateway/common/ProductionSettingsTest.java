@@ -63,6 +63,18 @@ class ProductionSettingsTest {
     }
 
     @Test
+    void theServerIsAPublicDemo() throws Exception {
+        // Step 19b, ADR-55: nobody signs up, visitors use the shared demo account, which may fire the
+        // fixed scenarios but not submit text of its own, and demo runs have a ceiling.
+        Properties settings = production();
+        assertThat(settings.getProperty("security.signup-enabled")).isEqualTo("false");
+        assertThat(settings.getProperty("demo.public-login.enabled")).isEqualTo("true");
+        assertThat(settings.getProperty("security.incident-submitter-roles")).isEqualTo("ADMIN");
+        assertThat(Integer.parseInt(settings.getProperty("demo.max-runs-per-day"))).isPositive();
+        assertThat(Integer.parseInt(settings.getProperty("security.rate-limit.demo-runs-per-minute"))).isBetween(1, 10);
+    }
+
+    @Test
     void theAgentRunsWithoutAnAiModelOnTheServer() throws Exception {
         assertThat(compose()).contains("LLM_PROVIDER: \"off\"").contains("network_mode: \"service:gateway\"");
     }

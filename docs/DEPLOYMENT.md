@@ -1,6 +1,10 @@
 # Deployment
 
-How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)). The public demo is not online yet: step 19b adds the demo account and closes sign-up, and step 19c puts it on a server.
+How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)). The public demo is not online yet: step 19c puts it on a server.
+
+## The public demo mode
+
+With the production settings ([ADR-55](DECISIONS.md)): no sign-up; a **Try the demo** button that logs visitors in as a shared analyst account whose password nobody knows; that account fires the demo scenarios and decides the (simulated) actions but cannot submit text of its own; demo runs are limited to 5 a minute per visitor and 300 a day for the site.
 
 ## What runs where
 
