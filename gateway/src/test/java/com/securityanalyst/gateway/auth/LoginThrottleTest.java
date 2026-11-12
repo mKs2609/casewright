@@ -43,7 +43,7 @@ class LoginThrottleTest {
     private final FakeClock clock = new FakeClock();
 
     private LoginThrottle throttle(int freeAttempts, Duration maxBackoff) {
-        RateLimitProperties limits = new RateLimitProperties(100, 10, freeAttempts, maxBackoff, Duration.ofHours(1), 1000);
+        RateLimitProperties limits = new RateLimitProperties(100, 10, freeAttempts, maxBackoff, Duration.ofHours(1), 1000, 10);
         return new LoginThrottle(limits, clock);
     }
 
@@ -117,7 +117,7 @@ class LoginThrottleTest {
 
     @Test
     void forgettingAttemptsBeforeTheLongestWaitIsRefusedAtStartup() {
-        RateLimitProperties nonsense = new RateLimitProperties(100, 10, 5, Duration.ofHours(2), Duration.ofHours(1), 1000);
+        RateLimitProperties nonsense = new RateLimitProperties(100, 10, 5, Duration.ofHours(2), Duration.ofHours(1), 1000, 10);
 
         assertThatThrownBy(() -> new LoginThrottle(nonsense, clock)).isInstanceOf(IllegalArgumentException.class);
     }

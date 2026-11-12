@@ -48,6 +48,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
             @Value("${security.allowed-origins}") Set<String> allowedOrigins,
             @Value("${security.max-request-size}") DataSize maxRequestSize,
+            @Value("${security.incident-submitter-roles}") String[] incidentSubmitterRoles,
             RateLimitProperties limits) throws Exception {
 
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService);
@@ -55,7 +56,8 @@ public class SecurityConfig {
         RequestSizeLimitFilter sizeLimitFilter = new RequestSizeLimitFilter(maxRequestSize.toBytes());
         RateLimitFilter rateLimitFilter = new RateLimitFilter(
                 new KeyedRateLimiter(limits.requestsPerMinute(), limits.maxTrackedClients()),
-                new KeyedRateLimiter(limits.credentialRequestsPerMinute(), limits.maxTrackedClients()));
+                new KeyedRateLimiter(limits.credentialRequestsPerMinute(), limits.maxTrackedClients()),
+                new KeyedRateLimiter(limits.demoRunsPerMinute(), limits.maxTrackedClients()));
 
         http
             // No server-side HTTP session: every request proves itself with its access token.
@@ -90,13 +92,14 @@ public class SecurityConfig {
                 // a request that already passed these rules when it arrived; a caller cannot start one.
                 .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 // Open to everyone:
-                .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/health", "/api/auth/options").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login",
-                        "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        "/api/auth/refresh", "/api/auth/logout", "/api/auth/demo-login").permitAll()
                 // Admins only:
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // Submitting incidents: analysts and admins (viewers may only read):
-                .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole("ANALYST", "ADMIN")
+                // Submitting incidents: analysts and admins (viewers may only read). On the public demo,
+                // admins only (step 19b): the shared demo account fires fixed scenarios, never its own text.
+                .requestMatchers(HttpMethod.POST, "/api/incidents").hasAnyRole(incidentSubmitterRoles)
                 // Deciding actions: the same. The server checks this; a hidden button is no control.
                 .requestMatchers(HttpMethod.POST, "/api/actions/**").hasAnyRole("ANALYST", "ADMIN")
                 // Firing a demo scenario submits an incident, so the same roles.

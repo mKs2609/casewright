@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final LoginThrottle loginThrottle;
     private final AuditLog audit;
+    /** Off on the public demo (step 19b): nobody can create an account there. */
+    private final boolean signupEnabled;
 
     /**
      * A hash of a random value nobody knows. When a login names a user that
@@ -31,7 +34,9 @@ public class AuthService {
      */
     private final String dummyHash;
 
-    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, LoginThrottle loginThrottle, AuditLog audit) {
+    public AuthService(UserRepository users, PasswordEncoder passwordEncoder, LoginThrottle loginThrottle, AuditLog audit,
+            @Value("${security.signup-enabled}") boolean signupEnabled) {
+        this.signupEnabled = signupEnabled;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.loginThrottle = loginThrottle;
@@ -41,6 +46,9 @@ public class AuthService {
 
     @Transactional
     public User signup(SignupRequest request) {
+        if (!signupEnabled) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Sign-up is closed on this site");
+        }
         if (request.password().toLowerCase().contains(request.username())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Password must not contain the username");
         }

@@ -35,8 +35,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 17b | **Red-team probe** | Showing the guardrails hold | The probe shows every hijack attempt blocked | ✅ |
 | 18a | **CI security gate** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, supply-chain checks | Every push runs tests and scans | ✅ |
 | 18b | **Evaluation** | Measuring accuracy, held-out sets, overfitting | Evaluation numbers are in the README; `SECURITY.md` ticked except the items that wait for a deployment | ✅ |
-| 19a | **Containers** | Docker, Compose, reverse proxies, least privilege in containers | The whole system starts in containers in CI and passes a visitor's journey and the isolation checks | 🟡 |
-| 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | ⬜ |
+| 19a | **Containers** | Docker, Compose, reverse proxies, least privilege in containers | The whole system starts in containers in CI and passes a visitor's journey and the isolation checks | ✅ |
+| 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | 🟡 |
 | 19c | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⬜ |
 
 ## Suggested pace (8 weeks)

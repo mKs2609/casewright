@@ -1,4 +1,13 @@
-import type { Action, AuditCheck, DemoScenario, IncidentDetail, IncidentSummary, RedTeamCard, User } from "./types";
+import type {
+  Action,
+  AuditCheck,
+  AuthOptions,
+  DemoScenario,
+  IncidentDetail,
+  IncidentSummary,
+  RedTeamCard,
+  User,
+} from "./types";
 
 /** A refusal from the server, with its own message (which never repeats what was sent). */
 export class ApiError extends Error {
@@ -93,6 +102,10 @@ async function errorMessage(response: Response): Promise<string> {
 export const api = {
   me: () => request<User>("/me"),
   login: (username: string, password: string) => request<User>("/auth/login", { username, password }),
+  // GET said outright: without a body, other /auth/ paths are POSTs.
+  authOptions: () => request<AuthOptions>("/auth/options", undefined, "GET"),
+  // The public demo's shared account: no password is sent, because nobody knows it.
+  demoLogin: () => request<User>("/auth/demo-login", undefined, "POST"),
   logout: () => request<void>("/auth/logout"),
   incidents: () => request<IncidentSummary[]>("/incidents"),
   incident: (id: number) => request<IncidentDetail>(`/incidents/${id}`),

@@ -6,6 +6,8 @@
 
 > An AI security analyst that investigates threats like a human would, explains itself to experts and non-experts at the same time, and never acts alone on anything risky.
 
+![The Casewright dashboard: a phishing email investigated step by step, each piece of evidence with its findings, a risk score of 90, and two high-risk actions waiting for a person to approve or reject them](docs/images/dashboard.png)
+
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
 **Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log, with a dashboard that updates live as an investigation runs, demo buttons that fire made-up attacks, and a red-team probe that plays a hijacked AI. Its accuracy is measured on 100 labelled incidents ([results](docs/EVALUATION.md)). See the [roadmap](docs/ROADMAP.md). It is a portfolio project, not a production system: see [Limitations](#limitations).
@@ -51,13 +53,13 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 
 The held-out set is the honest number: the rule engine rarely cries wolf, but misses calm requests that use no tell-tale words, no link and nothing the threat list knows. The detection target is not met. With the local AI model the opposite happens: it caught every attack but called most harmless incidents "suspicious" too, so neither setting meets both targets yet. Every miss and false alarm, the 95% ranges and the method are in [EVALUATION.md](docs/EVALUATION.md) and [ADR-53](docs/DECISIONS.md); CI fails if those published numbers stop matching what the agent does.
 
-**Automated tests** (counts at step 19a; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
+**Automated tests** (counts at step 19b; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
 
 | Suite | Tests | Covers, among other things |
 |---|---|---|
-| Gateway (Java) | 352 | Approvals: role checks, two simultaneous approvals (one wins), expiry, deciding your own account; the action policy; the audit chain detecting edited, removed or forged entries; the gateway refusing malformed or out-of-order agent events; auth, rate limits and headers |
+| Gateway (Java) | 364 | Approvals: role checks, two simultaneous approvals (one wins), expiry, deciding your own account; the action policy; the audit chain detecting edited, removed or forged entries; the gateway refusing malformed or out-of-order agent events; auth, rate limits and headers |
 | Agent (Python) | 656 | The six demo scenarios reaching their verdicts with and without the AI; the 100-incident evaluation; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
-| Dashboard (TypeScript) | 103 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed |
+| Dashboard (TypeScript) | 107 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed |
 
 **The whole system in containers.** Every pull request also builds the server's containers, starts them, and uses them like a visitor: a verified HTTPS connection, a demo investigation from start to finish, the audit chain, and the walls between the containers ([Deployment](docs/DEPLOYMENT.md)).
 
@@ -72,7 +74,7 @@ The held-out set is the honest number: the rule engine rarely cries wolf, but mi
 - **Nothing is enforced for real.** Approved actions are recorded, not carried out, and the threat intelligence is a small built-in list using reserved example names. Connecting real firewalls or mail systems would need its own review.
 - **Accuracy targets are not met.** On the held-out set the rule engine caught 60% of attacks against a 90% target; the local AI model caught all of them but raised false alarms on 65% of harmless incidents. The incidents are synthetic, in English, and written by the same author as the detectors, and 100 is a small set, so the numbers are a rough guide, not a benchmark.
 - **A small local model.** The AI runs on the same machine (Qwen3 8B through Ollama). It is often slow, and spotting injected instructions relies on pattern matching that new phrasing may evade. The other layers do not depend on detection, so the cost is a missed finding, not an unsafe action.
-- **One person can both submit and approve.** This keeps the demo usable with one analyst; a real deployment would want a second approver.
+- **One person can both submit and approve.** This keeps the demo usable with one analyst; a real deployment would want a second approver. On the public demo, visitors share one demo account, so one can approve an action another is looking at (it is all simulated).
 - **Not online yet.** The containers for a server are built and checked in CI ([Deployment](docs/DEPLOYMENT.md)), but the public demo is not live. Locally, HTTPS uses a self-signed certificate, the setup scripts are for Windows, and the live feed keeps its connections in one gateway's memory, so several gateways would need a shared channel.
 - **The audit log is tamper-evident, not tamper-proof.** Someone with both database access and the signing key could rewrite it; the log file records the latest entry outside the database as a second check.
 - **The red-team probe plays one script.** It shows the checks hold against those attempts, not against every possible attack; a compromised agent attacking the gateway directly is covered by the gateway's tests, not by the probe.

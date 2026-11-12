@@ -6,7 +6,16 @@ import { App } from "../App";
 import type { IncidentDetail } from "../types";
 import { analyst, fakeGateway, incident, loggedInAs, pendingBlock, summary, viewer } from "./fixtures";
 
-const noSession = { "GET /api/me": { status: 401 }, "POST /api/auth/refresh": { status: 401 } };
+// A development machine: no demo button. The login page asks once, when it opens.
+const noSession = {
+  "GET /api/me": { status: 401 },
+  "POST /api/auth/refresh": { status: 401 },
+  "GET /api/auth/options": { status: 200, body: { signupOpen: true, demoLogin: false } },
+};
+const publicDemo = {
+  ...noSession,
+  "GET /api/auth/options": { status: 200, body: { signupOpen: false, demoLogin: true } },
+};
 
 async function openIncident() {
   window.location.hash = "#/incidents/57";
@@ -52,6 +61,56 @@ describe("logging in", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Invalid username or password");
     expect(screen.getByLabelText("Password")).toHaveValue("");
     expect(screen.getByRole("button", { name: "Log in" })).toBeEnabled();
+  });
+
+  it("offers no demo button on a development machine", async () => {
+    fakeGateway(noSession);
+    render(<App />);
+
+    await screen.findByLabelText("Password");
+    expect(screen.queryByRole("button", { name: "Try the demo" })).not.toBeInTheDocument();
+  });
+
+  it("on the public demo, Try the demo logs in without sending any password", async () => {
+    const demo = { username: "demo", role: "ANALYST" as const };
+    const fetchMock = fakeGateway({
+      ...publicDemo,
+      "POST /api/auth/demo-login": { status: 200, body: demo },
+      "GET /api/incidents": { status: 200, body: [summary] },
+      "GET /api/audit/verify": { status: 200, body: { valid: true, entries: 1, headSeq: 1, brokenAt: null } },
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByText(/approving an action changes nothing real/)).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Try the demo" }));
+
+    expect(await screen.findByText("Sara Khan")).toBeInTheDocument();
+    const [, init] = fetchMock.mock.calls.find(([url]) => url === "/api/auth/demo-login")!;
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBeUndefined();
+  });
+
+  it("shows the server's refusal of the demo login, such as today's limit", async () => {
+    fakeGateway({
+      ...publicDemo,
+      "POST /api/auth/demo-login": { status: 429, body: { error: "Too many requests. Try again later." } },
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Try the demo" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many requests. Try again later.");
+    expect(screen.getByRole("button", { name: "Try the demo" })).toBeEnabled();
+  });
+
+  it("still shows the ordinary login form when the server cannot say what it offers", async () => {
+    fakeGateway({ ...noSession, "GET /api/auth/options": { status: 500 } });
+    render(<App />);
+
+    expect(await screen.findByLabelText("Password")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Try the demo" })).not.toBeInTheDocument();
   });
 
   it("goes back to the login screen when the session can no longer be renewed", async () => {

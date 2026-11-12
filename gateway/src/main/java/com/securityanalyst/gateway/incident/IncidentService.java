@@ -1,8 +1,13 @@
 package com.securityanalyst.gateway.incident;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,6 +18,7 @@ import com.securityanalyst.gateway.audit.AuditLog;
 import com.securityanalyst.gateway.auth.AuthenticatedUser;
 import com.securityanalyst.gateway.auth.UserRepository;
 import com.securityanalyst.gateway.common.ApiException;
+import com.securityanalyst.gateway.common.TooManyRequestsException;
 import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.MonitoredIdentity;
 import com.securityanalyst.gateway.identity.MonitoredIdentityService;
@@ -33,10 +39,13 @@ public class IncidentService {
     private final VerdictService verdicts;
     private final AuditLog audit;
     private final ActionService actions;
+    /** Most demo and red-team runs per day (UTC), for the whole site; 0 for no limit (step 19b). */
+    private final int maxDemoRunsPerDay;
 
     public IncidentService(IncidentRepository incidents, MonitoredIdentityService identities, UserRepository users,
             JsonMapper json, ApplicationEventPublisher events, EvidenceService evidence, VerdictService verdicts,
-            AuditLog audit, ActionService actions) {
+            AuditLog audit, ActionService actions, @Value("${demo.max-runs-per-day}") int maxDemoRunsPerDay) {
+        this.maxDemoRunsPerDay = maxDemoRunsPerDay;
         this.incidents = incidents;
         this.identities = identities;
         this.users = users;
@@ -54,6 +63,7 @@ public class IncidentService {
      */
     @Transactional
     public IncidentResponses.Detail submit(IncidentRequest request, AuthenticatedUser submittedBy, String source) {
+        refuseDemoRunsOverTodaysLimit(source);
         MonitoredIdentity subject = identities.find(request.subjectIdentity())
                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Unknown monitored identity"));
 
@@ -73,6 +83,25 @@ public class IncidentService {
         // Starts the investigation, but only once this transaction has committed (InvestigationRunner).
         events.publishEvent(new IncidentSubmitted(saved.getId()));
         return IncidentResponses.Detail.from(saved, json, List.of(), null, List.of());
+    }
+
+    private static final List<String> DEMO_SOURCES = List.of(Incident.SOURCE_DEMO, Incident.SOURCE_RED_TEAM);
+
+    /**
+     * Each demo run stores an incident for good (the audit log cannot be cleaned, ADR-46), so the
+     * public demo has a daily ceiling on top of the per-address rate limit. Counted from the stored
+     * incidents, so restarting the gateway does not reset it. Two runs arriving at the same instant
+     * can each pass the count; the ceiling guards against filling the disk, it is not an exact quota.
+     */
+    private void refuseDemoRunsOverTodaysLimit(String source) {
+        if (maxDemoRunsPerDay <= 0 || !DEMO_SOURCES.contains(source)) {
+            return;
+        }
+        Instant startOfToday = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
+        if (incidents.countBySourceInAndCreatedAtGreaterThanEqual(DEMO_SOURCES, startOfToday) >= maxDemoRunsPerDay) {
+            Duration untilTomorrow = Duration.between(Instant.now(), startOfToday.plus(Duration.ofDays(1)));
+            throw new TooManyRequestsException("The demo has reached today's limit. Try again tomorrow.", untilTomorrow);
+        }
     }
 
     @Transactional(readOnly = true)

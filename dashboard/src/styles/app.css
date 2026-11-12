@@ -624,3 +624,9 @@ th {
     animation: none !important;
   }
 }
+
+/* "Or log in with your own account", between the demo button and the form (step 19b). */
+.login-or {
+  margin-top: var(--space-2);
+  text-align: center;
+}

@@ -157,8 +157,9 @@ describe("following the feed", () => {
 
     await waitFor(() => expect(times.length).toBeGreaterThanOrEqual(4), { timeout: 2000 }).finally(stop);
     const gaps = times.slice(1).map((t, i) => t - times[i]);
+    // Compared with the configured first delay, not with the measured first gap: a measured gap
+    // includes however long the test machine took to get round to it (seen: 28 ms for a 5 ms wait).
     expect(gaps[2]).toBeGreaterThanOrEqual(timing.firstRetry * 4 - 2);
-    expect(gaps[2]).toBeGreaterThan(gaps[0]);
   });
 
   it("stopping closes the feed and does not reconnect", async () => {

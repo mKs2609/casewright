@@ -289,7 +289,7 @@ class LiveFeedTest extends PostgresIntegrationTest {
         long id = submitIncident();
         awaitSettled(id);
         List<String> sent = new java.util.concurrent.CopyOnWriteArrayList<>();
-        LiveUpdates.Subscriber subscriber = live.subscribe(-1L, new LiveUpdates.Sink() {
+        LiveUpdates.Subscriber subscriber = live.subscribe(-1L, "203.0.113.1", new LiveUpdates.Sink() {
             @Override
             public void ready() {
             }

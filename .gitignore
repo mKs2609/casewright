@@ -29,6 +29,8 @@ __pycache__/
 gateway/logs/
 
 # Editors & OS
+# Local launch settings for the development servers (machine-specific):
+/.claude/launch.json
 .idea/
 .vscode/
 *.iml

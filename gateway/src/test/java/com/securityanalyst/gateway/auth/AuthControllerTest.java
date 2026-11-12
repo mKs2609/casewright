@@ -5,6 +5,7 @@ import static com.securityanalyst.gateway.NoEcho.withoutTraceId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -187,5 +188,14 @@ class AuthControllerTest extends PostgresIntegrationTest {
     void loginRejectsBlankAndOversizedInput() throws Exception {
         postJson("/api/auth/login", credentials("", "")).andExpect(status().isBadRequest());
         postJson("/api/auth/login", credentials("asha.rao", "x".repeat(129))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void onADevelopmentMachineSignupIsOpenAndThereIsNoDemoButton() throws Exception {
+        mvc.perform(get("/api/auth/options"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.signupOpen").value(true))
+                .andExpect(jsonPath("$.demoLogin").value(false));
+        mvc.perform(post("/api/auth/demo-login")).andExpect(status().isNotFound());
     }
 }

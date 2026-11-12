@@ -121,6 +121,12 @@ flowchart LR
 | A secret baked into an image | `.dockerignore` excludes `.env`, certificates and personal files; multi-stage builds; secrets reach containers only at run time; CI checks no `.env` is inside any image | 19a |
 | Everyone sharing one rate limit behind the proxy, or a visitor faking their address | `X-Forwarded-For` believed only from Caddy's fixed address | 19a |
 | A taken-over container reaching further | Ordinary users, no capabilities, read-only file systems; the gateway, agent and database on internal networks with no internet; only Caddy reachable from outside | 19a |
+| Strangers creating accounts on the public demo | Sign-up closed; a shared demo account instead (ADR-55) | 19b |
+| A visitor storing text of their own (abuse, real people's data) | The demo account cannot submit incidents; only the fixed scenarios | 19b |
+| The shared account's password guessed, changed or published | It has none anyone knows: a new random one at every start, entry only through the demo button | 19b |
+| Another website logging a visitor in as the demo (login CSRF) | The cross-site check also covers `/api/auth/demo-login` | 19b |
+| Filling the disk with demo runs | Per-address limit on runs, and a daily ceiling for the whole site counted from stored incidents | 19b |
+| One visitor using up the live feed for everyone on the shared account | The per-user feed limit counts each visitor address separately | 19b |
 
 ## 6. Accepted risks (for a student project)
 
