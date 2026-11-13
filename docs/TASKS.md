@@ -12,6 +12,7 @@ Updated at the start and end of every step.
 ### Step 19c: Containers on ARM (on `feature/go-live`)
 - [x] Checked that everything runs on Oracle's free ARM server: all six pinned images include arm64, every Python package has an ARM file (pinned hashes cover all published files), the dashboard's build tool has its ARM Linux binary in the lockfile
 - [x] CI runs the Containers job on ARM too ("Containers (ARM)"), and both copies check every container runs on that machine's kind of processor (ADR-56)
+- [x] The dependency audit found a vulnerability published on 2026-11-13 in `opentelemetry-api` 1.45.1 (GHSA-mf5v-w3w3-f6cg, slow parsing of a crafted trace header; it comes with FastAPI and the agent never uses that part). Upgraded to 1.45.2 (released 2026-10-29); agent 656 tests pass; the Java, Python and npm libraries have no other known vulnerabilities
 - [ ] All checks pass on GitHub, including "Containers (ARM)"
 - [ ] Merged, and "Containers (ARM)" added to `Protect main` as the 12th required check (Mohit)
 
