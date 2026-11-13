@@ -1,6 +1,6 @@
 # Deployment
 
-How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)). The public demo is not online yet: step 19c puts it on a server.
+How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)). The public demo is not online yet: step 19d puts it on a server.
 
 ## The public demo mode
 
@@ -72,4 +72,4 @@ The first command runs once and refuses to overwrite an existing `deploy/.env`: 
 
 ## Checked on every pull request
 
-CI's "Containers" job builds the images, starts everything with throwaway secrets (Caddy makes its own certificate authority for `localhost`), and runs `deploy/smoke-test.sh`: a verified HTTPS connection, the page's security headers and HSTS, the HTTP-to-HTTPS redirect, sign-up and log-in, a demo investigation from start to finish, the audit chain, the cross-site check, and the walls between the containers.
+CI's "Containers" job, twice (on GitHub's usual x86 machine and, as "Containers (ARM)", on an ARM machine like the server's, ADR-56), builds the images, starts everything with throwaway secrets (Caddy makes its own certificate authority for `localhost`), and runs `deploy/smoke-test.sh`: a verified HTTPS connection, the page's security headers and HSTS, the HTTP-to-HTTPS redirect, sign-up closed and the "Try the demo" button, the demo account unable to submit text of its own, a demo investigation from start to finish, the audit chain, the cross-site check, and the walls between the containers. Then it checks that every container runs on that machine's own kind of processor.

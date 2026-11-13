@@ -118,9 +118,21 @@ jobs:
         run: npm run build
 
   # --------------------------------------------------------------- the containers (step 19a, ADR-54)
+  # Twice: on GitHub's usual machine, and on an ARM machine like the public server's (step 19c).
+  # Each copy is its own required check, named below.
   containers:
-    name: Containers
-    runs-on: ubuntu-latest
+    name: ${{ matrix.check }}
+    strategy:
+      fail-fast: false        # one machine failing still lets the other finish, to show where it breaks
+      matrix:
+        include:
+          - check: Containers
+            runner: ubuntu-latest
+            machine: x86_64
+          - check: Containers (ARM)
+            runner: ubuntu-24.04-arm
+            machine: aarch64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
       - name: Check out the code
@@ -138,6 +150,17 @@ jobs:
 
       - name: Use it like a visitor, and check the walls between the containers
         run: bash deploy/smoke-test.sh
+
+      # Proves the images really are this machine's kind (not another kind run through emulation).
+      - name: Check every container runs on ${{ matrix.machine }}
+        env:
+          EXPECTED: ${{ matrix.machine }}
+        run: |
+          for service in caddy gateway agent db; do
+            actual="$(docker compose -f deploy/compose.yaml exec -T "$service" uname -m)"
+            echo "$service: $actual"
+            [ "$actual" = "$EXPECTED" ] || { echo "FAIL $service runs on $actual, expected $EXPECTED" >&2; exit 1; }
+          done
 
       - name: Show the containers' logs if something failed
         if: failure()
