@@ -36,8 +36,9 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 18a | **CI security gate** (adds dependency audit, static analysis and secret scanning to the CI from 5a) | GitHub Actions, dependency audit, static analysis, supply-chain checks | Every push runs tests and scans | ✅ |
 | 18b | **Evaluation** | Measuring accuracy, held-out sets, overfitting | Evaluation numbers are in the README; `SECURITY.md` ticked except the items that wait for a deployment | ✅ |
 | 19a | **Containers** | Docker, Compose, reverse proxies, least privilege in containers | The whole system starts in containers in CI and passes a visitor's journey and the isolation checks | ✅ |
-| 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | 🟡 |
-| 19c | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⬜ |
+| 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | ✅ |
+| 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | 🟡 |
+| 19d | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ waiting for the Oracle Cloud account |
 
 ## Suggested pace (8 weeks)
 
@@ -58,6 +59,6 @@ Uploading `.eml` files · a real threat-intel feed behind a flag · analyst feed
 
 ## After step 18b
 
-Deployment is steps 19a to 19c above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish**, then the final handbook (step 20).
+Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish**, then the final handbook (step 20). While 19d waits for the Oracle Cloud account (the sign-up needs a card that works), the design and UI/UX polish comes first.
 
 The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating).

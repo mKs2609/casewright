@@ -3,29 +3,33 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-11
+**Last updated:** 2026-11-13
 
 ---
 
 ## Now
 
-### Step 19b: Public demo mode (on `feature/public-demo`)
-- [x] Sign-up switch (`security.signup-enabled`), off on the server
-- [x] "Try the demo": the shared `demo` analyst with a password nobody knows, reset at every start; `POST /api/auth/demo-login`; `GET /api/auth/options` for the login page (ADR-55)
-- [x] Incidents of one's own for admins only on the server (`security.incident-submitter-roles`)
-- [x] Demo runs limited per address (5 a minute) and per day for the site (300)
-- [x] The live feed's per-user limit counts each visitor address separately
-- [x] Login page: the "Try the demo" button where it exists
-- [x] Smoke test follows the public demo's path (no sign-up, the demo button)
-- [x] Fixed a timing-dependent dashboard test from step 16b (it compared with a measured delay)
-- [x] Tests: gateway 364 (both orders), dashboard 107, agent 656; 12 mutation checks, all caught
-- [x] Dashboard screenshot for the README and profile: `docs/images/dashboard.png` (incident #70, a phishing email with its evidence and two actions waiting for approval)
-- [ ] All checks pass on GitHub, including Containers
-- [ ] Merged
+### Step 19c: Containers on ARM (on `feature/go-live`)
+- [x] Checked that everything runs on Oracle's free ARM server: all six pinned images include arm64, every Python package has an ARM file (pinned hashes cover all published files), the dashboard's build tool has its ARM Linux binary in the lockfile
+- [x] CI runs the Containers job on ARM too ("Containers (ARM)"), and both copies check every container runs on that machine's kind of processor (ADR-56)
+- [ ] All checks pass on GitHub, including "Containers (ARM)"
+- [ ] Merged, and "Containers (ARM)" added to `Protect main` as the 12th required check (Mohit)
+
+## Waiting
+
+### Step 19d: Going live (paused: the Oracle Cloud sign-up needs a card that works)
+Decided: Oracle Cloud's free ARM server in India South (Hyderabad), staying on the free tier (ADR-56), the DuckDNS name `casewright`.
+- [ ] Oracle Cloud account (Mohit; the sign-up stopped at the card check)
+- [ ] The free ARM server (Ubuntu, Ampere A1), with an SSH key made on the laptop
+- [ ] Ports 80 and 443 open (Oracle's network rules and the server's own firewall)
+- [ ] The DuckDNS name `casewright` points at the server (Mohit)
+- [ ] Docker installed; the system started with `deploy/make-secrets.sh` and `docker compose up`
+- [ ] Checked from outside: HTTPS, the demo button, a demo run, the audit chain
+- [ ] `docs/DEPLOYMENT.md`: how it was set up and how to look after it; the live link in the README
 
 ## Later
 
-Step 19c (going live), then design and UI/UX polish, then step 20: the final handbook.
+Design and UI/UX polish (next, while 19d waits), then step 20: the final handbook.
 
 ## Open questions
 
@@ -35,6 +39,7 @@ Step 19c (going live), then design and UI/UX polish, then step 20: the final han
 
 ## Done
 
+- **2026-11-13:** Step 19b (public demo mode) merged: PR #23, with the dashboard screenshot. Its first checks were stuck for a day by a GitHub Actions outage; an empty commit started fresh ones, which all passed (15 smoke checks).
 - **2026-11-11:** Step 19a (containers) merged. "Containers" is the 11th required check on `main`.
 - **2026-11-10:** Step 18b (evaluation) merged: PR #21.
 - **2026-11-09:** Step 18a (CI security gate) merged: PR #20. All 10 checks are required on `main`.

@@ -473,3 +473,15 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** a public site needs a way in that strangers can use without an account, and nothing a stranger can do there may cost more than a page view: no accounts to create, no text of their own to store, and no unlimited supply of investigations.
 **Alternatives considered:** a username and password printed on the login page (anyone could also try to change or lock it; publishing a password is a habit worth not having); one account per visitor (sign-up spam, and their data to look after); read-only visitors (the approval flow is the most interesting part to try).
 **Trade-offs:** visitors share one account, so one can approve or reject an action another is looking at, and everyone sees everyone's demo incidents (all made up). The daily ceiling is shared too, so one person can use it up for the day (at most 5 runs a minute from one address). Two runs arriving at the same instant can both pass the count; the ceiling is a guard, not an exact quota.
+
+## ADR-56: Going live on Oracle Cloud's free ARM server
+**Status:** Accepted (2026-11-13; an ARM check in CI, and staying on the free tier, by Mohit)
+**Decision:**
+- **The public demo runs on one Oracle Cloud "Always Free" server**: an Ampere A1 (ARM) machine with Ubuntu, in an Indian region, reached at `casewright.duckdns.org` (ADR-54).
+- **CI builds and smoke-tests the containers on ARM as well** ("Containers (ARM)", on GitHub's free `ubuntu-24.04-arm` machine), and both copies of the job check that every running container is really that machine's kind, so a run that fell back to emulation cannot pass. This removes ADR-54's trade-off that an ARM-only problem would first show up on the server.
+- **The account stays on the free tier**: nothing can be charged. Oracle may stop a free server it sees as idle; it is then started again from the console, with its data intact.
+
+**Why:** the server's processor differs from CI's usual one, and every pinned input (base images, Python packages, the dashboard's build tool) has to exist for it; checking that once by hand is not enough when the pins change.
+**Alternatives considered:** testing on the server only (a broken update would be found on the live site); upgrading to "Pay As You Go" to avoid idle stops (a card that can be charged, for a demo).
+**Trade-offs:** one more required check, which takes as long as "Containers". The demo may occasionally be stopped by Oracle until someone starts it again.
+**Note (2026-11-14):** the ARM check is step 19c; putting the server online became step 19d, waiting for the Oracle Cloud sign-up, which needs a working card.
