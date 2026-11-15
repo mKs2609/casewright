@@ -1,4 +1,4 @@
-import { ShieldX } from "lucide-react";
+import { Fingerprint, Gauge, ShieldX } from "lucide-react";
 
 import { KIND_WORDS, RED_TEAM, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { Evidence, IncidentDetail } from "../types";
@@ -7,16 +7,27 @@ import { SignalChip, StatusChip } from "./Chips";
 function RiskMeter({ score }: { score: number }) {
   return (
     <div className="risk-meter">
-      <span className={`risk-score tone-text-${riskBand(score)}`}>{score}</span>
-      <div
-        className="meter-track"
-        role="meter"
-        aria-label="Risk score"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={score}
-      >
-        <div className={`meter-fill fill-${riskBand(score)}`} style={{ width: `${score}%` }} />
+      <div className="risk-figure">
+        <span className={`risk-score tone-text-${riskBand(score)}`}>{score}</span>
+        <span className="label">
+          <Gauge aria-hidden="true" size={14} />
+          Risk / 100
+        </span>
+      </div>
+      <div className="risk-scale">
+        <span className="label" aria-hidden="true">
+          0 safe · 30 suspicious · 65 attack · 100
+        </span>
+        <div
+          className="meter-track"
+          role="meter"
+          aria-label="Risk score"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={score}
+        >
+          <div className={`meter-fill fill-${riskBand(score)}`} style={{ width: `${score}%` }} />
+        </div>
       </div>
     </div>
   );
@@ -30,7 +41,7 @@ function GuardrailCard({ step, highlighted }: { step: Evidence; highlighted: boo
         <ShieldX aria-hidden="true" size={16} />
         <strong>Blocked</strong>
         <span className="mono muted">{step.label}</span>
-        <span className="mono">{step.tool}</span>
+        <span className="mono step-tool">{step.tool.replaceAll("_", " ")}</span>
       </div>
       <Arguments args={step.args} />
       <p>{step.reason}</p>
@@ -56,7 +67,7 @@ function StepCard({ step, highlighted }: { step: Evidence; highlighted: boolean 
     <li id={`evidence-${step.label}`} tabIndex={-1} className={`card step ${highlighted ? "highlighted" : ""}`}>
       <div className="step-head">
         <span className="evidence-tag mono">{step.label}</span>
-        <span className="mono">{step.tool}</span>
+        <span className="mono step-tool">{step.tool.replaceAll("_", " ")}</span>
       </div>
       <Arguments args={step.args} />
       <p>{step.summary}</p>
@@ -119,7 +130,10 @@ export function Investigation({ incident, highlighted }: Props) {
         <pre>{JSON.stringify(incident.payload, null, 2)}</pre>
       </details>
 
-      <h3 className="label">Evidence</h3>
+      <h3 className="label">
+        <Fingerprint aria-hidden="true" size={14} />
+        Evidence
+      </h3>
       {evidence.length === 0 && <p className="muted">No evidence yet.</p>}
       <ol className="timeline" aria-live="polite">
         {evidence.map((step) =>

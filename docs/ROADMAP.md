@@ -37,8 +37,12 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 18b | **Evaluation** | Measuring accuracy, held-out sets, overfitting | Evaluation numbers are in the README; `SECURITY.md` ticked except the items that wait for a deployment | ✅ |
 | 19a | **Containers** | Docker, Compose, reverse proxies, least privilege in containers | The whole system starts in containers in CI and passes a visitor's journey and the isolation checks | ✅ |
 | 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | ✅ |
-| 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | 🟡 |
+| 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | ✅ |
 | 19d | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ waiting for the Oracle Cloud account |
+| 20a | **The new look** | Design tokens, self-hosted fonts, contrast, canvas animation | Every screen in one "signal" style (near-black on a blueprint grid, one soft indigo signal colour, editorial serif, icons with the labels); a simple centred login over a dotted globe (ADR-57) | 🟡 |
+| 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | ⬜ |
+| 20c | **Live dashboard** | Motion that explains change | Count-ups, the risk meter sweeping, steps arriving like a feed, skeletons while loading | ⬜ |
+| 21 | **Final handbook** | Writing it all up | The handbook chapters assembled into one | ⬜ |
 
 ## Suggested pace (8 weeks)
 
@@ -59,6 +63,6 @@ Uploading `.eml` files · a real threat-intel feed behind a flag · analyst feed
 
 ## After step 18b
 
-Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish**, then the final handbook (step 20). While 19d waits for the Oracle Cloud account (the sign-up needs a card that works), the design and UI/UX polish comes first.
+Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish** (steps 20a to 20c, from Mohit's style references), then the final handbook (step 21). While 19d waits for the Oracle Cloud account (the sign-up needs a card that works), the design and UI/UX polish comes first.
 
 The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating).

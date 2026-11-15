@@ -1,7 +1,9 @@
 # Design System
 
-**Status:** Draft v1 · **Last updated:** 2026-10-02
-Applies to the React dashboard. Tokens live in `dashboard/src/styles/tokens.css` as CSS variables; components never hardcode a colour, size or duration.
+**Status:** v2 "signal" · **Last updated:** 2026-11-16
+Applies to the React dashboard. Tokens live in `dashboard/src/styles/tokens.css` as CSS variables; components never hardcode a colour, size or duration, and every token is used (`src/test/rules.test.ts` checks all three). Decision: [ADR-57](DECISIONS.md).
+
+A near-black, monochrome control room on a faint blueprint grid, with white type and **one soft indigo signal colour** (from the Dovetail and zkPass references). Headlines are a whisper-weight serif; labels are widely tracked capitals with a small indigo icon; panels are sharp and separated by hairlines. The login is one centred stack over a slowly turning dotted globe, with an icon tile set into the headline like a word.
 
 ---
 
@@ -13,35 +15,41 @@ Applies to the React dashboard. Tokens live in `dashboard/src/styles/tokens.css`
 4. **Show the work.** The investigation appears step by step, so a viewer understands *how* the verdict was reached.
 5. **Never colour alone.** Every status uses colour **plus** an icon **plus** a word.
 6. **Untrusted text is just text.** Anything that came from an incident is rendered as plain text, never as HTML.
+7. **One signal.** Indigo marks only focus, evidence references, label icons, the timeline, the open incident and one accent word. The main action is white. Everything else is monochrome, except the meaning colours.
+8. **Nothing blends.** Text always sits on a solid panel or, on the login, on a dark pool that keeps the globe's dots away from it.
 
 ## 2. Colour tokens
 
-Dark theme only for v1 (a SOC dashboard is used in low light and on projectors).
-Contrast ratios below were measured against the three surface colours (WCAG 2.1; body text needs ≥ 4.5, large text and UI parts ≥ 3).
+Dark theme only. Contrast ratios were measured (WCAG 2.1): body text needs at least 4.5, large text and the borders of controls at least 3.
 
 ### Surfaces and text
 | Token | Hex | Use | Contrast on bg / surface / surface-2 |
 |---|---|---|---|
-| `--color-bg` | `#0b0f14` | Page background | – |
-| `--color-surface` | `#121821` | Cards, panels | – |
-| `--color-surface-2` | `#18202b` | Raised elements, buttons | – |
-| `--color-border` | `#243040` | Decorative dividers only | 1.4 (decorative, not relied on) |
-| `--color-border-control` | `#5b728f` | Borders of inputs and buttons | 3.9 / 3.6 / 3.3 |
-| `--color-text` | `#dbe4ee` | Body text | 15.0 / 13.9 / 12.8 |
-| `--color-text-muted` | `#8494a7` | Secondary text, timestamps | 6.2 / 5.7 / 5.3 |
-| `--color-accent` | `#4cc2ff` | Links, focus ring, evidence chips, "investigating" | 9.6 / 8.9 / 8.2 |
-| `--color-on-accent` | `#04121c` | Text on accent backgrounds | 9.4 on accent |
+| `--color-void` | `#000000` | App bar, inputs, code | – |
+| `--color-bg` | `#060606` | Page background | – |
+| `--color-surface` | `#121212` | Panels, cards | – |
+| `--color-surface-2` | `#1c1c1c` | Buttons, meter track | – |
+| `--color-border` | `#252525` | Hairline dividers (decorative) | not relied on |
+| `--color-border-control` | `#6e6e6e` | Borders of inputs and buttons | 3.9 / 3.7 / 3.3 |
+| `--color-text-strong` | `#ffffff` | Headlines, names | 20 or more |
+| `--color-text` | `#e5e5e5` | Body text | 16.1 / 14.9 / 13.5 |
+| `--color-text-muted` | `#8f8f8f` | Secondary text, timestamps | 6.3 / 5.8 / 5.3 |
+| `--color-label` | `#868686` | Bracketed labels | 5.6 / 5.1 / 4.7 |
+| `--color-accent` | `#6798ff` | The signal (black on it: 7.5; never white text on it: 2.8) | 7.2 / 6.7 / 6.1 |
+| `--color-grid` | white at 3.5% | The blueprint grid behind the page (decoration) | – |
+
+The main button is white with black text (21:1). The signal's glow (`--glow-accent`) is the only shadow in the system: on the logo tile, the headline tile, the open incident, the timeline's markers and a hovered main button.
 
 ### Meaning (verdicts and states)
 | Token | Hex | Meaning | Icon | Word | Contrast on bg / surface / surface-2 |
 |---|---|---|---|---|---|
-| `--color-benign` | `#3fcf8e` | Safe, approved, intact | ✓ check | "Safe" | 9.6 / 8.9 / 8.2 |
-| `--color-suspicious` | `#f5b942` | Unusual, waiting for a human | ! triangle | "Suspicious" | 10.9 / 10.1 / 9.3 |
-| `--color-malicious` | `#ff5d5d` | Attack, blocked, tampered | ✕ octagon | "Attack" | 6.4 / 5.9 / 5.4 |
-| `--color-info` | `#c6a8ff` | MITRE technique tags | – | – | 9.6 / 8.9 / 8.2 |
-| `--color-danger-fill` | `#c93a3a` | Background of destructive buttons (with white text) | – | – | white text: 5.1 |
+| `--color-benign` | `#4fd69c` | Safe, approved, intact | ✓ check | "Safe" | 11.0 / 10.2 / 9.3 |
+| `--color-suspicious` | `#f0b54a` | Unusual, waiting for a human | ! triangle | "Suspicious" | 11.0 / 10.2 / 9.3 |
+| `--color-malicious` | `#ff6e6e` | Attack, blocked, tampered | ✕ octagon | "Attack" | 7.4 / 6.9 / 6.3 |
+| `--color-info` | `#b8a5ff` | MITRE technique tags | – | – | 9.5 / 8.8 / 8.0 |
+| `--color-danger-fill` | `#c93a3a` | Destructive buttons (white text: 5.1) | – | – | – |
 
-> Do **not** put white text on `--color-malicious` (`#ff5d5d`): it measures 3.0 and fails. Use `--color-danger-fill` for filled red buttons.
+Chips take their colour from `currentcolor`: the text in the meaning colour, a hairline at 40% and a wash at 7% of it (`color-mix`), so one rule serves every tone.
 
 ### Risk scale
 | Score | Band | Colour |
@@ -54,74 +62,80 @@ The number is always shown next to the bar; the bar colour is a reinforcement, n
 
 ## 3. Typography
 
-| Token | Value | Use |
-|---|---|---|
-| `--font-sans` | `system-ui, "Segoe UI", Roboto, sans-serif` | Everything |
-| `--font-mono` | `ui-monospace, "Cascadia Code", Consolas, monospace` | IPs, domains, IDs, JSON, scores |
+Free fonts under the SIL Open Font License, **bundled into the app** from the Fontsource packages and served by our own server (the page policy allows fonts from nowhere else).
 
-| Style | Size / line-height / weight | Use |
+| Token | Font | Use |
 |---|---|---|
-| Display | 26 / 32 / 700, mono | Risk number |
-| H1 | 20 / 28 / 600 | Plain-report headline |
-| H2 | 18 / 26 / 600 | Incident title |
-| H3 | 16 / 24 / 600 | Card titles |
-| Body | 14 / 21 / 400 | Default |
-| Body-large | 15 / 24 / 400 | Plain-language report text |
+| `--font-display` | Source Serif 4, weight 300 (and its italic) | Wordmark, login headline, incident title, plain-report headline, risk number |
+| `--font-sans` | Inter Tight (variable) | Body, controls, labels, chips |
+| `--font-mono` | IBM Plex Mono 400/500 | IDs, values, evidence references, signals |
+
+| Style | Size / line / weight | Use |
+|---|---|---|
+| Hero | 72 / 70 / 300 serif, −0.025em | Login headline (44 on phones); an icon tile set in it, and one italic indigo accent word |
+| Display | 56 / 52 / 300 serif | Risk number |
+| Title | 32 / 36 / 300 serif | Incident title |
+| Headline | 26 / 30 / 300 serif | Wordmark, plain-report headline |
+| Body | 14 / 22 / 400 | Default |
+| Body-large | 15 / 24 / 400 | Plain-language report |
 | Small | 12 / 18 / 400 | Metadata, timestamps |
-| Label | 12 / 16 / 500, uppercase, +0.06em | Section labels only |
+| Label | 12 / 16 / 500, upper case, +0.2em, with a 14px indigo icon | Section labels, roles, table headers |
+| Tag | 12 / 18 / 500, upper case, +0.06em | Chips, tool names |
 
-Minimum size is 12px. Numbers that are compared (scores, counts) use tabular figures.
+Minimum size is 12px. Numbers that are compared use tabular figures. Label icons are `aria-hidden`, so headings read as their words.
 
 ## 4. Spacing, shape, elevation
 
 | Token | Value |
 |---|---|
-| `--space-1 … --space-6` | 4, 8, 12, 16, 24, 32 px |
-| `--radius-sm` / `--radius-md` / `--radius-lg` / `--radius-pill` | 4 / 8 / 12 / 999 px |
-| Elevation | Flat. Depth is shown with surface colour steps and borders, not shadows. |
+| `--space-1 … --space-7` | 4, 8, 12, 16, 24, 32, 48 px |
+| Panels and cards | Sharp (no radius); a 1px `--color-border` hairline |
+| `--radius-tag` / `--radius-button` / `--radius-tile` / `--radius-pill` | 2 (evidence and signal tags) / 4 (buttons, inputs, logo tile) / 10 (the headline tile) / pill (status chips) |
+| `--neon-bar` | 3px indigo bar along the top of every page |
+| `--grid-size` | 56px blueprint grid |
+| Elevation | Flat: surface steps and hairlines. The only glow belongs to the signal. |
 
-Layout: three columns on desktop (incidents 290px · investigation 1.25fr · reports 1fr), collapsing to a single column under 1150px. No horizontal scrolling at any width; long values (domains, hashes) wrap.
+Layout: three columns on desktop (incidents 300px · investigation 1.25fr · reports 1fr, at most 1600px wide), one column under 1150px. The login is centred. No horizontal scrolling at any width; long values wrap.
 
 ## 5. Motion
 
 | Token | Value | Use |
 |---|---|---|
 | `--motion-fast` | 150 ms | Hover, focus |
-| `--motion-base` | 450 ms, `cubic-bezier(.2,.8,.2,1)` | A step entering the timeline |
-| `--motion-slow` | 600 ms | Risk bar growing |
+| `--motion-slow` | 600 ms, `--ease-out` | Risk bar growing |
 
-- Motion explains change: a step slides in, the risk bar grows. Nothing loops forever except the single "investigating" pulse.
-- Respect `prefers-reduced-motion`: replace movement with an instant change.
+- The dotted globe behind the login turns slowly and leans with the pointer. It draws one still frame when the visitor asks for reduced motion, and stops while the tab is hidden.
+- Respect `prefers-reduced-motion`: transitions and animations are switched off.
 
 ## 6. Components
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **App bar** | Product name, audit-chain badge, user and log out. Which engine investigated is shown on each incident. | Badges always show icon + text. |
-| **Live badge** | Beside the incident list's title: Live, Connecting, or Live updates paused | Icon + word, read out politely to screen readers (`role="status"`). Refresh stays available. |
-| **Scenario buttons** | Fire simulated incidents, in a strip under the app bar | One primary "Attempt breach"; others secondary; the description on hover and to screen readers. Disabled for `VIEWER`, with a note why. Hidden when the gateway has demos off. |
-| **Red-team button and scorecard** | "Red-team the agent" after the scenario buttons; on a run, a card listing each attempt, what is meant to stop it, and the outcome | Outcomes are icon + word: Blocked, Not blocked, Waiting. A run with anything not blocked says so in the headline, styled as a notice. The engine chip says a scripted, hijacked model played the AI, and the incident carries a "Red team" badge. |
-| **Simulated badge** | On demo incidents, in the list and the investigation header | Muted chip with icon + "Simulated", so a made-up incident is never mistaken for a real one. |
-| **Incident list item** | One incident in the feed | Verdict icon + colour dot, kind icon, `#id`, subject, status text, risk number. Selected state uses accent border. |
-| **Risk meter** | Running risk score | Big number + bar. Updates on every step. `role="meter"` with `aria-valuenow`. |
-| **Step card** | One tool call | Evidence chip (`E3`), tool name, arguments, one-line summary, signal chips, expandable raw evidence. |
-| **Guardrail card** | A blocked call/action | Red border, shield icon, the word "Blocked", the reason. |
-| **Thought line** | Agent narration | Muted italic, no card. |
-| **Evidence chip** | Reference like `E3` | Always a button; clicking scrolls to and highlights that step. |
-| **Signal chip** | A finding and its weight | Mono text; three strength levels (muted / amber / red) plus the numeric weight. |
-| **Report panel (plain)** | For everyone | Headline with icon and word, "what happened", "why we think so", "what to do". Body-large text. |
-| **Report panel (SOC)** | For experts | Verdict line, technique tags, analysis with evidence chips, findings table, indicator table, counterfactual, actions. |
-| **Approval card** | Human decision | Amber border. Shows evidence summary **above** the buttons. Approve = danger-fill button, Reject = ghost button, expiry time. |
-| **Status chip** | Any state | Icon + word; colour from the meaning tokens. |
-| **Toast** | Transient feedback | `role="status"`, auto-dismiss after 3.5 s, never the only place an error appears. |
+| **App bar** | Indigo logo tile (radar), serif wordmark, audit-chain badge, user badge (pill), log out | Black, sticky, under the indigo bar. Badges always show icon + text. |
+| **Live badge** | Beside "Incidents": Live, Connecting, or Live updates paused | Icon + word, read out politely (`role="status"`). Refresh stays available. |
+| **Scenario buttons** | Fire simulated incidents, in a strip under the app bar | One white "Attempt breach"; others charcoal; the description on hover and to screen readers. Disabled for `VIEWER`, with a note why. Hidden when the gateway has demos off. |
+| **Red-team button and scorecard** | "Red-team the agent"; on a run, a card listing each attempt, what is meant to stop it, and the outcome | Outcomes are icon + word: Blocked, Not blocked, Waiting. The card sits on an indigo hairline and wash. |
+| **Simulated badge** | On demo incidents | Muted chip, icon + "Simulated". |
+| **Incident list item** | One incident in the feed | Kind icon, mono `#id`, subject, risk number, chips, time. The open one: indigo hairline, wash and glow. |
+| **Risk meter** | Running risk score | Panel with the serif number, "Risk / 100" (gauge icon), the scale and a 4px bar with a glow of its band colour. `role="meter"`. |
+| **Evidence timeline** | The investigation's steps | One indigo rail with a glowing diamond per step (red, without glow, for a blocked step). |
+| **Step card** | One tool call | Mono header "E1 PATTERN MATCH"; arguments as a two-column list; summary; signal tags; expandable raw evidence. |
+| **Guardrail card** | A blocked call/action | Red hairline and wash, shield icon, the word "Blocked", the reason. |
+| **Evidence chip** | Reference like `E3` | Always a button (indigo hairline, 2px radius); clicking scrolls to and highlights that step. |
+| **Signal tag** | A finding and its weight | Mono text; three strengths (muted / amber / red) plus the numeric weight. |
+| **Report panel (plain)** | For everyone | Serif headline, status chip, "what happened", "why we think so", "what to do". |
+| **Report panel (SOC)** | For experts | Verdict line, technique tags, AI summary with evidence chips, findings table, counterfactual, next steps. |
+| **Approval card** | Human decision | Amber hairline and wash. Evidence summary **above** the buttons. Approve = danger-fill, Reject = charcoal. Expiry time. |
+| **Login** | The front door | Indigo bar, logo tile; centred "Agentic security analyst", "Every alert, [shield tile] *investigated.*", and the form, on a dark pool; the dotted globe (canvas, `aria-hidden`) behind. On the public demo, "Try the demo" with its note that nothing is real. |
+| **Status chip** | Any state | Pill, upper case; icon + word in the meaning colour on its own wash. |
 | **Empty state** | Nothing selected | One sentence telling the user what to do next. |
 
 ### States every interactive component must define
-Default · hover · focus-visible (2px accent outline, 1px offset) · active · disabled (45% opacity, `not-allowed`) · loading.
+Default · hover · focus-visible (2px indigo outline, 2px offset) · active · disabled (45% opacity, `not-allowed`) · loading.
 
 ## 7. Icons
 
-One outline icon set (Lucide), 16–20px, `currentColor`. Decorative icons are `aria-hidden`; icon-only buttons have an `aria-label`. Emoji are not used in the product UI.
+One outline icon set (Lucide), 14–20px, `currentColor`. Decorative icons are `aria-hidden`; icon-only buttons have an `aria-label`. Emoji are not used in the product UI.
 
 ## 8. Voice and content
 
@@ -145,21 +159,23 @@ One outline icon set (Lucide), 16–20px, `currentColor`. Decorative icons are `
 ### Interface text
 - Buttons say what happens: "Approve block", not "OK".
 - Errors say what went wrong and what to do, in the interface's voice, without blaming.
-- Sentence case everywhere.
+- Sentence case in the text; labels and chips are upper-cased by CSS only, so screen readers and tests read the real words.
+- The login says as little as possible: what it is, and the way in.
 
 ## 9. Accessibility checklist
 
 - [ ] All text meets the contrast values in section 2.
 - [ ] Every status has icon + word, not just colour.
 - [ ] Everything works by keyboard; focus is always visible; focus order follows reading order.
-- [ ] Live updates are announced politely (`aria-live="polite"` on the timeline; not every step interrupts).
-- [ ] `prefers-reduced-motion` is respected.
+- [ ] Live updates are announced politely (`aria-live="polite"` on the timeline; not every step interrupts). The globe is hidden from screen readers.
+- [ ] `prefers-reduced-motion` is respected (section 5).
 - [ ] Touch/click targets are at least 32×32px.
-- [ ] Page works at 200% zoom without horizontal scrolling.
+- [ ] Page works at 200% zoom and at phone width (390px) without horizontal scrolling.
 
 ## 10. Security rules for the UI
 
 - Render untrusted strings with React's default text escaping. `dangerouslySetInnerHTML` is banned.
-- No inline scripts or inline event-handler attributes (the CSP forbids them).
+- No inline scripts or inline event-handler attributes (the page policy forbids them).
+- Fonts, like scripts and styles, come only from our own server (`font-src 'self'`).
 - No secrets in the bundle; the browser only ever holds HttpOnly cookies it cannot read.
 - Links built from incident data are never clickable.

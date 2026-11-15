@@ -3,18 +3,26 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-13
+**Last updated:** 2026-11-15
 
 ---
 
 ## Now
 
-### Step 19c: Containers on ARM (on `feature/go-live`)
-- [x] Checked that everything runs on Oracle's free ARM server: all six pinned images include arm64, every Python package has an ARM file (pinned hashes cover all published files), the dashboard's build tool has its ARM Linux binary in the lockfile
-- [x] CI runs the Containers job on ARM too ("Containers (ARM)"), and both copies check every container runs on that machine's kind of processor (ADR-56)
-- [x] The dependency audit found a vulnerability published on 2026-11-13 in `opentelemetry-api` 1.45.1 (GHSA-mf5v-w3w3-f6cg, slow parsing of a crafted trace header; it comes with FastAPI and the agent never uses that part). Upgraded to 1.45.2 (released 2026-10-29); agent 656 tests pass; the Java, Python and npm libraries have no other known vulnerabilities
-- [ ] All checks pass on GitHub, including "Containers (ARM)"
-- [ ] Merged, and "Containers (ARM)" added to `Protect main` as the 12th required check (Mohit)
+### Step 20a: The new look (on `feature/design-polish`)
+Mohit's references: Ameba, AWE and Auros first, then zkPass and Dovetail for the final look. Mohit chose: one look throughout, a simple centred login, no brackets on labels, a soft indigo signal colour, icons with the labels, and three parts (20a look, 20b front page, 20c live dashboard), each its own PR (ADR-57).
+- [x] New tokens: one monochrome system on a blueprint grid with one soft indigo signal colour; every text colour measured against WCAG contrast; a test that every token used exists and every token is used
+- [x] Fonts bundled from Fontsource (Source Serif 4, Inter Tight, IBM Plex Mono; OFL), served by our own server under the strict page policy
+- [x] Every screen restyled, every section label with an icon: app bar (indigo bar, logo tile), scenario strip, incident list, risk meter, evidence timeline, reports, approval cards, red-team card
+- [x] The login: centred and simple, an icon tile in the headline, over a turning dotted globe (canvas) with a dark pool behind the text
+- [x] Simplified on the way: one look instead of two (the separate navy/teal tokens, the aurora button and the live feed card removed), repeated styles merged
+- [x] Reduced motion respected; nothing scrolls sideways at 390px
+- [x] `DESIGN_SYSTEM.md` v2
+- [x] New README screenshot `docs/images/dashboard.png` (incident #71, live updates on); the login's image waits until the front page, 20b
+- [x] Found and fixed: in development, Vite's proxy kept a page's live-updates request to the gateway open after the page was reloaded or closed, so a few reloads used up the 3-per-person limit and paused live updates until a restart. The proxy now closes it (`vite.config.ts`); the gateway frees the slot at its next keep-alive. Production (Caddy) was not affected
+- [x] Tests: dashboard 109 (the live feed card and its tests removed; new: every token used exists and every token is used); 6 mutation checks, all caught
+- [ ] All checks pass on GitHub
+- [ ] Merged
 
 ## Waiting
 
@@ -30,7 +38,7 @@ Decided: Oracle Cloud's free ARM server in India South (Hyderabad), staying on t
 
 ## Later
 
-Design and UI/UX polish (next, while 19d waits), then step 20: the final handbook.
+Step 20b (front page), step 20c (live dashboard), then step 21: the final handbook.
 
 ## Open questions
 
@@ -40,6 +48,7 @@ Design and UI/UX polish (next, while 19d waits), then step 20: the final handboo
 
 ## Done
 
+- **2026-11-15:** Step 19c (containers on ARM) merged: PR #24, with the opentelemetry-api upgrade. "Containers (ARM)" is the 12th required check on `main`.
 - **2026-11-13:** Step 19b (public demo mode) merged: PR #23, with the dashboard screenshot. Its first checks were stuck for a day by a GitHub Actions outage; an empty commit started fresh ones, which all passed (15 smoke checks).
 - **2026-11-11:** Step 19a (containers) merged. "Containers" is the 11th required check on `main`.
 - **2026-11-10:** Step 18b (evaluation) merged: PR #21.

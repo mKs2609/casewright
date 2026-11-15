@@ -54,6 +54,17 @@ describe("project rules", () => {
     expect(styles.match(/\b[1-9]\d*(px|rem|em)\b/g)).toBeNull();
   });
 
+  it("every token the styles and code use exists, and every token that exists is used", () => {
+    const tokens = new Set(read(join(SRC, "styles/tokens.css")).match(/^\s*--[a-z0-9-]+(?=:)/gm)!.map((t) => t.trim()));
+    const styles = read(join(SRC, "styles/app.css"));
+    // Local custom properties (like --fill) are set inside app.css itself; they are not tokens.
+    const local = new Set(styles.match(/^\s*--[a-z0-9-]+(?=:)/gm)?.map((t) => t.trim()) ?? []);
+    const uses = [styles, ...code.map(read)].join("\n").match(/var\((--[a-z0-9-]+)|["'](--[a-z0-9-]+)["']/g) ?? [];
+    const used = new Set(uses.map((use) => use.replace(/^var\(|["']/g, "")));
+    expect([...used].filter((name) => !tokens.has(name) && !local.has(name))).toEqual([]);
+    expect([...tokens].filter((name) => !used.has(name))).toEqual([]);
+  });
+
   it("the product name stays out of the code's identifiers (ADR-30): only what people read may use it", () => {
     const named = code.filter((path) => /\bcasewright\b/.test(read(path)));
     expect(named).toEqual([]);

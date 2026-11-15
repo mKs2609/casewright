@@ -1,3 +1,4 @@
+import { ShieldCheck, UserRoundCheck } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../api";
@@ -105,7 +106,10 @@ export function Actions({ actions, evidence, user, onCite, onDecided }: Props) {
     <section aria-label="Actions">
       {waiting.length > 0 && (
         <>
-          <h3 className="label">Waiting for your decision</h3>
+          <h3 className="label">
+            <UserRoundCheck aria-hidden="true" size={14} />
+            Waiting for your decision
+          </h3>
           <ul className="stack">
             {waiting.map((action) => (
               <ApprovalCard
@@ -122,7 +126,10 @@ export function Actions({ actions, evidence, user, onCite, onDecided }: Props) {
       )}
       {others.length > 0 && (
         <>
-          <h3 className="label">Actions</h3>
+          <h3 className="label">
+            <ShieldCheck aria-hidden="true" size={14} />
+            Actions
+          </h3>
           <p className="small muted">Enforcement is simulated: nothing real is blocked.</p>
           <ul className="stack">
             {others.map((action) => (

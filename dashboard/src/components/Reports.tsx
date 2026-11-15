@@ -1,3 +1,4 @@
+import { SquareTerminal, Users } from "lucide-react";
 import type { PlainReport as Plain, SocReport as Soc, Verdict } from "../types";
 import { verdictMeaning } from "../meaning";
 import { EvidenceChip, StatusChip } from "./Chips";
@@ -7,7 +8,10 @@ type Cite = (label: string) => void;
 function PlainReport({ report, verdict, onCite }: { report: Plain; verdict: Verdict; onCite: Cite }) {
   return (
     <article className="card report report-plain" aria-label="Report for everyone">
-      <h3 className="label">For everyone</h3>
+      <h3 className="label">
+        <Users aria-hidden="true" size={14} />
+        For everyone
+      </h3>
       <StatusChip meaning={verdictMeaning(verdict.verdict)} />
       <h4 className="plain-headline">{report.headline}</h4>
       <p>{report.whatHappened}</p>
@@ -53,7 +57,10 @@ function AiSummary({ text, onCite }: { text: string; onCite: Cite }) {
 function SocReport({ report, verdict, onCite }: { report: Soc; verdict: Verdict; onCite: Cite }) {
   return (
     <article className="card report" aria-label="Report for the security team">
-      <h3 className="label">For the security team</h3>
+      <h3 className="label">
+        <SquareTerminal aria-hidden="true" size={14} />
+        For the security team
+      </h3>
       <p>
         <strong>{report.headline}</strong>
       </p>

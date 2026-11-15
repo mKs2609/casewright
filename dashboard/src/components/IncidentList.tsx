@@ -1,4 +1,4 @@
-import { CircleHelp, RefreshCw } from "lucide-react";
+import { CircleHelp, Inbox, RefreshCw } from "lucide-react";
 
 import type { LiveState } from "../live";
 import { KIND_ICONS, KIND_WORDS, liveMeaning, RED_TEAM, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
@@ -18,7 +18,10 @@ export function IncidentList({ incidents, selected, error, onSelect, onRefresh, 
   return (
     <section className="panel incidents" aria-label="Incidents">
       <div className="panel-title">
-        <h2 className="label">Incidents</h2>
+        <h2 className="label">
+          <Inbox aria-hidden="true" size={14} />
+          Incidents
+        </h2>
         <span role="status" className="live-state">
           <StatusChip meaning={liveMeaning(live)} />
         </span>
@@ -47,7 +50,7 @@ export function IncidentList({ incidents, selected, error, onSelect, onRefresh, 
                 <span className="incident-line">
                   <KindIcon aria-hidden="true" size={16} />
                   <span className="sr-only">{KIND_WORDS[incident.kind] ?? incident.kind}</span>
-                  <span className="mono">#{incident.id}</span>
+                  <span className="mono incident-id">#{incident.id}</span>
                   <span className="subject">{incident.subjectName}</span>
                   {incident.riskScore !== null && <span className="mono risk-number">{incident.riskScore}</span>}
                 </span>

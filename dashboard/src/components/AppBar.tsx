@@ -1,4 +1,4 @@
-import { CircleHelp, LogOut, ShieldAlert, ShieldCheck } from "lucide-react";
+import { CircleHelp, LogOut, Radar, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import type { AuditCheck, User } from "../types";
 
@@ -30,10 +30,15 @@ function AuditBadge({ check }: { check: AuditCheck | null }) {
 export function AppBar({ user, audit, onLogout }: { user: User; audit: AuditCheck | null; onLogout: () => void }) {
   return (
     <header className="app-bar">
-      <strong className="product">Casewright</strong>
+      <span className="brand">
+        <span className="logo-tile">
+          <Radar aria-hidden="true" size={18} />
+        </span>
+        <strong className="product">Casewright</strong>
+      </span>
       <AuditBadge check={audit} />
       <span className="spacer" />
-      <span className="muted">
+      <span className="user">
         {user.username} <span className="role">{user.role.toLowerCase()}</span>
       </span>
       <button type="button" className="button" onClick={onLogout}>

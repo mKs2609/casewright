@@ -1,4 +1,10 @@
-/* Sizes, colours and durations come from tokens.css only (a test checks). */
+/*
+ * The "signal" look (DESIGN_SYSTEM.md v2): a near-black, monochrome control room on a faint
+ * blueprint grid, white type, one soft indigo signal colour, a whisper-weight serif for headlines,
+ * sharp panels separated by hairlines, and tracked labels with an icon. The only glow belongs to
+ * the signal colour.
+ * Sizes, colours and durations come from tokens.css only (a test checks).
+ */
 *,
 *::before,
 *::after {
@@ -8,9 +14,15 @@
 html,
 body {
   margin: 0;
-  background: var(--color-bg);
+  background-color: var(--color-bg);
+  /* The blueprint grid: two faint sets of lines. Text always sits on a solid panel or the dark pool. */
+  background-image:
+    linear-gradient(var(--color-grid) var(--border-thin), transparent var(--border-thin)),
+    linear-gradient(90deg, var(--color-grid) var(--border-thin), transparent var(--border-thin));
+  background-size: var(--grid-size) var(--grid-size);
   color: var(--color-text);
-  font: 400 var(--text-body) / var(--line-body) var(--font-sans);
+  font: var(--weight-regular) var(--text-body) / var(--line-body) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -46,16 +58,23 @@ pre {
 
 pre {
   margin: var(--space-2) 0 0;
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-  font: 400 var(--text-small) / var(--line-small) var(--font-mono);
+  padding: var(--space-3);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-void);
+  color: var(--color-text-muted);
+  font: var(--weight-regular) var(--text-small) / var(--line-small) var(--font-mono);
   white-space: pre-wrap;
 }
 
 :focus-visible {
   outline: var(--border-focus) solid var(--color-accent);
-  outline-offset: var(--border-thin);
+  outline-offset: var(--border-focus);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .mono {
@@ -72,13 +91,26 @@ pre {
   line-height: var(--line-small);
 }
 
-.label {
-  color: var(--color-text-muted);
-  font-size: var(--text-small);
-  font-weight: 500;
-  line-height: var(--line-label);
+/* Labels, roles and table headers read like instrument stamps: upper case, widely tracked. */
+.label,
+.role,
+th {
+  color: var(--color-label);
+  font: var(--weight-medium) var(--text-small) / var(--line-label) var(--font-sans);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
+}
+
+/* A section label carries a small signal-coloured icon. */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
 }
 
 .sr-only {
@@ -98,7 +130,18 @@ pre {
   padding: var(--space-5);
 }
 
-/* Buttons */
+/* Serif headlines: whisper weight, tight tracking. */
+.product,
+.incident-title,
+.plain-headline,
+.risk-score,
+.front-headline {
+  font-family: var(--font-display);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-display);
+}
+
+/* Buttons: near-sharp; the white fill is kept for the one main action. */
 .button {
   display: inline-flex;
   align-items: center;
@@ -106,16 +149,20 @@ pre {
   min-height: var(--target-min);
   padding: var(--space-1) var(--space-3);
   border: var(--border-thin) solid var(--color-border-control);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-button);
   background: var(--color-surface-2);
   color: var(--color-text);
   font: inherit;
+  font-weight: var(--weight-medium);
   cursor: pointer;
-  transition: background-color var(--motion-fast);
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .button:hover:not(:disabled) {
-  background: var(--color-border);
+  border-color: var(--color-text);
 }
 
 .button:disabled {
@@ -125,25 +172,25 @@ pre {
 
 .button-primary {
   justify-content: center;
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font-weight: 600;
+  border-color: var(--color-text-strong);
+  background: var(--color-text-strong);
+  color: var(--color-void);
 }
 
 .button-primary:hover:not(:disabled) {
-  background: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-text);
+  box-shadow: 0 0 var(--glow-radius) var(--glow-accent);
 }
 
 .button-danger {
   border-color: var(--color-danger-fill);
   background: var(--color-danger-fill);
   color: var(--color-on-danger);
-  font-weight: 600;
 }
 
 .button-danger:hover:not(:disabled) {
-  background: var(--color-danger-fill);
+  border-color: var(--color-malicious);
 }
 
 .button-row {
@@ -152,14 +199,19 @@ pre {
   gap: var(--space-2);
 }
 
-/* Chips */
+/* Chips: a status is a pill in its own colour, on a faint wash of it. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-small);
-  line-height: var(--line-small);
-  font-weight: 500;
+  padding: 0 var(--space-2);
+  border: var(--border-thin) solid color-mix(in srgb, currentcolor 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, currentcolor 7%, transparent);
+  font: var(--weight-medium) var(--text-small) / var(--line-small) var(--font-sans);
+  letter-spacing: var(--tracking-tag);
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .chip-row {
@@ -197,12 +249,14 @@ pre {
   min-height: var(--target-min);
   padding: 0 var(--space-2);
   border: var(--border-thin) solid var(--color-accent);
-  border-radius: var(--radius-pill);
-  background: transparent;
+  border-radius: var(--radius-tag);
+  background: var(--tint-accent);
   color: var(--color-accent);
-  font: 500 var(--text-small) / var(--line-small) var(--font-mono);
+  font: var(--weight-medium) var(--text-small) / var(--line-small) var(--font-mono);
   cursor: pointer;
-  transition: background-color var(--motion-fast), color var(--motion-fast);
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .evidence-chip:hover {
@@ -214,11 +268,12 @@ pre {
   color: var(--color-accent);
 }
 
-.signal-chip {
+.signal-chip,
+.technique {
   padding: 0 var(--space-2);
-  border: var(--border-thin) solid currentcolor;
-  border-radius: var(--radius-sm);
-  font: 400 var(--text-small) / var(--line-small) var(--font-mono);
+  border: var(--border-thin) solid color-mix(in srgb, currentcolor 40%, transparent);
+  border-radius: var(--radius-tag);
+  font: var(--weight-regular) var(--text-small) / var(--line-small) var(--font-mono);
 }
 
 .signal-none {
@@ -234,61 +289,62 @@ pre {
 }
 
 .weight {
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 
 .technique {
   color: var(--color-info);
-  font-size: var(--text-small);
 }
 
-/* App bar */
+/* App bar: a signal bar along the top, the logo tile, the serif wordmark. */
 .app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--neon-bar) solid var(--color-accent);
   border-bottom: var(--border-thin) solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-void);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.logo-tile {
+  display: inline-grid;
+  width: var(--logo-tile);
+  height: var(--logo-tile);
+  place-items: center;
+  border-radius: var(--radius-button);
+  background: var(--color-accent);
+  box-shadow: 0 0 var(--glow-radius) var(--glow-accent);
+  color: var(--color-on-accent);
 }
 
 .product {
-  font-size: var(--text-h3);
-  line-height: var(--line-h3);
+  color: var(--color-text-strong);
+  font-size: var(--text-headline);
+  line-height: var(--line-headline);
 }
 
 .spacer {
   flex: 1;
 }
 
-.role {
-  margin-left: var(--space-1);
-  font-size: var(--text-small);
-}
-
-/* Red-team scorecard */
-.red-team {
-  border-color: var(--color-accent);
-}
-
-.red-team-rows {
-  display: flex;
-  flex-direction: column;
+.user {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.red-team-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
-.red-team-row .chip {
-  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-pill);
 }
 
 /* Demo scenario buttons, under the app bar */
@@ -296,18 +352,21 @@ pre {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
-  padding: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   border-bottom: var(--border-thin) solid var(--color-border);
+  background: var(--color-bg);
 }
 
 /* The three columns; one column on smaller screens. */
 .columns {
   display: grid;
-  grid-template-columns: var(--column-incidents) 1.25fr 1fr;
+  grid-template-columns: var(--column-incidents) minmax(0, 1.25fr) minmax(0, 1fr);
   align-items: start;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  gap: var(--space-5);
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--space-5);
 }
 
 .columns > * {
@@ -328,6 +387,15 @@ pre {
   }
 }
 
+@media (max-width: 640px) {
+  .app-bar,
+  .demo-bar,
+  .columns {
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -336,33 +404,74 @@ pre {
 
 .panel-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+/* A label never squeezes: the row wraps instead. */
+.panel-title .label {
+  flex-shrink: 0;
 }
 
 .live-state {
   margin-left: auto;
 }
 
+/* Panels are sharp: depth comes from the border step against the canvas. */
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
-.stack,
-.timeline {
+/* A chip directly inside a card keeps its own width instead of stretching across it. */
+.card > .chip {
+  align-self: flex-start;
+}
+
+.stack {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-/* Incident list */
+/* Breathing room between a group of cards and the next section label. */
+.label + .stack {
+  margin-top: var(--space-2);
+}
+
+.stack + .label {
+  margin-top: var(--space-5);
+}
+
+/* Red-team scorecard */
+.red-team {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  background: var(--tint-accent);
+}
+
+.red-team-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.red-team-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.red-team-row .chip {
+  flex-shrink: 0;
+}
+
+/* Incident list: the open one lights up with the signal. */
 .incident-list {
   display: flex;
   flex-direction: column;
@@ -372,17 +481,18 @@ pre {
 .incident-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
   border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .incident-item:hover {
@@ -391,6 +501,8 @@ pre {
 
 .incident-item[aria-current="true"] {
   border-color: var(--color-accent);
+  background: var(--tint-accent);
+  box-shadow: 0 0 var(--glow-radius) var(--glow-accent);
 }
 
 .incident-line {
@@ -400,61 +512,131 @@ pre {
   gap: var(--space-2);
 }
 
+.incident-id {
+  color: var(--color-label);
+}
+
 .subject {
   flex: 1;
+  color: var(--color-text-strong);
+  font-weight: var(--weight-medium);
 }
 
 .risk-number {
-  font-weight: 600;
+  font-weight: var(--weight-medium);
 }
 
 /* Investigation */
 .incident-title {
-  font-size: var(--text-h2);
-  font-weight: 600;
-  line-height: var(--line-h2);
+  color: var(--color-text-strong);
+  font-size: var(--text-title);
+  line-height: var(--line-title);
+}
+
+.incident-title .mono {
+  color: var(--color-label);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-regular);
+  letter-spacing: 0;
 }
 
 .risk-meter {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-thin) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.risk-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .risk-score {
-  font: 700 var(--text-display) / var(--line-display) var(--font-mono);
+  font-size: var(--text-display);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-display);
+}
+
+.risk-scale {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .meter-track {
-  flex: 1;
   height: var(--meter-height);
   overflow: hidden;
-  border-radius: var(--radius-pill);
   background: var(--color-surface-2);
 }
 
 .meter-fill {
   height: 100%;
-  border-radius: var(--radius-pill);
+  background: var(--fill);
+  box-shadow: 0 0 var(--glow-radius) color-mix(in srgb, var(--fill) 70%, transparent);
   transition: width var(--motion-slow) var(--ease-out);
 }
 
 .fill-benign {
-  background: var(--color-benign);
+  --fill: var(--color-benign);
 }
 
 .fill-suspicious {
-  background: var(--color-suspicious);
+  --fill: var(--color-suspicious);
 }
 
 .fill-malicious {
-  background: var(--color-malicious);
+  --fill: var(--color-malicious);
 }
 
 .notice {
   padding: var(--space-2) var(--space-3);
+  border: var(--border-thin) solid color-mix(in srgb, var(--color-suspicious) 40%, transparent);
   border-left: var(--border-focus) solid var(--color-suspicious);
-  background: var(--color-surface);
+  background: var(--tint-suspicious);
+}
+
+/* The evidence chain: one signal rail, a diamond marker for each step. */
+.timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: var(--space-6);
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--rail-offset);
+  border-left: var(--border-thin) solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+.timeline > li {
+  position: relative;
+}
+
+.timeline > li::before {
+  content: "";
+  position: absolute;
+  top: var(--space-5);
+  left: calc(var(--rail-offset) - var(--space-6) - var(--marker-size) / 2);
+  width: var(--marker-size);
+  height: var(--marker-size);
+  background: var(--color-accent);
+  box-shadow: 0 0 var(--glow-radius) var(--glow-accent);
+  transform: rotate(45deg);
+}
+
+.timeline > .guardrail::before {
+  background: var(--color-malicious);
+  box-shadow: none;
 }
 
 .step-head {
@@ -464,17 +646,31 @@ pre {
   gap: var(--space-2);
 }
 
+/* In the evidence chain the step header is machine data (E1 · PATTERN MATCH), so it is mono. */
+.timeline .step-head {
+  font-family: var(--font-mono);
+}
+
+.step-tool {
+  color: var(--color-label);
+  letter-spacing: var(--tracking-tag);
+  text-transform: uppercase;
+}
+
 .highlighted {
   border-color: var(--color-accent);
-  background: var(--color-surface-2);
+  background: var(--tint-accent);
 }
 
 .step {
-  transition: border-color var(--motion-fast), background-color var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    background-color var(--motion-fast);
 }
 
 .guardrail {
-  border-color: var(--color-malicious);
+  border-color: color-mix(in srgb, var(--color-malicious) 60%, transparent);
+  background: var(--tint-malicious);
 }
 
 .guardrail .step-head {
@@ -482,15 +678,18 @@ pre {
 }
 
 .arguments {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
 }
 
 .arguments > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  display: contents;
+}
+
+.arguments dt {
+  color: var(--color-label);
+  font: var(--weight-regular) var(--text-small) / var(--line-body) var(--font-mono);
 }
 
 .arguments dd {
@@ -502,20 +701,31 @@ summary {
   cursor: pointer;
 }
 
+summary:hover {
+  color: var(--color-text);
+}
+
 /* Reports */
 .report {
   gap: var(--space-3);
 }
 
 .report h5 {
+  margin-top: var(--space-1);
+  color: var(--color-text-strong);
   font-size: var(--text-body);
-  font-weight: 600;
+  font-weight: var(--weight-strong);
 }
 
 .report ul {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+
+.report li {
+  padding-left: var(--space-3);
+  border-left: var(--border-thin) solid var(--color-border);
 }
 
 .report-plain {
@@ -524,9 +734,9 @@ summary {
 }
 
 .plain-headline {
-  font-size: var(--text-h1);
-  font-weight: 600;
-  line-height: var(--line-h1);
+  color: var(--color-text-strong);
+  font-size: var(--text-headline);
+  line-height: var(--line-headline);
 }
 
 .table-wrap {
@@ -540,21 +750,16 @@ table {
 
 th,
 td {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2);
   border-bottom: var(--border-thin) solid var(--color-border);
   text-align: left;
   vertical-align: top;
 }
 
-th {
-  color: var(--color-text-muted);
-  font-size: var(--text-small);
-  font-weight: 500;
-}
-
-/* Approval */
+/* Approval: a human decision, on an amber hairline */
 .approval {
-  border-color: var(--color-suspicious);
+  border-color: color-mix(in srgb, var(--color-suspicious) 60%, transparent);
+  background: var(--tint-suspicious);
 }
 
 .approval-evidence {
@@ -572,50 +777,141 @@ th {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   border-bottom: var(--border-thin) solid var(--color-border);
 }
 
-/* Login */
-.login-page {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: var(--space-4);
-}
-
-.login-card {
+/* The login: one centred stack over the slowly turning dotted globe. A dark pool behind the
+   text keeps every word clear of the dots. */
+.front {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  min-height: 100vh;
+  overflow: hidden;
+  border-top: var(--neon-bar) solid var(--color-accent);
+}
+
+.orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--orb-size);
+  height: var(--orb-size);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.front-bar {
+  position: relative;
+  padding: var(--space-5);
+  background: linear-gradient(var(--color-bg) 60%, transparent);
+}
+
+.front-center {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-4) var(--space-7);
+  text-align: center;
+}
+
+.front-center::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, var(--color-bg) 30%, transparent 62%);
+}
+
+.front-headline {
+  color: var(--color-text-strong);
+  font-size: var(--text-hero);
+  line-height: var(--line-hero);
+}
+
+/* The one accent word: italic, in the signal colour. */
+.front-headline em {
+  color: var(--color-accent);
+}
+
+/* An icon set into the headline like a word: a tilted signal-coloured tile. */
+.headline-tile {
+  display: inline-grid;
+  width: var(--headline-tile);
+  height: var(--headline-tile);
+  place-items: center;
+  margin: 0 var(--space-1);
+  border-radius: var(--radius-tile);
+  background: var(--color-accent);
+  box-shadow: 0 0 calc(var(--glow-radius) * 3) var(--glow-accent);
+  color: var(--color-on-accent);
+  vertical-align: -10%;
+  transform: rotate(-8deg);
+}
+
+.headline-tile svg {
+  width: 55%;
+  height: 55%;
+}
+
+.front-card {
   width: 100%;
   max-width: var(--login-width);
-  padding: var(--space-5);
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: left;
 }
 
-.login-card h1 {
-  font-size: var(--text-h1);
-  font-weight: 600;
-  line-height: var(--line-h1);
-}
-
-.login-card label {
+.front-card label {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  color: var(--color-label);
+  font-size: var(--text-small);
+  letter-spacing: var(--tracking-tag);
+  text-transform: uppercase;
 }
 
-.login-card input {
+.front-card input {
   min-height: var(--target-min);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: var(--border-thin) solid var(--color-border-control);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  border-radius: var(--radius-button);
+  background: var(--color-void);
   color: var(--color-text);
   font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.front-card input:focus-visible {
+  border-color: var(--color-accent);
+  outline-offset: 0;
+}
+
+/* "Or log in with your own account", between the demo button and the form (step 19b). */
+.login-or {
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-thin) solid var(--color-border);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .front-headline {
+    font-size: var(--text-hero-small);
+    line-height: var(--line-hero-small);
+  }
+
+  .front-card {
+    padding: var(--space-5);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -623,10 +919,4 @@ th {
     transition: none !important;
     animation: none !important;
   }
-}
-
-/* "Or log in with your own account", between the demo button and the form (step 19b). */
-.login-or {
-  margin-top: var(--space-2);
-  text-align: center;
 }
