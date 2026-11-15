@@ -59,7 +59,7 @@ The held-out set is the honest number: the rule engine rarely cries wolf, but mi
 |---|---|---|
 | Gateway (Java) | 364 | Approvals: role checks, two simultaneous approvals (one wins), expiry, deciding your own account; the action policy; the audit chain detecting edited, removed or forged entries; the gateway refusing malformed or out-of-order agent events; auth, rate limits and headers |
 | Agent (Python) | 656 | The six demo scenarios reaching their verdicts with and without the AI; the 100-incident evaluation; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
-| Dashboard (TypeScript) | 107 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed |
+| Dashboard (TypeScript) | 109 | Hostile markup in every incident field staying text; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed; colours, sizes and durations only from design tokens |
 
 **The whole system in containers.** Every pull request also builds the server's containers, starts them, and uses them like a visitor: a verified HTTPS connection, a demo investigation from start to finish, the audit chain, and the walls between the containers ([Deployment](docs/DEPLOYMENT.md)).
 

@@ -485,3 +485,17 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Alternatives considered:** testing on the server only (a broken update would be found on the live site); upgrading to "Pay As You Go" to avoid idle stops (a card that can be charged, for a demo).
 **Trade-offs:** one more required check, which takes as long as "Containers". The demo may occasionally be stopped by Oracle until someone starts it again.
 **Note (2026-11-14):** the ARM check is step 19c; putting the server online became step 19d, waiting for the Oracle Cloud sign-up, which needs a working card.
+
+## ADR-57: The "signal" look
+**Status:** Accepted (2026-11-16, by Mohit: after trying a navy/teal version from the Ameba, AWE and Auros references, one look throughout from the zkPass and Dovetail references, a simple centred login with no brackets on labels, and three parts 20a/20b/20c)
+**Decision:**
+- **One monochrome system with one signal colour.** Near-black surfaces on a faint blueprint grid, separated by hairlines, sharp panels, white type and a white main button, and a soft indigo (`#6798ff`) only for focus, evidence references, label icons, the timeline, the open incident and one accent word. Its glow is the only shadow.
+- **Editorial type, with icons.** Source Serif 4 at weight 300 for headlines, Inter Tight for everything else, IBM Plex Mono for machine data; labels are widely tracked capitals with a small icon, and the login headline carries an icon tile like a word.
+- **Free fonts, bundled.** The references' fonts are paid licences; these (SIL Open Font License) come from the Fontsource npm packages, pinned like any package, and are served by our own server. The page policy keeps `font-src 'self'`: no font service is contacted.
+- **A simple login.** One centred stack (label, a short headline, the form) over a dotted globe drawn on a canvas, with a dark pool behind the text so no word sits on the dots. Explanations of the product live in the README and the coming front page (20b), not in the way of logging in.
+- **Accessibility does not bend to the style.** Verdicts keep red, amber and green with an icon and a word; every text colour was measured against WCAG contrast (`DESIGN_SYSTEM.md` section 2); every animation stops under `prefers-reduced-motion`; the globe is hidden from screen readers.
+- **Colours stay in the tokens, and every token is used.** The globe's canvas reads its colours from `tokens.css` at run time; a test fails if a style uses a token that does not exist or a token is never used.
+
+**Why:** the dashboard is what visitors of the public demo see, and the README's screenshot is what people see first; the old look was plain. One look is also less code than two.
+**Alternatives considered:** separate styles for the login and the dashboard (tried: more tokens and CSS, and the two halves felt like different products); a CSS framework or component library (another dependency, and it would fight the token rule); loading fonts from Google Fonts (needs the page policy loosened and tells a third party about every visitor); a WebGL or Three.js globe (a large dependency for a decoration).
+**Trade-offs:** the bundle grows by the font files (the browser downloads only the alphabets it needs, about 110 KB for English); the globe costs some CPU while the login is open (it pauses when the tab is hidden).

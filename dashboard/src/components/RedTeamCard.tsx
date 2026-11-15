@@ -1,3 +1,4 @@
+import { Crosshair } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { api } from "../api";
@@ -45,7 +46,10 @@ export function RedTeamCard({ incident }: { incident: IncidentDetail }) {
 
   return (
     <section className="card red-team" aria-label="Red-team scorecard">
-      <h3 className="label">What the hijacked model tried</h3>
+      <h3 className="label">
+        <Crosshair aria-hidden="true" size={14} />
+        What the hijacked model tried
+      </h3>
       {error && (
         <p role="alert" className="error-text">
           {error}

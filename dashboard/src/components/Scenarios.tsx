@@ -1,4 +1,4 @@
-import { Crosshair, Play } from "lucide-react";
+import { Crosshair, Play, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api } from "../api";
@@ -45,7 +45,10 @@ export function Scenarios({ user, onStarted }: Props) {
 
   return (
     <section className="demo-bar" aria-label="Demo scenarios">
-      <h2 className="label">Try a scenario</h2>
+      <h2 className="label">
+        <Zap aria-hidden="true" size={14} />
+        Try a scenario
+      </h2>
       <div className="button-row">
         {scenarios.map((scenario, index) => (
           <button
