@@ -600,8 +600,9 @@ th {
   background: var(--tint-suspicious);
 }
 
-/* The evidence chain: one signal rail, a diamond marker for each step. */
-.timeline {
+/* The evidence chain (and the front page's tool steps): one signal rail, a diamond marker for each step. */
+.timeline,
+.tool-steps {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -609,7 +610,8 @@ th {
   padding-left: var(--space-6);
 }
 
-.timeline::before {
+.timeline::before,
+.tool-steps::before {
   content: "";
   position: absolute;
   top: var(--space-4);
@@ -618,11 +620,13 @@ th {
   border-left: var(--border-thin) solid color-mix(in srgb, var(--color-accent) 40%, transparent);
 }
 
-.timeline > li {
+.timeline > li,
+.tool-steps > li {
   position: relative;
 }
 
-.timeline > li::before {
+.timeline > li::before,
+.tool-steps > li::before {
   content: "";
   position: absolute;
   top: var(--space-5);
@@ -781,15 +785,52 @@ td {
   border-bottom: var(--border-thin) solid var(--color-border);
 }
 
-/* The login: one centred stack over the slowly turning dotted globe. A dark pool behind the
-   text keeps every word clear of the dots. */
-.front {
+/* The login: one centred stack over the slowly turning dotted globe, filling the first screen.
+   A dark pool behind the text keeps every word clear of the dots. The sections follow below. */
+.front-hero {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   overflow: hidden;
   border-top: var(--neon-bar) solid var(--color-accent);
+}
+
+/* How far down the page you are: a signal line along the top, driven by the scroll itself.
+   Browsers without scroll-driven animations show it full, like the bar it sits on. */
+.scroll-progress {
+  position: fixed;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--neon-bar);
+  background: var(--color-text-strong);
+  transform-origin: 0 50%;
+  animation: scroll-grow linear both;
+  animation-timeline: scroll(root block);
+}
+
+@keyframes scroll-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.scroll-cue {
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.scroll-cue svg {
+  animation: nudge var(--motion-pulse) ease-in-out infinite;
+}
+
+@keyframes nudge {
+  50% {
+    transform: translateY(var(--space-1));
+  }
 }
 
 .orb {
@@ -903,6 +944,189 @@ td {
   text-align: center;
 }
 
+/* The front page's sections */
+.front-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-width: var(--front-section-max);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5);
+}
+
+.front-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  scroll-margin-top: var(--space-6);
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.section-index {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.section-title {
+  color: var(--color-text-strong);
+  font: var(--weight-light) var(--text-section) / var(--line-section) var(--font-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.section-title em {
+  color: var(--color-accent);
+}
+
+.tool-step {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-thin) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.tool-icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  width: var(--icon-box);
+  height: var(--icon-box);
+  place-items: center;
+  border: var(--border-thin) solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+  border-radius: var(--radius-button);
+  background: var(--tint-accent);
+  color: var(--color-accent);
+}
+
+.tool-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tool-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-strong);
+  font-weight: var(--weight-medium);
+}
+
+.tool-finding {
+  margin-top: var(--space-1);
+  font: var(--weight-regular) var(--text-small) / var(--line-small) var(--font-mono);
+}
+
+.section-note {
+  max-width: var(--login-width);
+  color: var(--color-text-muted);
+}
+
+.report-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.example {
+  gap: var(--space-3);
+}
+
+.example-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.example-list li {
+  padding-left: var(--space-3);
+  border-left: var(--border-thin) solid var(--color-border);
+}
+
+.example-verdict {
+  color: var(--color-text-strong);
+  font-family: var(--font-mono);
+}
+
+.example-findings {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.example-findings > div {
+  display: contents;
+}
+
+/* An evidence reference on the front page: it looks like the dashboard's chip, but is not a button. */
+.ref-chip {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border: var(--border-thin) solid var(--color-accent);
+  border-radius: var(--radius-tag);
+  background: var(--tint-accent);
+  color: var(--color-accent);
+  font: var(--weight-medium) var(--text-small) / var(--line-small) var(--font-mono);
+  vertical-align: middle;
+}
+
+.front-footer {
+  text-align: center;
+}
+
+/* The example decision's buttons are pictures of buttons: dimmed, and nothing happens on a click. */
+.example-buttons {
+  align-items: center;
+}
+
+.example-buttons .button {
+  opacity: var(--disabled-opacity);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Blocks rise into view once, as they are scrolled to; the four tools follow one another. */
+.reveal {
+  opacity: 0;
+  transform: translateY(var(--space-4));
+  transition:
+    opacity var(--motion-slow) var(--ease-out),
+    transform var(--motion-slow) var(--ease-out);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.step-2 {
+  transition-delay: var(--motion-stagger);
+}
+
+.step-3 {
+  transition-delay: calc(var(--motion-stagger) * 2);
+}
+
+.step-4 {
+  transition-delay: calc(var(--motion-stagger) * 3);
+}
+
+@media (max-width: 760px) {
+  .report-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .section-title {
+    font-size: var(--text-section-small);
+    line-height: var(--line-section-small);
+  }
+}
+
 @media (max-width: 640px) {
   .front-headline {
     font-size: var(--text-hero-small);
@@ -918,5 +1142,15 @@ td {
   * {
     transition: none !important;
     animation: none !important;
+  }
+
+  /* Without motion, everything is simply there, and the progress line stays out of the way. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .scroll-progress {
+    display: none;
   }
 }

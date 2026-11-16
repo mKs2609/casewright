@@ -51,6 +51,10 @@
   --line-hero: 70px;
   --text-hero-small: 44px;
   --line-hero-small: 44px;
+  --text-section: 48px;
+  --line-section: 52px;
+  --text-section-small: 34px;
+  --line-section-small: 38px;
   --text-display: 56px;
   --line-display: 52px;
   --text-title: 32px;
@@ -81,6 +85,7 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
+  --space-8: 112px;
   --radius-tag: 2px;
   --radius-button: 4px;
   --radius-tile: 10px;
@@ -98,6 +103,8 @@
   --column-incidents: 300px;
   --login-width: 420px;
   --page-max: 1600px;
+  --front-section-max: 1080px;
+  --icon-box: 40px;
   --orb-size: 860px;
   --glow-radius: 8px;
   --disabled-opacity: 0.45;
@@ -105,5 +112,7 @@
   /* Motion */
   --motion-fast: 150ms;
   --motion-slow: 600ms;
+  --motion-stagger: 120ms;
+  --motion-pulse: 1800ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
