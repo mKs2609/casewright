@@ -3,24 +3,21 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-16
 
 ---
 
 ## Now
 
-### Step 20a: The new look (on `feature/design-polish`)
-Mohit's references: Ameba, AWE and Auros first, then zkPass and Dovetail for the final look. Mohit chose: one look throughout, a simple centred login, no brackets on labels, a soft indigo signal colour, icons with the labels, and three parts (20a look, 20b front page, 20c live dashboard), each its own PR (ADR-57).
-- [x] New tokens: one monochrome system on a blueprint grid with one soft indigo signal colour; every text colour measured against WCAG contrast; a test that every token used exists and every token is used
-- [x] Fonts bundled from Fontsource (Source Serif 4, Inter Tight, IBM Plex Mono; OFL), served by our own server under the strict page policy
-- [x] Every screen restyled, every section label with an icon: app bar (indigo bar, logo tile), scenario strip, incident list, risk meter, evidence timeline, reports, approval cards, red-team card
-- [x] The login: centred and simple, an icon tile in the headline, over a turning dotted globe (canvas) with a dark pool behind the text
-- [x] Simplified on the way: one look instead of two (the separate navy/teal tokens, the aurora button and the live feed card removed), repeated styles merged
-- [x] Reduced motion respected; nothing scrolls sideways at 390px
-- [x] `DESIGN_SYSTEM.md` v2
-- [x] New README screenshot `docs/images/dashboard.png` (incident #71, live updates on); the login's image waits until the front page, 20b
-- [x] Found and fixed: in development, Vite's proxy kept a page's live-updates request to the gateway open after the page was reloaded or closed, so a few reloads used up the 3-per-person limit and paused live updates until a restart. The proxy now closes it (`vite.config.ts`); the gateway frees the slot at its next keep-alive. Production (Caddy) was not affected
-- [x] Tests: dashboard 109 (the live feed card and its tests removed; new: every token used exists and every token is used); 6 mutation checks, all caught
+### Step 20b: Front page (on `feature/front-page`)
+Mohit chose: the login stays on top with the sections below it; two sections (how it investigates; two reports and a person decides). The accuracy and red-team sections were offered and left out for now (ADR-58).
+- [x] Plan agreed with Mohit
+- [x] "See how it works" under the login scrolls down (a button: the product code builds no links)
+- [x] 01 How it investigates: the four tools on the evidence rail, each with what it does and an example finding
+- [x] 02 Two reports, one evidence chain: example plain and expert reports side by side, then an example decision whose buttons are pictures, not controls
+- [x] Blocks rise into view once as they are scrolled to (IntersectionObserver); a scroll-progress line along the top (CSS scroll-driven animation); both off for reduced motion, and everything visible where the browser cannot watch scrolling
+- [x] Examples from a real demo investigation, with reserved example names only (paypal.com appears only as the site being imitated)
+- [x] Tests: dashboard 113 (4 new); 7 mutation checks, all caught
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
@@ -48,6 +45,7 @@ Step 20b (front page), step 20c (live dashboard), then step 21: the final handbo
 
 ## Done
 
+- **2026-11-16:** Step 20a (the new look) merged: PR #25. The first Containers run on `main` failed once: Maven's download server briefly answered 404 for a file it has (checked: the file is there); the failed job is re-run.
 - **2026-11-15:** Step 19c (containers on ARM) merged: PR #24, with the opentelemetry-api upgrade. "Containers (ARM)" is the 12th required check on `main`.
 - **2026-11-13:** Step 19b (public demo mode) merged: PR #23, with the dashboard screenshot. Its first checks were stuck for a day by a GitHub Actions outage; an empty commit started fresh ones, which all passed (15 smoke checks).
 - **2026-11-11:** Step 19a (containers) merged. "Containers" is the 11th required check on `main`.

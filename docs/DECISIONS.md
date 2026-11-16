@@ -499,3 +499,15 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the dashboard is what visitors of the public demo see, and the README's screenshot is what people see first; the old look was plain. One look is also less code than two.
 **Alternatives considered:** separate styles for the login and the dashboard (tried: more tokens and CSS, and the two halves felt like different products); a CSS framework or component library (another dependency, and it would fight the token rule); loading fonts from Google Fonts (needs the page policy loosened and tells a third party about every visitor); a WebGL or Three.js globe (a large dependency for a decoration).
 **Trade-offs:** the bundle grows by the font files (the browser downloads only the alphabets it needs, about 110 KB for English); the globe costs some CPU while the login is open (it pauses when the tab is hidden).
+
+## ADR-58: The front page
+**Status:** Accepted (2026-11-16; the login on top with the sections below, and two sections, by Mohit)
+**Decision:**
+- **The login stays first.** The front page is the login screen followed by sections; logging in or trying the demo stays one step. "See how it works" scrolls down to them.
+- **Two sections**: how it investigates (the four tools in order, each with an example finding), and two reports from one evidence chain followed by a person deciding. The measured accuracy and the red-team results were offered and left out for now.
+- **Examples are honest and harmless.** They come from a real demo investigation and use reserved example names only; a test checks every domain and address on the page. The example decision's buttons are pictures, never controls, and say so.
+- **Scroll effects are progressive enhancement.** Blocks rise into view once (IntersectionObserver); the progress line uses CSS scroll-driven animations. Where the browser cannot do either, everything is simply shown; with reduced motion, nothing moves.
+
+**Why:** the login was deliberately simple (ADR-57), but a visitor to the public demo should be able to learn what Casewright does before trying it, without the explanation getting in the way of logging in.
+**Alternatives considered:** a separate front page with a "Log in" button (one more step to the demo); a scroll-animation library (a dependency for two effects the browser already offers).
+**Trade-offs:** the example content is written by hand, so it can drift from what the agent produces; it is short, and checked for reserved names but not against the agent's wording.

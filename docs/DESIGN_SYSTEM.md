@@ -102,10 +102,13 @@ Layout: three columns on desktop (incidents 300px · investigation 1.25fr · rep
 | Token | Value | Use |
 |---|---|---|
 | `--motion-fast` | 150 ms | Hover, focus |
-| `--motion-slow` | 600 ms, `--ease-out` | Risk bar growing |
+| `--motion-slow` | 600 ms, `--ease-out` | Risk bar growing; a front-page block rising into view |
+| `--motion-stagger` | 120 ms | The delay between the four tool steps rising in |
+| `--motion-pulse` | 1800 ms | The arrow on "See how it works" nudging down |
 
 - The dotted globe behind the login turns slowly and leans with the pointer. It draws one still frame when the visitor asks for reduced motion, and stops while the tab is hidden.
-- Respect `prefers-reduced-motion`: transitions and animations are switched off.
+- On the front page, blocks rise into view once as they are scrolled to, and a thin line along the top grows with the scroll (a CSS scroll-driven animation; browsers without it show the line full).
+- Respect `prefers-reduced-motion`: transitions and animations are switched off, every block is simply there, and the progress line is hidden.
 
 ## 6. Components
 
@@ -127,6 +130,7 @@ Layout: three columns on desktop (incidents 300px · investigation 1.25fr · rep
 | **Report panel (SOC)** | For experts | Verdict line, technique tags, AI summary with evidence chips, findings table, counterfactual, next steps. |
 | **Approval card** | Human decision | Amber hairline and wash. Evidence summary **above** the buttons. Approve = danger-fill, Reject = charcoal. Expiry time. |
 | **Login** | The front door | Indigo bar, logo tile; centred "Agentic security analyst", "Every alert, [shield tile] *investigated.*", and the form, on a dark pool; the dotted globe (canvas, `aria-hidden`) behind. On the public demo, "Try the demo" with its note that nothing is real. |
+| **Front page sections** | Below the login: 01 how it investigates, 02 two reports and a person decides | A serif section title with one indigo accent phrase; the four tools on the evidence rail; example reports with evidence references that look like the dashboard's but are not buttons (`.ref-chip`); an example decision whose buttons are dimmed pictures, labelled as an example. Every example uses reserved example names. |
 | **Status chip** | Any state | Pill, upper case; icon + word in the meaning colour on its own wash. |
 | **Empty state** | Nothing selected | One sentence telling the user what to do next. |
 
