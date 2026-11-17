@@ -296,19 +296,252 @@ th {
   color: var(--color-info);
 }
 
-/* App bar: a signal bar along the top, the logo tile, the serif wordmark. */
-.app-bar {
+/* The dashboard: a sidebar of pages, and the open page beside it. A signal bar along the top. */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+  border-top: var(--neon-bar) solid var(--color-accent);
+}
+
+.sidebar {
   position: sticky;
   top: 0;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  height: 100vh;
+  padding: var(--space-5) var(--space-4);
+  border-right: var(--border-thin) solid var(--color-border);
+  background: var(--color-void);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-thin) solid transparent;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.nav-item:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.nav-item[aria-current="page"] {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  background: var(--tint-accent);
+  color: var(--color-text-strong);
+}
+
+.nav-item[aria-current="page"] svg {
+  color: var(--color-accent);
+}
+
+.sidebar-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+
+.main {
+  min-width: 0;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--page-max);
+  padding: var(--space-6);
+}
+
+.page-title {
+  color: var(--color-text-strong);
+  font: var(--weight-light) var(--text-title) / var(--line-title) var(--font-display);
+  letter-spacing: var(--tracking-display);
+}
+
+/* Overview: the figures at a glance */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--figure-min), 1fr));
+  gap: var(--space-3);
+}
+
+.figure {
+  gap: var(--space-3);
+}
+
+.figure-value {
+  color: var(--color-text-strong);
+  font: var(--weight-light) var(--text-display) / var(--line-display) var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scenarios: one card each, with what it is and its button */
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--space-3);
+}
+
+.scenario {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.scenario .button {
+  align-self: flex-start;
+}
+
+/* On the Overview the incidents are a grid of cards, not rows stretched across the page. */
+.page .incident-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+}
+
+.page .incident-list .incident-item {
+  height: 100%;
+}
+
+/* The incident page: back, the header, then the tabs */
+.back {
+  align-self: flex-start;
+  border-color: var(--color-border);
+  background: transparent;
+}
+
+.incident-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-4);
-  padding: var(--space-3) var(--space-5);
-  border-top: var(--neon-bar) solid var(--color-accent);
+  gap: var(--space-1);
   border-bottom: var(--border-thin) solid var(--color-border);
-  background: var(--color-void);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  margin-bottom: calc(var(--border-thin) * -1);
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: var(--border-focus) solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab[aria-selected="true"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-text-strong);
+}
+
+.tab[aria-selected="true"] svg {
+  color: var(--color-accent);
+}
+
+.tab-note {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On small screens the sidebar becomes a bar across the top. */
+  .sidebar {
+    position: static;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: var(--space-3);
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    border-right: 0;
+    border-bottom: var(--border-thin) solid var(--color-border);
+  }
+
+  .nav {
+    flex-direction: row;
+  }
+
+  .sidebar-foot {
+    flex-flow: row wrap;
+    align-items: center;
+    margin-top: 0;
+  }
+
+  .page {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  /* The tabs stay on one row: tighter, and the row scrolls if it ever has to. */
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    padding-right: var(--space-3);
+    padding-left: var(--space-3);
+  }
 }
 
 .brand {
@@ -334,10 +567,6 @@ th {
   line-height: var(--line-headline);
 }
 
-.spacer {
-  flex: 1;
-}
-
 .user {
   display: inline-flex;
   align-items: center;
@@ -345,55 +574,6 @@ th {
   padding: var(--space-1) var(--space-3);
   border: var(--border-thin) solid var(--color-border);
   border-radius: var(--radius-pill);
-}
-
-/* Demo scenario buttons, under the app bar */
-.demo-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-4);
-  padding: var(--space-3) var(--space-5);
-  border-bottom: var(--border-thin) solid var(--color-border);
-  background: var(--color-bg);
-}
-
-/* The three columns; one column on smaller screens. */
-.columns {
-  display: grid;
-  grid-template-columns: var(--column-incidents) minmax(0, 1.25fr) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-5);
-  max-width: var(--page-max);
-  margin: 0 auto;
-  padding: var(--space-5);
-}
-
-.columns > * {
-  min-width: 0;
-}
-
-.columns > .empty {
-  grid-column: 2 / -1;
-}
-
-@media (max-width: 1150px) {
-  .columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .columns > .empty {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 640px) {
-  .app-bar,
-  .demo-bar,
-  .columns {
-    padding-right: var(--space-4);
-    padding-left: var(--space-4);
-  }
 }
 
 .panel {

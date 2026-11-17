@@ -58,26 +58,42 @@ describe("text from an incident is only ever text", () => {
       ...loggedInAs(analyst, hostileIncident),
       "GET /api/incidents": { status: 200, body: [{ ...summary, subjectName: HOSTILE }] },
     });
-    window.location.hash = "#/incidents/57";
+    const user = userEvent.setup();
+    const safe = () => {
+      expect(document.querySelectorAll("img, script, iframe, object, embed")).toHaveLength(0);
+      expect(document.querySelectorAll("[onerror], [onclick]")).toHaveLength(0);
+      expect((window as unknown as { __hacked?: number }).__hacked).toBeUndefined();
+      // And the words are really on the screen, not dropped.
+      expect(document.body.textContent).toContain(IMG);
+      expect(document.body.textContent).toContain(SCRIPT);
+    };
     render(<App />);
-    await screen.findByRole("region", { name: "Reports and actions" });
+    await screen.findByRole("region", { name: "Incidents" });
+    await screen.findByText(new RegExp("javascript:window"));
+    safe();
 
-    expect(document.querySelectorAll("img, script, iframe, object, embed")).toHaveLength(0);
-    expect(document.querySelectorAll("[onerror], [onclick]")).toHaveLength(0);
-    expect((window as unknown as { __hacked?: number }).__hacked).toBeUndefined();
-    // And the words are really on the screen, not dropped.
-    expect(document.body.textContent).toContain(IMG);
-    expect(document.body.textContent).toContain(SCRIPT);
+    // Every view of the incident, one tab at a time.
+    window.location.hash = "#/incidents/57";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    await screen.findByRole("tablist");
+    for (const tab of ["Evidence", "Reports", "Actions"]) {
+      await user.click(screen.getByRole("tab", { name: new RegExp(`^${tab}`) }));
+      safe();
+    }
   });
 
   it("no link is ever made from incident data, even one that looks harmless", async () => {
     fakeGateway(loggedInAs(analyst, hostileIncident));
+    const user = userEvent.setup();
     window.location.hash = "#/incidents/57";
     render(<App />);
-    await screen.findByRole("region", { name: "Reports and actions" });
+    await screen.findByRole("tablist");
 
-    expect(document.querySelectorAll("a")).toHaveLength(0);
-    expect(document.body.textContent).toContain(URL_TEXT);
+    for (const tab of ["Evidence", "Reports", "Actions"]) {
+      await user.click(screen.getByRole("tab", { name: new RegExp(`^${tab}`) }));
+      expect(document.querySelectorAll("a")).toHaveLength(0);
+      expect(document.body.textContent).toContain(URL_TEXT);
+    }
   });
 
   it("a bracketed note in the AI line cannot make a chip that goes anywhere else", async () => {
@@ -89,11 +105,13 @@ describe("text from an incident is only ever text", () => {
     window.location.hash = "#/incidents/57";
     render(<App />);
 
+    await user.click(await screen.findByRole("tab", { name: /^Reports/ }));
     await screen.findByRole("article", { name: "Report for the security team" });
     const paragraph = screen.getByText(/javascript:alert/).parentElement!;
     expect(paragraph.querySelectorAll("button")).toHaveLength(1);
     expect(paragraph.querySelector("img")).toBeNull();
     await user.click(paragraph.querySelector("button")!);
+    expect(await screen.findByRole("tab", { name: /^Evidence/ })).toHaveAttribute("aria-selected", "true");
     expect(document.getElementById("evidence-E1")).toHaveClass("highlighted");
   });
 });

@@ -40,8 +40,9 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | ✅ |
 | 19d | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ waiting for the Oracle Cloud account |
 | 20a | **The new look** | Design tokens, self-hosted fonts, contrast, canvas animation | Every screen in one "signal" style (near-black on a blueprint grid, one soft indigo signal colour, editorial serif, icons with the labels); a simple centred login over a dotted globe (ADR-57) | ✅ |
-| 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | 🟡 |
-| 20c | **Live dashboard** | Motion that explains change | Count-ups, the risk meter sweeping, steps arriving like a feed, skeletons while loading | ⬜ |
+| 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | ✅ (two sections: how it investigates; two reports and a person decides) |
+| 20c | **Dashboard layout** | Navigation, information architecture, accessible tabs | A sidebar with Overview and Scenarios; each incident on its own page with Investigation / Reports / Actions tabs | 🟡 |
+| 20d | **Live dashboard** | Motion that explains change | Count-ups, the risk meter sweeping, steps arriving like a feed, skeletons while loading | ⬜ |
 | 21 | **Final handbook** | Writing it all up | The handbook chapters assembled into one | ⬜ |
 
 ## Suggested pace (8 weeks)

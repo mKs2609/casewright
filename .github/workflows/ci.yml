@@ -191,10 +191,12 @@ jobs:
           chmod +x osv-scanner
 
       # Every library of all three parts, against the OSV vulnerability database. For pom.xml the
-      # scanner works out the indirect libraries too. Any known vulnerability fails the job.
+      # scanner works out the indirect libraries too. Any known vulnerability fails the job, except
+      # one listed as reviewed in .github/osv-scanner.toml (with a reason and an end date, ADR-60).
       - name: Check every library for known vulnerabilities
         run: >-
           ./osv-scanner scan source
+          --config=.github/osv-scanner.toml
           --lockfile=gateway/pom.xml
           --lockfile=agent/requirements.txt
           --lockfile=agent/requirements-dev.txt

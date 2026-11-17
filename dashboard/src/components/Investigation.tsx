@@ -1,4 +1,4 @@
-import { Fingerprint, Gauge, ShieldX } from "lucide-react";
+import { Gauge, ShieldX } from "lucide-react";
 
 import { KIND_WORDS, RED_TEAM, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { Evidence, IncidentDetail } from "../types";
@@ -86,16 +86,12 @@ function StepCard({ step, highlighted }: { step: Evidence; highlighted: boolean 
   );
 }
 
-interface Props {
-  incident: IncidentDetail;
-  highlighted: string | null;
-}
-
-export function Investigation({ incident, highlighted }: Props) {
-  const { verdict, evidence, status } = incident;
+/** The top of an incident's page: what it is, its state, and its risk. Always shown above the tabs. */
+export function IncidentHeader({ incident }: { incident: IncidentDetail }) {
+  const { verdict, status } = incident;
   const unfinished = status === "queued" || status === "investigating";
   return (
-    <section className="panel investigation" aria-label="Investigation">
+    <div className="incident-header">
       <h2 className="incident-title">
         {KIND_WORDS[incident.kind] ?? incident.kind} about {incident.subjectName}{" "}
         <span className="mono muted">#{incident.id}</span>
@@ -124,16 +120,20 @@ export function Investigation({ incident, highlighted }: Props) {
       )}
       {unfinished && <p className="notice">This investigation is still running. New steps appear as they happen.</p>}
       {status === "error" && <p className="notice">This investigation stopped before finishing. Any evidence so far is below.</p>}
+    </div>
+  );
+}
 
+/** The Evidence tab: what was reported, and every step the investigation took. */
+export function EvidenceTimeline({ incident, highlighted }: { incident: IncidentDetail; highlighted: string | null }) {
+  const { evidence } = incident;
+  return (
+    <div className="panel">
       <details className="payload">
         <summary>What was reported</summary>
         <pre>{JSON.stringify(incident.payload, null, 2)}</pre>
       </details>
 
-      <h3 className="label">
-        <Fingerprint aria-hidden="true" size={14} />
-        Evidence
-      </h3>
       {evidence.length === 0 && <p className="muted">No evidence yet.</p>}
       <ol className="timeline" aria-live="polite">
         {evidence.map((step) =>
@@ -144,6 +144,6 @@ export function Investigation({ incident, highlighted }: Props) {
           ),
         )}
       </ol>
-    </section>
+    </div>
   );
 }

@@ -44,6 +44,7 @@ describe("the red-team probe", () => {
       "GET /api/red-team/70": { status: 200, body: allBlocked },
     });
     const user = userEvent.setup();
+    window.location.hash = "#/scenarios";
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Red-team the agent" }));
@@ -55,6 +56,7 @@ describe("the red-team probe", () => {
 
   it("a viewer sees it disabled", async () => {
     fakeGateway({ ...loggedInAs(viewer), "GET /api/demo/scenarios": { status: 200, body: SCENARIOS } });
+    window.location.hash = "#/scenarios";
     render(<App />);
 
     expect(await screen.findByRole("button", { name: "Red-team the agent" })).toBeDisabled();
