@@ -2,14 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, setSessionLostHandler } from "./api";
 import { followIncidents, type LiveState } from "./live";
-import { Actions } from "./components/Actions";
-import { AppBar } from "./components/AppBar";
-import { IncidentList } from "./components/IncidentList";
-import { Investigation } from "./components/Investigation";
+import { IncidentPage, useFocusEvidence, type Tab } from "./components/IncidentPage";
 import { Login } from "./components/Login";
-import { RedTeamCard } from "./components/RedTeamCard";
-import { Reports } from "./components/Reports";
+import { Overview } from "./components/Overview";
 import { Scenarios } from "./components/Scenarios";
+import { Sidebar, type Page } from "./components/Sidebar";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
 
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : "Something went wrong. Try again.");
@@ -39,16 +36,29 @@ function coalesced(work: () => Promise<void>): () => void {
   };
 }
 
-/** The selected incident lives in the address (#/incidents/57), so a reload keeps your place. */
-function selectedFromAddress(): number | null {
-  const match = /^#\/incidents\/(\d{1,15})$/.exec(window.location.hash);
-  return match ? Number(match[1]) : null;
+/**
+ * The page lives in the address, so a reload keeps your place: #/ (Overview), #/scenarios, or
+ * #/incidents/57. Anything else is the Overview.
+ */
+type Route = { page: Page } | { page: "incident"; id: number };
+
+function routeFromAddress(): Route {
+  const hash = window.location.hash;
+  if (hash === "#/scenarios") {
+    return { page: "scenarios" };
+  }
+  const match = /^#\/incidents\/(\d{1,15})$/.exec(hash);
+  return match ? { page: "incident", id: Number(match[1]) } : { page: "overview" };
 }
+
+const selectedIn = (route: Route) => (route.page === "incident" ? route.id : null);
 
 function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [incidents, setIncidents] = useState<IncidentSummary[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<number | null>(selectedFromAddress);
+  const [route, setRoute] = useState<Route>(routeFromAddress);
+  const selected = selectedIn(route);
+  const [tab, setTab] = useState<Tab>("evidence");
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [audit, setAudit] = useState<AuditCheck | null>(null);
@@ -104,6 +114,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
 
   useEffect(() => {
     setHighlighted(null);
+    setTab("evidence");
     void loadDetail(selected);
   }, [selected, loadDetail]);
 
@@ -128,9 +139,15 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   }, [loadIncidents, loadDetail]);
 
   useEffect(() => {
-    const follow = () => setSelected(selectedFromAddress());
+    const follow = () => setRoute(routeFromAddress());
     window.addEventListener("hashchange", follow);
     return () => window.removeEventListener("hashchange", follow);
+  }, []);
+
+  const go = useCallback((address: string) => {
+    window.location.hash = address;
+    setRoute(routeFromAddress());
+    window.scrollTo?.(0, 0);
   }, []);
 
   const refresh = useCallback(() => {
@@ -138,64 +155,71 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     void loadDetail(selected);
   }, [loadList, loadDetail, selected]);
 
-  const cite = useCallback((label: string) => {
-    setHighlighted(label);
-    const target = document.getElementById(`evidence-${label}`);
-    target?.focus({ preventScroll: true });
-    target?.scrollIntoView?.({ block: "center" });
-  }, []);
+  const focusEvidence = useFocusEvidence(tab, highlighted);
+  // An evidence chip (in a report or a decision) opens the Evidence tab at that step.
+  const cite = useCallback(
+    (label: string) => {
+      setHighlighted(label);
+      setTab("evidence");
+      focusEvidence(label);
+    },
+    [focusEvidence],
+  );
 
   return (
-    <div className="app">
-      <AppBar user={user} audit={audit} onLogout={onLogout} />
-      <Scenarios
+    <div className="shell">
+      <Sidebar
+        current={route.page === "incident" ? null : route.page}
         user={user}
-        onStarted={(started) => {
-          // Open the new incident at once; the live feed fills in its steps.
-          window.location.hash = `#/incidents/${started.id}`;
-          setSelected(started.id);
-          void loadIncidents();
-        }}
+        audit={audit}
+        live={live}
+        onGo={go}
+        onRefresh={refresh}
+        onLogout={onLogout}
       />
-      <div className="columns">
-        <IncidentList
-          incidents={incidents}
-          selected={selected}
-          error={listError}
-          onSelect={(id) => {
-            window.location.hash = `#/incidents/${id}`;
-            setSelected(id);
-          }}
-          onRefresh={refresh}
-          live={live}
-        />
-        {detail && detail.id === selected ? (
-          <>
-            <Investigation incident={detail} highlighted={highlighted} />
-            <section className="panel reports" aria-label="Reports and actions">
-              {detail.source === "red_team" && <RedTeamCard incident={detail} />}
-              <Actions
-                actions={detail.actions}
-                evidence={detail.evidence}
-                user={user}
-                onCite={cite}
-                onDecided={refresh}
-              />
-              <Reports verdict={detail.verdict} onCite={cite} />
-            </section>
-          </>
-        ) : (
-          <section className="panel empty" aria-label="Investigation">
-            {detailError ? (
-              <p role="alert" className="error-text">
-                {detailError}
-              </p>
-            ) : (
-              <p className="muted">{selected === null ? "Choose an incident to see its investigation." : "Loading..."}</p>
-            )}
-          </section>
+      <main className="main">
+        {route.page === "overview" && (
+          <Overview
+            incidents={incidents}
+            audit={audit}
+            error={listError}
+            onOpen={(id) => go(`#/incidents/${id}`)}
+          />
         )}
-      </div>
+        {route.page === "scenarios" && (
+          <Scenarios
+            user={user}
+            onStarted={(started) => {
+              // Open the new incident at once; the live feed fills in its steps.
+              go(`#/incidents/${started.id}`);
+              void loadIncidents();
+            }}
+          />
+        )}
+        {route.page === "incident" &&
+          (detail && detail.id === selected ? (
+            <IncidentPage
+              incident={detail}
+              user={user}
+              highlighted={highlighted}
+              onCite={cite}
+              onDecided={refresh}
+              onBack={() => go("#/")}
+              tab={tab}
+              onTab={setTab}
+            />
+          ) : (
+            <div className="page">
+              {detailError ? (
+                <p role="alert" className="error-text">
+                  {detailError}
+                </p>
+              ) : (
+                <p className="muted">Loading...</p>
+              )}
+            </div>
+          ))}
+      </main>
     </div>
   );
 }

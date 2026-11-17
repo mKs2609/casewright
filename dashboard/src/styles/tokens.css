@@ -100,7 +100,9 @@
   --logo-tile: 28px;
   --headline-tile: 0.82em;
   --grid-size: 56px;
-  --column-incidents: 300px;
+  --sidebar-width: 232px;
+  --figure-min: 200px;
+  --card-min: 260px;
   --login-width: 420px;
   --page-max: 1600px;
   --front-section-max: 1080px;

@@ -3,21 +3,22 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-16
+**Last updated:** 2026-11-17
 
 ---
 
 ## Now
 
-### Step 20b: Front page (on `feature/front-page`)
-Mohit chose: the login stays on top with the sections below it; two sections (how it investigates; two reports and a person decides). The accuracy and red-team sections were offered and left out for now (ADR-58).
-- [x] Plan agreed with Mohit
-- [x] "See how it works" under the login scrolls down (a button: the product code builds no links)
-- [x] 01 How it investigates: the four tools on the evidence rail, each with what it does and an example finding
-- [x] 02 Two reports, one evidence chain: example plain and expert reports side by side, then an example decision whose buttons are pictures, not controls
-- [x] Blocks rise into view once as they are scrolled to (IntersectionObserver); a scroll-progress line along the top (CSS scroll-driven animation); both off for reduced motion, and everything visible where the browser cannot watch scrolling
-- [x] Examples from a real demo investigation, with reserved example names only (paypal.com appears only as the site being imitated)
-- [x] Tests: dashboard 113 (4 new); 7 mutation checks, all caught
+### Step 20c: Dashboard layout (on `feature/dashboard-layout`)
+Mohit found the dashboard too crowded on one screen. Mohit chose: a left sidebar; pages Overview and Scenarios; the colours stay (near-black and indigo). Incidents open on their own page with tabs.
+- [x] Sidebar with Overview and Scenarios (the current page marked); the live badge, Refresh, the audit badge, the user and Log out at its foot, on every page; a bar across the top on small screens
+- [x] Overview: four figures (incidents, attacks found, waiting for a decision, audit log entries), then the incidents as a grid of cards
+- [x] Scenarios page: each demo as a card with what it is and its button; a note when demos are switched off
+- [x] Incident page: All incidents, the header and risk, a "decisions waiting" note, then Evidence / Reports / Actions tabs (WAI-ARIA tabs: arrow keys, Home, End); an evidence chip opens the Evidence tab at that step
+- [x] Addresses: #/ (Overview), #/scenarios, #/incidents/57 (unchanged); anything else is the Overview
+- [x] Tests: dashboard 119 (6 new for the sidebar, figures, tabs and the way back; the existing ones now move through pages and tabs like a person; the hostile-text test checks each view on its own)
+- [x] New README screenshot (incident #72, two decisions waiting, live)
+- [x] README brought up to date: the status, the pages, where the demo buttons are, test counts, containers on ARM, mutation-check results, the folder list and how to use the dashboard
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
@@ -35,7 +36,7 @@ Decided: Oracle Cloud's free ARM server in India South (Hyderabad), staying on t
 
 ## Later
 
-Step 20b (front page), step 20c (live dashboard), then step 21: the final handbook.
+Step 20d (live motion in the dashboard), then step 21: the final handbook.
 
 ## Open questions
 
@@ -45,6 +46,7 @@ Step 20b (front page), step 20c (live dashboard), then step 21: the final handbo
 
 ## Done
 
+- **2026-11-17:** Step 20b (front page) merged.
 - **2026-11-16:** Step 20a (the new look) merged: PR #25. The first Containers run on `main` failed once: Maven's download server briefly answered 404 for a file it has (checked: the file is there); the failed job is re-run.
 - **2026-11-15:** Step 19c (containers on ARM) merged: PR #24, with the opentelemetry-api upgrade. "Containers (ARM)" is the 12th required check on `main`.
 - **2026-11-13:** Step 19b (public demo mode) merged: PR #23, with the dashboard screenshot. Its first checks were stuck for a day by a GitHub Actions outage; an empty commit started fresh ones, which all passed (15 smoke checks).

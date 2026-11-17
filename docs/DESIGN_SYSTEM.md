@@ -95,7 +95,7 @@ Minimum size is 12px. Numbers that are compared use tabular figures. Label icons
 | `--grid-size` | 56px blueprint grid |
 | Elevation | Flat: surface steps and hairlines. The only glow belongs to the signal. |
 
-Layout: three columns on desktop (incidents 300px · investigation 1.25fr · reports 1fr, at most 1600px wide), one column under 1150px. The login is centred. No horizontal scrolling at any width; long values wrap.
+Layout: a 232px sidebar and the open page beside it; under 900px the sidebar becomes a bar across the top. Pages: Overview (#/), Scenarios (#/scenarios) and each incident (#/incidents/57) with its tabs. The login is centred. No horizontal scrolling at any width; long values wrap.
 
 ## 5. Motion
 
@@ -114,17 +114,19 @@ Layout: three columns on desktop (incidents 300px · investigation 1.25fr · rep
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **App bar** | Indigo logo tile (radar), serif wordmark, audit-chain badge, user badge (pill), log out | Black, sticky, under the indigo bar. Badges always show icon + text. |
-| **Live badge** | Beside "Incidents": Live, Connecting, or Live updates paused | Icon + word, read out politely (`role="status"`). Refresh stays available. |
-| **Scenario buttons** | Fire simulated incidents, in a strip under the app bar | One white "Attempt breach"; others charcoal; the description on hover and to screen readers. Disabled for `VIEWER`, with a note why. Hidden when the gateway has demos off. |
+| **Sidebar** | Logo tile and wordmark; the pages (Overview, Scenarios), the current one marked with `aria-current`; at its foot the live badge, Refresh, the audit badge, the user and Log out | Black, sticky, full height; a bar across the top under 900px. Pages change by buttons (no links). |
+| **Live badge** | In the sidebar, on every page: Live, Connecting, or Live updates paused | Icon + word, read out politely (`role="status"`). Refresh stays available. |
+| **Overview figures** | Incidents, attacks found, waiting for a decision, audit log entries | Serif light numbers in cards, as a definition list; "Tampered" if the audit chain is broken. |
+| **Scenario cards** | One per demo on the Scenarios page | What it is, then its button. One white "Attempt breach"; others charcoal; the description also read out as the button's description. Disabled for `VIEWER`, with a note why. A note when the gateway has demos off. |
+| **Incident page and tabs** | One incident: All incidents, the header and risk, a "decisions waiting" note, then Evidence / Reports / Actions | WAI-ARIA tabs: arrow keys, Home and End move between them; only the open tab is shown; the Actions tab says how many decisions are waiting. |
 | **Red-team button and scorecard** | "Red-team the agent"; on a run, a card listing each attempt, what is meant to stop it, and the outcome | Outcomes are icon + word: Blocked, Not blocked, Waiting. The card sits on an indigo hairline and wash. |
 | **Simulated badge** | On demo incidents | Muted chip, icon + "Simulated". |
-| **Incident list item** | One incident in the feed | Kind icon, mono `#id`, subject, risk number, chips, time. The open one: indigo hairline, wash and glow. |
+| **Incident card** | One incident on the Overview | Kind icon, mono `#id`, subject, risk number, chips, time; a grid of cards, equal height in a row. |
 | **Risk meter** | Running risk score | Panel with the serif number, "Risk / 100" (gauge icon), the scale and a 4px bar with a glow of its band colour. `role="meter"`. |
 | **Evidence timeline** | The investigation's steps | One indigo rail with a glowing diamond per step (red, without glow, for a blocked step). |
 | **Step card** | One tool call | Mono header "E1 PATTERN MATCH"; arguments as a two-column list; summary; signal tags; expandable raw evidence. |
 | **Guardrail card** | A blocked call/action | Red hairline and wash, shield icon, the word "Blocked", the reason. |
-| **Evidence chip** | Reference like `E3` | Always a button (indigo hairline, 2px radius); clicking scrolls to and highlights that step. |
+| **Evidence chip** | Reference like `E3` | Always a button (indigo hairline, 2px radius); clicking opens the Evidence tab, then scrolls to and highlights that step. |
 | **Signal tag** | A finding and its weight | Mono text; three strengths (muted / amber / red) plus the numeric weight. |
 | **Report panel (plain)** | For everyone | Serif headline, status chip, "what happened", "why we think so", "what to do". |
 | **Report panel (SOC)** | For experts | Verdict line, technique tags, AI summary with evidence chips, findings table, counterfactual, next steps. |

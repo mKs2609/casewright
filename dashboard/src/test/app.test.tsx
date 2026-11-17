@@ -17,10 +17,16 @@ const publicDemo = {
   "GET /api/auth/options": { status: 200, body: { signupOpen: false, demoLogin: true } },
 };
 
+/** Opens incident 57 on its own page (the Evidence tab is open first). */
 async function openIncident() {
   window.location.hash = "#/incidents/57";
   render(<App />);
-  await screen.findByRole("region", { name: "Reports and actions" });
+  await screen.findByRole("heading", { name: /#57/ });
+}
+
+/** Opens one of the incident page's tabs, as a person would. */
+async function showTab(name: "Evidence" | "Reports" | "Actions") {
+  await userEvent.setup().click(screen.getByRole("tab", { name: new RegExp(`^${name}`) }));
 }
 
 describe("logging in", () => {
@@ -46,7 +52,7 @@ describe("logging in", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Sara Khan")).toBeInTheDocument();
-    expect(screen.getByText("Choose an incident to see its investigation.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" })).toBeInTheDocument();
   });
 
   it("shows the server's refusal and clears the password", async () => {
@@ -145,9 +151,10 @@ describe("logging in", () => {
 describe("the incident", () => {
   it("every status has a word as well as a colour", async () => {
     fakeGateway(loggedInAs(analyst));
-    await openIncident();
+    render(<App />);
 
-    const list = screen.getByRole("region", { name: "Incidents" });
+    const list = await screen.findByRole("region", { name: "Incidents" });
+    await within(list).findByText("Sara Khan");
     expect(within(list).getByText("Attack")).toBeInTheDocument();
     expect(within(list).getByText("Waiting for approval")).toBeInTheDocument();
     expect(within(list).getByText("75")).toBeInTheDocument();
@@ -177,12 +184,13 @@ describe("the incident", () => {
     expect(await screen.findByRole("meter", { name: "Risk score" })).toHaveAttribute("aria-valuenow", "75");
   });
 
-  it("ignores an address that is not an incident number", async () => {
+  it("ignores an address that is not an incident number, and shows the Overview", async () => {
     window.location.hash = "#/incidents/1;alert(1)";
-    fakeGateway(loggedInAs(analyst));
+    const fetchMock = fakeGateway(loggedInAs(analyst));
     render(<App />);
 
-    expect(await screen.findByText("Choose an incident to see its investigation.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("alert"))).toBe(false);
   });
 
   it("a slow answer for the old incident cannot replace the one you moved on to", async () => {
@@ -196,11 +204,12 @@ describe("the incident", () => {
       "/api/incidents/58": async () => Response.json(other),
     };
     fakeFetch(routes);
-    const user = userEvent.setup();
+    window.location.hash = "#/incidents/57";
     render(<App />);
 
-    await user.click(await screen.findByRole("button", { name: /Sara Khan/ }));
-    await user.click(screen.getByRole("button", { name: /Omar Haddad/ }));
+    // Move on to 58 while 57's answer is still on its way.
+    window.location.hash = "#/incidents/58";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
     await screen.findByRole("heading", { name: /about Omar Haddad/ });
     releaseOld(Response.json(incident));
     await new Promise((resolve) => setTimeout(resolve));
@@ -222,12 +231,14 @@ describe("the incident", () => {
     await openIncident();
 
     expect(screen.getByText(/stopped before finishing/)).toBeInTheDocument();
+    await showTab("Reports");
     expect(screen.getByText("The reports appear once the investigation has finished.")).toBeInTheDocument();
   });
 
   it("an incident from before reports existed still opens", async () => {
     fakeGateway(loggedInAs(analyst, { ...incident, verdict: { ...incident.verdict!, socReport: null, plainReport: null } }));
     await openIncident();
+    await showTab("Reports");
 
     expect(screen.getByText("This incident was investigated before reports existed.")).toBeInTheDocument();
   });
@@ -251,23 +262,26 @@ describe("the incident", () => {
 });
 
 describe("evidence chips", () => {
-  it("clicking one goes to that step and marks it", async () => {
+  it("clicking one in a report opens the Evidence tab at that step and marks it", async () => {
     fakeGateway(loggedInAs(analyst));
     const user = userEvent.setup();
     await openIncident();
+    await showTab("Reports");
 
     const plain = screen.getByRole("article", { name: "Report for everyone" });
     await user.click(within(plain).getByRole("button", { name: "Go to evidence E2" }));
 
+    expect(screen.getByRole("tab", { name: /^Evidence/ })).toHaveAttribute("aria-selected", "true");
     const step = document.getElementById("evidence-E2")!;
     await waitFor(() => expect(step).toHaveClass("highlighted"));
-    expect(step).toHaveFocus();
+    await waitFor(() => expect(step).toHaveFocus());
     expect(document.getElementById("evidence-E1")).not.toHaveClass("highlighted");
   });
 
   it("the AI line's citations become chips and its words stay text", async () => {
     fakeGateway(loggedInAs(analyst));
     await openIncident();
+    await showTab("Reports");
 
     const soc = screen.getByRole("article", { name: "Report for the security team" });
     const line = within(soc).getByText(/A caller asked for a one-time code/).parentElement!;
@@ -279,6 +293,7 @@ describe("both reports", () => {
   it("show the same verdict from one evidence chain", async () => {
     fakeGateway(loggedInAs(analyst));
     await openIncident();
+    await showTab("Reports");
 
     const plain = screen.getByRole("article", { name: "Report for everyone" });
     const soc = screen.getByRole("article", { name: "Report for the security team" });
@@ -295,6 +310,7 @@ describe("approval", () => {
   it("shows the evidence above the buttons", async () => {
     fakeGateway(loggedInAs(analyst));
     await openIncident();
+    await showTab("Actions");
 
     const evidence = within(card()).getByText("The number is on a list of scam callers");
     const approve = within(card()).getByRole("button", { name: "Approve block" });
@@ -320,6 +336,7 @@ describe("approval", () => {
     });
     const user = userEvent.setup();
     await openIncident();
+    await showTab("Actions");
 
     await user.click(within(card()).getByRole("button", { name: "Approve block" }));
 
@@ -333,6 +350,7 @@ describe("approval", () => {
     const fetchMock = fakeGateway({ ...loggedInAs(analyst), "POST /api/actions/9/decision": { status: 200, body: pendingBlock } });
     const user = userEvent.setup();
     await openIncident();
+    await showTab("Actions");
 
     await user.click(within(card()).getByRole("button", { name: "Reject" }));
 
@@ -345,6 +363,7 @@ describe("approval", () => {
   it("a viewer gets no buttons", async () => {
     fakeGateway(loggedInAs(viewer));
     await openIncident();
+    await showTab("Actions");
 
     expect(within(card()).queryByRole("button", { name: "Approve block" })).not.toBeInTheDocument();
     expect(within(card()).queryByRole("button", { name: "Reject" })).not.toBeInTheDocument();
@@ -358,6 +377,7 @@ describe("approval", () => {
     });
     const user = userEvent.setup();
     await openIncident();
+    await showTab("Actions");
 
     await user.click(within(card()).getByRole("button", { name: "Approve block" }));
 
@@ -368,6 +388,7 @@ describe("approval", () => {
   it("says that enforcement is simulated", async () => {
     fakeGateway(loggedInAs(analyst));
     await openIncident();
+    await showTab("Actions");
 
     expect(screen.getByText(/nothing real is blocked/)).toBeInTheDocument();
   });

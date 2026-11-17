@@ -511,3 +511,16 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the login was deliberately simple (ADR-57), but a visitor to the public demo should be able to learn what Casewright does before trying it, without the explanation getting in the way of logging in.
 **Alternatives considered:** a separate front page with a "Log in" button (one more step to the demo); a scroll-animation library (a dependency for two effects the browser already offers).
 **Trade-offs:** the example content is written by hand, so it can drift from what the agent produces; it is short, and checked for reserved names but not against the agent's wording.
+
+## ADR-59: The dashboard's pages
+**Status:** Accepted (2026-11-17; a left sidebar, the pages Overview and Scenarios, and the same colours, by Mohit)
+**Decision:**
+- **A sidebar of pages instead of one screen.** Overview (#/: four figures, then the incidents as cards) and Scenarios (#/scenarios: one card per demo). Each incident opens on its own page (#/incidents/57, as before) with three tabs: Evidence, Reports, Actions.
+- **What every page needs lives in the sidebar**: the live badge and Refresh, the audit badge, the user and Log out.
+- **The tabs follow the WAI-ARIA tabs pattern** (roles, `aria-selected`, arrow keys, Home and End); only the open tab is rendered. A note above them says when decisions are waiting, and an evidence chip opens the Evidence tab at its step.
+- **The address is the page**, so a reload keeps your place; anything that is not a known page or an incident number is the Overview.
+- **No backend change**: every page uses what the gateway already sends.
+
+**Why:** Mohit found the one-screen dashboard too crowded: the scenarios, the list, the investigation, both reports and the decisions all at once.
+**Alternatives considered:** tabs along the top instead of a sidebar (less room as pages grow); separate Incidents, Approvals and Audit pages (offered; not chosen for now); a routing library (a dependency for three addresses).
+**Trade-offs:** reports and decisions are one click further from the evidence; the tests now move through pages and tabs like a person, so they are a little longer.

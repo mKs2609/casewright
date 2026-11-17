@@ -206,7 +206,7 @@ describe("the dashboard with live updates", () => {
   async function openIncident() {
     window.location.hash = "#/incidents/57";
     render(<App />);
-    await screen.findByRole("region", { name: "Reports and actions" });
+    await screen.findByRole("heading", { name: /#57/ });
   }
 
   it("shows a new step on the open incident as soon as the gateway says it changed", async () => {
@@ -275,7 +275,7 @@ describe("the dashboard with live updates", () => {
     await openIncident();
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Live updates paused"));
-    expect(screen.getAllByText(summary.subjectName).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: new RegExp(summary.subjectName) })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh" })).toBeEnabled();
   });
 });

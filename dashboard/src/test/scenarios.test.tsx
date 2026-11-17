@@ -16,10 +16,16 @@ const started = { ...incident, id: 61, status: "queued", source: "demo", evidenc
 
 const demoBar = () => screen.getByRole("region", { name: "Demo scenarios" });
 
+/** The scenarios have their own page now (#/scenarios). */
+function renderScenariosPage() {
+  window.location.hash = "#/scenarios";
+  render(<App />);
+}
+
 describe("demo scenarios", () => {
-  it("shows the buttons with Attempt breach first and as the main one", async () => {
+  it("shows a card for each, with Attempt breach first and as the main one", async () => {
     fakeGateway({ ...loggedInAs(analyst), "GET /api/demo/scenarios": { status: 200, body: SCENARIOS } });
-    render(<App />);
+    renderScenariosPage();
 
     await screen.findByRole("button", { name: "Attempt breach" });
     const buttons = within(demoBar()).getAllByRole("button");
@@ -27,6 +33,7 @@ describe("demo scenarios", () => {
     expect(buttons[0]).toHaveClass("button-primary");
     expect(buttons[1]).not.toHaveClass("button-primary");
     expect(buttons[0]).toHaveAccessibleDescription("Password guessing, then a way in.");
+    expect(within(demoBar()).getByText("A fake security warning.")).toBeInTheDocument();
   });
 
   it("sends only the scenario's name, then opens the new incident", async () => {
@@ -37,7 +44,7 @@ describe("demo scenarios", () => {
       "GET /api/incidents/61": { status: 200, body: started },
     });
     const user = userEvent.setup();
-    render(<App />);
+    renderScenariosPage();
 
     await user.click(await screen.findByRole("button", { name: "Attempt breach" }));
 
@@ -49,11 +56,11 @@ describe("demo scenarios", () => {
 
   it("a viewer sees the buttons disabled, and why", async () => {
     const fetchMock = fakeGateway({ ...loggedInAs(viewer), "GET /api/demo/scenarios": { status: 200, body: SCENARIOS } });
-    render(<App />);
+    renderScenariosPage();
 
     const breach = await screen.findByRole("button", { name: "Attempt breach" });
     expect(breach).toBeDisabled();
-    expect(within(demoBar()).getByText("Only analysts and admins can run scenarios.")).toBeInTheDocument();
+    expect(screen.getByText("Only analysts and admins can run scenarios.")).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/demo/") && url !== "/api/demo/scenarios")).toBe(false);
   });
 
@@ -64,11 +71,11 @@ describe("demo scenarios", () => {
       "POST /api/demo/phishing_email": { status: 429, body: { error: "Too many requests. Try again later." } },
     });
     const user = userEvent.setup();
-    render(<App />);
+    renderScenariosPage();
 
     await user.click(await screen.findByRole("button", { name: "Phishing email" }));
 
-    expect(await within(demoBar()).findByRole("alert")).toHaveTextContent("Too many requests. Try again later.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many requests. Try again later.");
     expect(within(demoBar()).getByRole("button", { name: "Phishing email" })).toBeEnabled();
   });
 
@@ -79,19 +86,19 @@ describe("demo scenarios", () => {
       SCENARIOS[1],
     ];
     fakeGateway({ ...loggedInAs(analyst), "GET /api/demo/scenarios": { status: 200, body: odd } });
-    render(<App />);
+    renderScenariosPage();
 
     await screen.findByRole("button", { name: "Phishing email" });
     expect(within(demoBar()).getAllByRole("button").map((b) => b.textContent)).toEqual(["Phishing email", "Red-team the agent"]);
     expect(screen.queryByText("Sneaky")).not.toBeInTheDocument();
   });
 
-  it("is not there at all when the gateway has demos switched off", async () => {
+  it("says so, with no buttons, when the gateway has demos switched off", async () => {
     fakeGateway({ ...loggedInAs(analyst), "GET /api/demo/scenarios": { status: 404, body: { error: "Not Found" } } });
-    render(<App />);
+    renderScenariosPage();
 
-    await screen.findAllByText("Sara Khan");
-    await waitFor(() => expect(screen.queryByRole("region", { name: "Demo scenarios" })).not.toBeInTheDocument());
+    expect(await screen.findByText("Demo scenarios are switched off on this site.")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Demo scenarios" })).not.toBeInTheDocument();
   });
 
   it("marks a simulated incident in the list and on the incident itself", async () => {
@@ -100,12 +107,14 @@ describe("demo scenarios", () => {
       ...loggedInAs(analyst, demo),
       "GET /api/incidents": { status: 200, body: [{ ...summary, source: "demo" }] },
     });
-    window.location.hash = "#/incidents/57";
     render(<App />);
+    const list = await screen.findByRole("region", { name: "Incidents" });
+    expect(await within(list).findByText("Simulated")).toBeInTheDocument();
 
+    window.location.hash = "#/incidents/57";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
     await screen.findByRole("heading", { name: /#57/ });
     expect(within(screen.getByRole("region", { name: "Investigation" })).getByText("Simulated")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Incidents" })).getByText("Simulated")).toBeInTheDocument();
   });
 
   it("does not mark an ordinary incident", async () => {

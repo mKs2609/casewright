@@ -1,7 +1,6 @@
-import { CircleHelp, Inbox, RefreshCw } from "lucide-react";
+import { CircleHelp, Inbox } from "lucide-react";
 
-import type { LiveState } from "../live";
-import { KIND_ICONS, KIND_WORDS, liveMeaning, RED_TEAM, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
+import { KIND_ICONS, KIND_WORDS, RED_TEAM, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { IncidentSummary } from "../types";
 import { StatusChip } from "./Chips";
 
@@ -10,11 +9,9 @@ interface Props {
   selected: number | null;
   error: string | null;
   onSelect: (id: number) => void;
-  onRefresh: () => void;
-  live: LiveState;
 }
 
-export function IncidentList({ incidents, selected, error, onSelect, onRefresh, live }: Props) {
+export function IncidentList({ incidents, selected, error, onSelect }: Props) {
   return (
     <section className="panel incidents" aria-label="Incidents">
       <div className="panel-title">
@@ -22,13 +19,6 @@ export function IncidentList({ incidents, selected, error, onSelect, onRefresh, 
           <Inbox aria-hidden="true" size={14} />
           Incidents
         </h2>
-        <span role="status" className="live-state">
-          <StatusChip meaning={liveMeaning(live)} />
-        </span>
-        <button type="button" className="button" onClick={onRefresh}>
-          <RefreshCw aria-hidden="true" size={16} />
-          Refresh
-        </button>
       </div>
       {error && (
         <p role="alert" className="error-text">
