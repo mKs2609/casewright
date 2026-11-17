@@ -19,6 +19,7 @@ Mohit found the dashboard too crowded on one screen. Mohit chose: a left sidebar
 - [x] Tests: dashboard 119 (6 new for the sidebar, figures, tabs and the way back; the existing ones now move through pages and tabs like a person; the hostile-text test checks each view on its own)
 - [x] New README screenshot (incident #72, two decisions waiting, live)
 - [x] README brought up to date: the status, the pages, where the demo buttons are, test counts, containers on ARM, mutation-check results, the folder list and how to use the dashboard
+- [x] The PR's first run failed twice for reasons outside this change: (1) the dependency audit found GHSA-fc5q-39xc-vjpf in picomatch 4.0.7 (through Vite and Vitest; published that week, no fixed release), accepted for 30 days with Mohit's approval (ADR-60, `.github/osv-scanner.toml`); (2) a timing race in the gateway test `LiveUpdatesTest.aFeedThatFallsTooFarBehindIsClosedSoTheDashboardReloadsInstead`: the feed's writer could start late and take some changes with it. The test now waits until the writer is stuck before sending changes; the race was reproduced on purpose, then fixed; gateway 364 in both orders
 - [ ] All checks pass on GitHub
 - [ ] Merged
 

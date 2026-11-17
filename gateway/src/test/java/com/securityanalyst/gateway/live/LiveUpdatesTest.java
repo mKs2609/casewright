@@ -167,6 +167,10 @@ class LiveUpdatesTest {
         FakeSink slow = new FakeSink();
         slow.stall = new CountDownLatch(1);
         live.subscribe(1L, "203.0.113.1", slow);
+        // The feed's writer starts on a thread of its own. Wait until it is stuck in the greeting, or
+        // on a slow machine it could start late, take some of the changes with it, and leave fewer
+        // than 6 waiting (then, rightly, nothing is closed).
+        eventually(() -> slow.writing.get() == 1);
 
         for (long id = 1; id <= 6; id++) {   // one more than the 5 that may wait
             changed(live, id);
