@@ -12,6 +12,8 @@
   --color-surface-2: #1c1c1c;
   --color-border: #252525;
   --color-border-control: #6e6e6e;
+  /* The branched menu's rail and branches (a solid colour, so joints never darken) */
+  --color-rail: #3a3a3a;
   /* The blueprint grid behind everything (decoration only; panels sit on solid surfaces) */
   --color-grid: rgba(255, 255, 255, 0.035);
 
@@ -103,6 +105,18 @@
   --sidebar-width: 232px;
   --figure-min: 200px;
   --card-min: 260px;
+  --skeleton-line: 18px;
+  --skeleton-block: 120px;
+  /* The branched menu (its row, indent and trunk are mirrored in BranchedMenu.tsx) */
+  --menu-trunk: 14px;
+  --menu-row: 36px;
+  --menu-indent: 40px;
+  --menu-pad: 6px;
+  --line-stroke: 1.5;
+  /* The lattice loader */
+  --lattice-cell: 6px;
+  --lattice-gap: 2px;
+  --lattice-idle: 0.15;
   --login-width: 420px;
   --page-max: 1600px;
   --front-section-max: 1080px;
@@ -113,8 +127,13 @@
 
   /* Motion */
   --motion-fast: 150ms;
+  --motion-quick: 200ms;
+  --motion-fold: 300ms;
+  --motion-draw: 400ms;
   --motion-slow: 600ms;
   --motion-stagger: 120ms;
   --motion-pulse: 1800ms;
+  --motion-shimmer: 1400ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }

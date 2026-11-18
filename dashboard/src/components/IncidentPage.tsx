@@ -85,7 +85,7 @@ export function IncidentPage({ incident, user, highlighted, onCite, onDecided, o
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tab-panel">
+      <div key={tab} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tab-panel">
         {tab === "evidence" && (
           <>
             {incident.source === "red_team" && <RedTeamCard incident={incident} />}

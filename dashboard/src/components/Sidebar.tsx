@@ -1,16 +1,34 @@
-import { CircleHelp, FlaskConical, LayoutDashboard, LogOut, Radar, RefreshCw, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
+import {
+  CircleHelp,
+  FileText,
+  Fingerprint,
+  FlaskConical,
+  LayoutDashboard,
+  LogOut,
+  Radar,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  UserRoundCheck,
+} from "lucide-react";
 
 import type { LiveState } from "../live";
 import { liveMeaning } from "../meaning";
 import type { AuditCheck, User } from "../types";
+import { BranchedMenu, type BranchedMenuSection } from "./BranchedMenu";
 import { StatusChip } from "./Chips";
+import type { Tab } from "./IncidentPage";
 
 export type Page = "overview" | "scenarios";
 
-const PAGES: { page: Page; word: string; Icon: LucideIcon; address: string }[] = [
-  { page: "overview", word: "Overview", Icon: LayoutDashboard, address: "#/" },
-  { page: "scenarios", word: "Scenarios", Icon: FlaskConical, address: "#/scenarios" },
-];
+const ADDRESSES: Record<Page, string> = { overview: "#/", scenarios: "#/scenarios" };
+
+/** The open incident, for its branch of the menu: its number and how many decisions wait. */
+export interface OpenIncident {
+  id: number;
+  waiting: number;
+  tab: Tab;
+}
 
 function AuditBadge({ check }: { check: AuditCheck | null }) {
   if (!check) {
@@ -39,6 +57,8 @@ function AuditBadge({ check }: { check: AuditCheck | null }) {
 
 interface Props {
   current: Page | null;
+  incident: OpenIncident | null;
+  onTab: (tab: Tab) => void;
   user: User;
   audit: AuditCheck | null;
   live: LiveState;
@@ -48,10 +68,43 @@ interface Props {
 }
 
 /**
- * The dashboard's menu: one entry per page, and who is logged in. Pages are addresses
- * (#/, #/scenarios), changed by buttons: the product code builds no links.
+ * The dashboard's menu: a branched menu of the pages and, when an incident is open, its tabs; then
+ * who is logged in. Pages are addresses (#/, #/scenarios), changed by buttons: no links are built.
  */
-export function Sidebar({ current, user, audit, live, onGo, onRefresh, onLogout }: Props) {
+export function Sidebar({ current, incident, onTab, user, audit, live, onGo, onRefresh, onLogout }: Props) {
+  const sections: BranchedMenuSection[] = [
+    {
+      label: "Dashboard",
+      children: [
+        { value: "overview", label: "Overview", icon: <LayoutDashboard size={16} /> },
+        { value: "scenarios", label: "Scenarios", icon: <FlaskConical size={16} /> },
+      ],
+    },
+  ];
+  if (incident) {
+    sections.push({
+      label: `Incident #${incident.id}`,
+      children: [
+        { value: "tab:evidence", label: "Evidence", icon: <Fingerprint size={16} /> },
+        { value: "tab:reports", label: "Reports", icon: <FileText size={16} /> },
+        {
+          value: "tab:actions",
+          label: "Actions",
+          icon: <UserRoundCheck size={16} />,
+          note: incident.waiting > 0 ? `${incident.waiting} waiting` : undefined,
+        },
+      ],
+    });
+  }
+  const active = incident ? `tab:${incident.tab}` : (current ?? "");
+  const select = (value: string) => {
+    if (value.startsWith("tab:")) {
+      onTab(value.slice(4) as Tab);
+    } else {
+      onGo(ADDRESSES[value as Page]);
+    }
+  };
+
   return (
     <aside className="sidebar">
       <span className="brand">
@@ -60,20 +113,7 @@ export function Sidebar({ current, user, audit, live, onGo, onRefresh, onLogout 
         </span>
         <strong className="product">Casewright</strong>
       </span>
-      <nav aria-label="Pages" className="nav">
-        {PAGES.map(({ page, word, Icon, address }) => (
-          <button
-            key={page}
-            type="button"
-            className="nav-item"
-            aria-current={current === page ? "page" : undefined}
-            onClick={() => onGo(address)}
-          >
-            <Icon aria-hidden="true" size={18} />
-            {word}
-          </button>
-        ))}
-      </nav>
+      <BranchedMenu label="Pages" sections={sections} active={active} onSelect={select} />
       <div className="sidebar-foot">
         {/* Whether updates arrive by themselves, on every page; Refresh works either way. */}
         <span role="status">

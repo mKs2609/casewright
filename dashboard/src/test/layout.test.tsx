@@ -109,3 +109,44 @@ describe("the incident page", () => {
     expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
   });
 });
+
+describe("the branched menu", () => {
+  it("grows a branch for the open incident, whose tabs it opens, with what is waiting", async () => {
+    fakeGateway(loggedInAs(analyst));
+    const user = userEvent.setup();
+    window.location.hash = "#/incidents/57";
+    render(<App />);
+    await screen.findByRole("heading", { name: /#57/ });
+
+    const menu = pages();
+    expect(within(menu).getByRole("button", { name: "Incident #57" })).toHaveAttribute("aria-expanded", "true");
+    expect(within(menu).getByRole("button", { name: "Evidence" })).toHaveAttribute("aria-current", "page");
+    expect(within(menu).getByRole("button", { name: /^Actions/ })).toHaveTextContent("1 waiting");
+
+    await user.click(within(menu).getByRole("button", { name: "Reports" }));
+
+    expect(screen.getByRole("tab", { name: /^Reports/ })).toHaveAttribute("aria-selected", "true");
+    expect(within(menu).getByRole("button", { name: "Reports" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("has no incident branch when no incident is open, and its sections fold", async () => {
+    fakeGateway(loggedInAs(analyst));
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByRole("heading", { name: "Overview" });
+
+    expect(within(pages()).queryByRole("button", { name: /^Incident #/ })).not.toBeInTheDocument();
+    const dashboard = within(pages()).getByRole("button", { name: "Dashboard" });
+    await user.click(dashboard);
+    expect(dashboard).toHaveAttribute("aria-expanded", "false");
+    expect(within(pages()).getByRole("button", { name: "Overview", hidden: true })).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("an incident still being investigated shows the lattice on its card", async () => {
+    fakeGateway({ ...loggedInAs(analyst), "GET /api/incidents": { status: 200, body: [{ ...summary, verdict: null, riskScore: null, status: "investigating" }] } });
+    render(<App />);
+    const list = await screen.findByRole("region", { name: "Incidents" });
+    await within(list).findByText("Investigating");
+    expect(list.querySelector(".lattice-loader[data-status='working']")).not.toBeNull();
+  });
+});

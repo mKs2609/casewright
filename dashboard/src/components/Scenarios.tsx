@@ -2,6 +2,7 @@ import { Crosshair, Play } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { api } from "../api";
+import { Skeleton } from "../motion";
 import type { DemoScenario, IncidentDetail, User } from "../types";
 
 /** Not a scenario name (those are lowercase words), so it can never clash with one. */
@@ -31,7 +32,12 @@ export function Scenarios({ user, onStarted }: Props) {
   }, []);
 
   if (scenarios === null) {
-    return <p className="muted loading">Loading...</p>;
+    return (
+      <div className="page">
+        <h1 className="page-title">Scenarios</h1>
+        <Skeleton kind="cards" />
+      </div>
+    );
   }
   if (scenarios.length === 0) {
     return (

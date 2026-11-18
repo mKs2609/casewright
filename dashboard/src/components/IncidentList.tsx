@@ -3,6 +3,7 @@ import { CircleHelp, Inbox } from "lucide-react";
 import { KIND_ICONS, KIND_WORDS, RED_TEAM, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { IncidentSummary } from "../types";
 import { StatusChip } from "./Chips";
+import { LatticeLoader } from "./LatticeLoader";
 
 interface Props {
   incidents: IncidentSummary[] | null;
@@ -46,7 +47,13 @@ export function IncidentList({ incidents, selected, error, onSelect }: Props) {
                 </span>
                 <span className="incident-line">
                   {incident.verdict ? <StatusChip meaning={verdictMeaning(incident.verdict)} /> : null}
-                  <StatusChip meaning={statusMeaning(incident.status)} />
+                  {incident.status === "queued" || incident.status === "investigating" ? (
+                    <span className="chip tone-accent">
+                      <LatticeLoader status="working" label={statusMeaning(incident.status).word} showTimer={false} />
+                    </span>
+                  ) : (
+                    <StatusChip meaning={statusMeaning(incident.status)} />
+                  )}
                   {incident.source === "demo" && <StatusChip meaning={SIMULATED} />}
                   {incident.source === "red_team" && <StatusChip meaning={RED_TEAM} />}
                 </span>
