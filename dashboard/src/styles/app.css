@@ -316,46 +316,6 @@ th {
   background: var(--color-void);
 }
 
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--target-min);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-thin) solid transparent;
-  border-radius: var(--radius-button);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  font-weight: var(--weight-medium);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color var(--motion-fast),
-    color var(--motion-fast);
-}
-
-.nav-item:hover {
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.nav-item[aria-current="page"] {
-  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
-  background: var(--tint-accent);
-  color: var(--color-text-strong);
-}
-
-.nav-item[aria-current="page"] svg {
-  color: var(--color-accent);
-}
-
 .sidebar-foot {
   display: flex;
   flex-direction: column;
@@ -515,9 +475,6 @@ th {
     border-bottom: var(--border-thin) solid var(--color-border);
   }
 
-  .nav {
-    flex-direction: row;
-  }
 
   .sidebar-foot {
     flex-flow: row wrap;
@@ -1003,6 +960,10 @@ td {
   color: var(--color-text-muted);
 }
 
+.investigating {
+  color: var(--color-accent);
+}
+
 .scroll-cue svg {
   animation: nudge var(--motion-pulse) ease-in-out infinite;
 }
@@ -1315,6 +1276,85 @@ td {
 
   .front-card {
     padding: var(--space-5);
+  }
+}
+
+/*
+ * Motion that explains change (step 20d). Pages and tab contents fade in when you switch; an
+ * evidence step found during a live investigation slides in; the lattice loader (its own
+ * stylesheet) shows the investigation is still going; grey shapes shimmer where content is about to appear. Numbers
+ * count up in code (motion.tsx). All of it stops under prefers-reduced-motion (below).
+ */
+.page,
+.tab-panel {
+  animation: fade-in var(--motion-slow) var(--ease-out);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+}
+
+.step-new {
+  animation: arrive var(--motion-slow) var(--ease-out);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--space-4) * -1));
+  }
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--space-3);
+}
+
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skeleton-bar {
+  display: block;
+  border: var(--border-thin) solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: linear-gradient(90deg, var(--color-surface) 0%, var(--color-surface-2) 50%, var(--color-surface) 100%);
+  background-size: 200% 100%;
+  animation: shimmer var(--motion-shimmer) linear infinite;
+}
+
+.skeleton-title {
+  width: 40%;
+  height: var(--line-title);
+}
+
+.skeleton-block {
+  height: var(--skeleton-block);
+}
+
+.skeleton-stack .skeleton-block:first-child {
+  height: var(--skeleton-line);
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
   }
 }
 

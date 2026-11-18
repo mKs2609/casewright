@@ -10,6 +10,8 @@ import "@fontsource/source-serif-4/latin-300.css";
 import "@fontsource/source-serif-4/latin-300-italic.css";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import "./styles/branched-menu.css";
+import "./styles/lattice-loader.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

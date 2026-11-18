@@ -6,7 +6,7 @@
 
 > An AI security analyst that investigates threats like a human would, explains itself to experts and non-experts at the same time, and never acts alone on anything risky.
 
-![The Casewright dashboard: a sidebar with Overview and Scenarios, and a phishing email on its own page with a risk score of 90, a note that two actions are waiting for a person's decision, Evidence, Reports and Actions tabs, and the evidence chain step by step](docs/images/dashboard.png)
+![The Casewright dashboard: a sidebar whose branched menu leads from Dashboard (Overview, Scenarios) to the open incident's Evidence, Reports and Actions, and a scam phone call on its own page with a risk score of 85, a note that one action is waiting for a person's decision, and the evidence chain step by step](docs/images/dashboard.png)
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
@@ -53,13 +53,13 @@ Around these sit ordinary web defences: Argon2 password hashes, short-lived toke
 
 The held-out set is the honest number: the rule engine rarely cries wolf, but misses calm requests that use no tell-tale words, no link and nothing the threat list knows. The detection target is not met. With the local AI model the opposite happens: it caught every attack but called most harmless incidents "suspicious" too, so neither setting meets both targets yet. Every miss and false alarm, the 95% ranges and the method are in [EVALUATION.md](docs/EVALUATION.md) and [ADR-53](docs/DECISIONS.md); CI fails if those published numbers stop matching what the agent does.
 
-**Automated tests** (counts at step 20c; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
+**Automated tests** (counts at step 20d; GitHub runs all three suites on every pull request, and `main` cannot merge a failing one):
 
 | Suite | Tests | Covers, among other things |
 |---|---|---|
 | Gateway (Java) | 364 | Approvals: role checks, two simultaneous approvals (one wins), expiry, deciding your own account; the action policy; the audit chain detecting edited, removed or forged entries; the gateway refusing malformed or out-of-order agent events; auth, rate limits and headers |
 | Agent (Python) | 656 | The six demo scenarios reaching their verdicts with and without the AI; the 100-incident evaluation; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
-| Dashboard (TypeScript) | 119 | Hostile markup in every incident field staying text, on every page and tab; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed; keyboard-accessible tabs; colours, sizes and durations only from design tokens; the front page naming only reserved examples |
+| Dashboard (TypeScript) | 128 | Hostile markup in every incident field staying text, on every page and tab; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed; keyboard-accessible tabs; colours, sizes and durations only from design tokens; the front page naming only reserved examples |
 
 **The whole system in containers.** Every pull request also builds the server's containers, starts them, and uses them like a visitor of the public demo: a verified HTTPS connection, sign-up closed and the **Try the demo** button, a demo investigation from start to finish, the audit chain, and the walls between the containers. It does this twice, on an ordinary x86 machine and on an ARM machine like the free server it is meant for ([Deployment](docs/DEPLOYMENT.md)).
 
@@ -244,7 +244,7 @@ Start it, then open https://localhost:5173. The login comes first; below it, **S
 - **Scenarios** lets analysts and admins fire a made-up attack, starting with **Attempt breach**; these incidents are marked Simulated. **Red-team the agent** starts a run in which a scripted, hijacked model plays the AI, with a scorecard of every attempt and what stopped it.
 - **Each incident** has its own page: the risk at the top, then **Evidence** (every step the investigation took), **Reports** (for the security team and for everyone) and **Actions** (decisions waiting for you). Clicking a reference like `E2` in a report jumps to that step.
 
-Investigations update on screen as they run. The sidebar shows whether live updates are on, and Refresh always works. Every animation stops if your system asks for reduced motion.
+Investigations update on screen as they run: new evidence slides in, a small lattice and a stopwatch show the work is still going, and the figures count to their new values. With an incident open, the sidebar's menu branches to its Evidence, Reports and Actions. The sidebar shows whether live updates are on, and Refresh always works. Every animation stops if your system asks for reduced motion.
 
 ```bash
 npm run dev

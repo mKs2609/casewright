@@ -105,16 +105,20 @@ Layout: a 232px sidebar and the open page beside it; under 900px the sidebar bec
 | `--motion-slow` | 600 ms, `--ease-out` | Risk bar growing; a front-page block rising into view |
 | `--motion-stagger` | 120 ms | The delay between the four tool steps rising in |
 | `--motion-pulse` | 1800 ms | The arrow on "See how it works" nudging down |
+| `--motion-shimmer` | 1400 ms | Placeholder shapes while a page loads |
+| 600 ms (in code) | ease-out | Numbers counting to their new value (`motion.tsx`) |
 
 - The dotted globe behind the login turns slowly and leans with the pointer. It draws one still frame when the visitor asks for reduced motion, and stops while the tab is hidden.
 - On the front page, blocks rise into view once as they are scrolled to, and a thin line along the top grows with the scroll (a CSS scroll-driven animation; browsers without it show the line full).
-- Respect `prefers-reduced-motion`: transitions and animations are switched off, every block is simply there, and the progress line is hidden.
+- In the dashboard: figures and the risk score count up (from 0 on opening, from the old value on a live change); an evidence step found while you watch slides in (only that one); the lattice loader runs while an investigation is still going; the branched menu's line travels to the entry you choose; placeholder shapes shimmer while a page loads; pages and tab contents fade in.
+- Respect `prefers-reduced-motion`: transitions and animations are switched off, every block is simply there, the progress line is hidden, and numbers show their final value at once.
 
 ## 6. Components
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **Sidebar** | Logo tile and wordmark; the pages (Overview, Scenarios), the current one marked with `aria-current`; at its foot the live badge, Refresh, the audit badge, the user and Log out | Black, sticky, full height; a bar across the top under 900px. Pages change by buttons (no links). |
+| **Sidebar** | Logo tile and wordmark; the branched menu; at its foot the live badge, Refresh, the audit badge, the user and Log out | Black, sticky, full height; a bar across the top under 900px. Pages change by buttons (no links). |
+| **Branched menu** | The sidebar's menu (adapted from React Bits): a "Dashboard" branch (Overview, Scenarios) and, when an incident is open, its branch (Evidence, Reports, Actions, with "n waiting") | One rail; each entry branches from a trunk; an indigo line traces to the current entry (`aria-current="page"`) and a marker on the rail follows its branch; a heading folds its branch. Under 900px only the first branch is shown. |
 | **Live badge** | In the sidebar, on every page: Live, Connecting, or Live updates paused | Icon + word, read out politely (`role="status"`). Refresh stays available. |
 | **Overview figures** | Incidents, attacks found, waiting for a decision, audit log entries | Serif light numbers in cards, as a definition list; "Tampered" if the audit chain is broken. |
 | **Scenario cards** | One per demo on the Scenarios page | What it is, then its button. One white "Attempt breach"; others charcoal; the description also read out as the button's description. Disabled for `VIEWER`, with a note why. A note when the gateway has demos off. |
@@ -133,6 +137,7 @@ Layout: a 232px sidebar and the open page beside it; under 900px the sidebar bec
 | **Approval card** | Human decision | Amber hairline and wash. Evidence summary **above** the buttons. Approve = danger-fill, Reject = charcoal. Expiry time. |
 | **Login** | The front door | Indigo bar, logo tile; centred "Agentic security analyst", "Every alert, [shield tile] *investigated.*", and the form, on a dark pool; the dotted globe (canvas, `aria-hidden`) behind. On the public demo, "Try the demo" with its note that nothing is real. |
 | **Front page sections** | Below the login: 01 how it investigates, 02 two reports and a person decides | A serif section title with one indigo accent phrase; the four tools on the evidence rail; example reports with evidence references that look like the dashboard's but are not buttons (`.ref-chip`); an example decision whose buttons are dimmed pictures, labelled as an example. Every example uses reserved example names. |
+| **Lattice loader** | Anything still queued or investigating: the incident page (with a stopwatch from submission) and the incident cards (adapted from React Bits) | A 3 x 3 lattice whose cells brighten in a wave round the edge, beside the word; a check or cross forms when the work ends. It makes no announcement of its own; the word is plain text. |
 | **Status chip** | Any state | Pill, upper case; icon + word in the meaning colour on its own wash. |
 | **Empty state** | Nothing selected | One sentence telling the user what to do next. |
 

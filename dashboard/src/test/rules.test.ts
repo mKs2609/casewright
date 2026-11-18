@@ -18,6 +18,9 @@ function filesIn(folder: string): string[] {
 const product = filesIn(SRC).filter((path) => !path.includes(join("src", "test")));
 const code = product.filter((path) => /\.tsx?$/.test(path));
 const read = (path: string) => readFileSync(path, "utf8");
+// Every stylesheet except the tokens themselves, so a new CSS file is held to the same rules.
+const stylesheets = product.filter((path) => path.endsWith(".css") && !path.endsWith("tokens.css"));
+const allStyles = () => stylesheets.map(read).join("\n");
 
 /** The checks below scan source files, so first prove they are really reading them. */
 it("the rule checks are looking at the real source", () => {
@@ -42,7 +45,8 @@ describe("project rules", () => {
   });
 
   it("colours and durations come only from the tokens", () => {
-    const styles = read(join(SRC, "styles/app.css"));
+    const styles = allStyles();
+    expect(stylesheets.length).toBeGreaterThan(2);
     expect(styles.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/g)).toBeNull();
     expect(styles.match(/\b\d+m?s\b/g)).toBeNull();
     const inCode = code.filter((path) => /#[0-9a-fA-F]{6}\b|\brgba?\(/.test(read(path)));
@@ -50,15 +54,20 @@ describe("project rules", () => {
   });
 
   it("sizes in the styles come only from the tokens (screen widths for the layout are the one exception)", () => {
-    const styles = read(join(SRC, "styles/app.css")).replace(/@media[^{]+\{/g, "");
+    const styles = allStyles().replace(/@media[^{]+\{/g, "");
     expect(styles.match(/\b[1-9]\d*(px|rem|em)\b/g)).toBeNull();
   });
 
   it("every token the styles and code use exists, and every token that exists is used", () => {
     const tokens = new Set(read(join(SRC, "styles/tokens.css")).match(/^\s*--[a-z0-9-]+(?=:)/gm)!.map((t) => t.trim()));
-    const styles = read(join(SRC, "styles/app.css"));
-    // Local custom properties (like --fill) are set inside app.css itself; they are not tokens.
-    const local = new Set(styles.match(/^\s*--[a-z0-9-]+(?=:)/gm)?.map((t) => t.trim()) ?? []);
+    const styles = allStyles();
+    // Local custom properties are not tokens: set inside a stylesheet (like --fill), or set by a
+    // component on its own element (like the lattice's --ll-cycle, `["--ll-cycle" as string]: ...`).
+    const setInCode = code.map(read).join("\n").match(/\["--[a-z0-9-]+" as string\]/g) ?? [];
+    const local = new Set([
+      ...(styles.match(/^\s*--[a-z0-9-]+(?=:)/gm)?.map((t) => t.trim()) ?? []),
+      ...setInCode.map((t) => t.slice(2, t.indexOf('"', 2))),
+    ]);
     const uses = [styles, ...code.map(read)].join("\n").match(/var\((--[a-z0-9-]+)|["'](--[a-z0-9-]+)["']/g) ?? [];
     const used = new Set(uses.map((use) => use.replace(/^var\(|["']/g, "")));
     expect([...used].filter((name) => !tokens.has(name) && !local.has(name))).toEqual([]);

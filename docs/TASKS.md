@@ -3,23 +3,23 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-17
+**Last updated:** 2026-11-18
 
 ---
 
 ## Now
 
-### Step 20c: Dashboard layout (on `feature/dashboard-layout`)
-Mohit found the dashboard too crowded on one screen. Mohit chose: a left sidebar; pages Overview and Scenarios; the colours stay (near-black and indigo). Incidents open on their own page with tabs.
-- [x] Sidebar with Overview and Scenarios (the current page marked); the live badge, Refresh, the audit badge, the user and Log out at its foot, on every page; a bar across the top on small screens
-- [x] Overview: four figures (incidents, attacks found, waiting for a decision, audit log entries), then the incidents as a grid of cards
-- [x] Scenarios page: each demo as a card with what it is and its button; a note when demos are switched off
-- [x] Incident page: All incidents, the header and risk, a "decisions waiting" note, then Evidence / Reports / Actions tabs (WAI-ARIA tabs: arrow keys, Home, End); an evidence chip opens the Evidence tab at that step
-- [x] Addresses: #/ (Overview), #/scenarios, #/incidents/57 (unchanged); anything else is the Overview
-- [x] Tests: dashboard 119 (6 new for the sidebar, figures, tabs and the way back; the existing ones now move through pages and tabs like a person; the hostile-text test checks each view on its own)
-- [x] New README screenshot (incident #72, two decisions waiting, live)
-- [x] README brought up to date: the status, the pages, where the demo buttons are, test counts, containers on ARM, mutation-check results, the folder list and how to use the dashboard
-- [x] The PR's first run failed twice for reasons outside this change: (1) the dependency audit found GHSA-fc5q-39xc-vjpf in picomatch 4.0.7 (through Vite and Vitest; published that week, no fixed release), accepted for 30 days with Mohit's approval (ADR-60, `.github/osv-scanner.toml`); (2) a timing race in the gateway test `LiveUpdatesTest.aFeedThatFallsTooFarBehindIsClosedSoTheDashboardReloadsInstead`: the feed's writer could start late and take some changes with it. The test now waits until the writer is stuck before sending changes; the race was reproduced on purpose, then fixed; gateway 364 in both orders
+### Step 20d: Design motion (on `feature/design-motion`)
+Mohit chose: numbers count up, steps arrive like a feed, smooth loading and page changes (the risk bar keeps its existing glide).
+- [x] Plan agreed with Mohit
+- [x] Numbers count up (Overview figures, risk score): from 0 when a page opens, from the old value on a live change (`motion.tsx`)
+- [x] Evidence steps found during a live investigation slide in (only those, not every step on opening); a scanning line runs while it is still investigating
+- [x] Placeholder shapes with a shimmer instead of "Loading..." (read out as Loading); pages and tab contents fade in
+- [x] All of it stops under reduced motion; the count shows the final number at once
+- [x] Mohit's two React Bits components, adapted (MIT + Commons Clause; notice kept in each file and in `THIRD_PARTY_NOTICES.md`): the **branched menu** in the sidebar (Dashboard: Overview, Scenarios; plus the open incident's Evidence / Reports / Actions, the line tracing to where you are; the incident branch hidden on phones, where the page's tabs do the job) and the **lattice loader** for anything still investigating (the incident page, with a stopwatch from submission, replacing the scanning line; the incident cards). Lucide icons instead of Hugeicons, so no new package; colours, sizes and timings from tokens
+- [x] The rule tests now check every stylesheet, not only `app.css`
+- [x] Tests: dashboard 128; 11 mutation checks, all caught; real runs captured demos #74 and #75 while investigating and when finished, and the phone view
+- [x] New README screenshot with the branched menu (incident #75, one decision waiting, live)
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
@@ -37,7 +37,7 @@ Decided: Oracle Cloud's free ARM server in India South (Hyderabad), staying on t
 
 ## Later
 
-Step 20d (live motion in the dashboard), then step 21: the final handbook.
+Step 21: the final handbook.
 
 ## Open questions
 
@@ -47,6 +47,7 @@ Step 20d (live motion in the dashboard), then step 21: the final handbook.
 
 ## Done
 
+- **2026-11-18:** Step 20c (dashboard pages) merged: PR #27, with the picomatch exception (ADR-60, until 2026-12-18) and the LiveUpdatesTest race fix.
 - **2026-11-17:** Step 20b (front page) merged.
 - **2026-11-16:** Step 20a (the new look) merged: PR #25. The first Containers run on `main` failed once: Maven's download server briefly answered 404 for a file it has (checked: the file is there); the failed job is re-run.
 - **2026-11-15:** Step 19c (containers on ARM) merged: PR #24, with the opentelemetry-api upgrade. "Containers (ARM)" is the 12th required check on `main`.

@@ -1,0 +1,103 @@
+/*
+ * The lattice loader (components/LatticeLoader.tsx), adapted from React Bits (MIT + Commons Clause,
+ * Copyright (c) 2026 David Haz; see THIRD_PARTY_NOTICES.md). Colours, sizes and durations come
+ * from tokens.css only; the wave's cycle and each cell's delay are set by the component.
+ * With reduced motion the global rule in app.css stops the wave: the lattice is simply shown.
+ */
+.lattice-loader {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: inherit;
+  line-height: 1;
+}
+
+.lattice-loader__grid {
+  display: grid;
+  flex: none;
+}
+
+.lattice-loader__layer {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: repeat(3, var(--lattice-cell));
+  gap: var(--lattice-gap);
+}
+
+.lattice-loader__cell {
+  width: var(--lattice-cell);
+  height: var(--lattice-cell);
+  border-radius: 50%;
+  background: currentcolor;
+  opacity: var(--lattice-idle);
+}
+
+.lattice-loader__run {
+  transition: opacity var(--motion-quick) ease;
+}
+
+.lattice-loader__run .lattice-loader__cell {
+  animation: lattice-on var(--ll-cycle) var(--ease-in-out) infinite;
+}
+
+.lattice-loader__run .lattice-loader__cell[data-hole] {
+  animation: none;
+  opacity: calc(var(--lattice-idle) * 0.47);
+}
+
+/* When the work ends, the wave fades and a check (or a cross) forms in the same cells. */
+.lattice-loader__mark {
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.lattice-loader__mark .lattice-loader__cell[data-on] {
+  background: var(--color-benign);
+  opacity: 1;
+}
+
+.lattice-loader[data-status="error"] .lattice-loader__mark .lattice-loader__cell[data-on] {
+  background: var(--color-malicious);
+}
+
+.lattice-loader:not([data-status="working"]) .lattice-loader__run {
+  opacity: 0;
+}
+
+.lattice-loader:not([data-status="working"]) .lattice-loader__run .lattice-loader__cell {
+  animation-play-state: paused;
+}
+
+.lattice-loader:not([data-status="working"]) .lattice-loader__mark {
+  opacity: 1;
+  transform: none;
+}
+
+.lattice-loader__label {
+  font-weight: var(--weight-medium);
+}
+
+.lattice-loader__timer {
+  font-size: var(--text-small);
+  opacity: 0.6;
+}
+
+@keyframes lattice-on {
+  0%,
+  100% {
+    opacity: var(--lattice-idle);
+  }
+
+  18%,
+  42% {
+    opacity: 1;
+  }
+
+  62% {
+    opacity: var(--lattice-idle);
+  }
+}

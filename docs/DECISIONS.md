@@ -534,3 +534,15 @@ Refusals are `429` with a `Retry-After` header, in the usual error shape.
 **Why:** the audit fails on any finding (ADR-52), which is right when an upgrade exists; with none, every pull request would stay blocked by a finding that cannot reach the running system.
 **Alternatives considered:** waiting for a fix (every change blocked for an unknown time); switching the audit off or making it non-blocking (never: it would hide the next finding); an npm `overrides` to another version (every version is affected).
 **Trade-offs:** for up to 30 days a known issue in a build tool is tolerated; the Monday scan and the expiry date bring it back.
+
+## ADR-61: Motion in the dashboard
+**Status:** Accepted (2026-11-18; counting numbers, steps arriving like a feed, smooth loading and page changes, by Mohit)
+**Decision:**
+- **Motion explains change, never decorates.** Numbers count to their new value (the Overview figures and the risk score), an evidence step that arrives during a live investigation slides in (only steps that arrive while you watch, so opening an incident is calm), a scanning line shows an investigation is still running, and placeholder shapes show where content is about to appear. Pages and tab contents fade in.
+- **CSS and a little React, no animation library.** The count uses `requestAnimationFrame` in `motion.tsx`; everything else is CSS keyframes timed by tokens.
+- **Reduced motion means none.** Every animation stops under `prefers-reduced-motion`, and the count shows its final number at once, as it does wherever the browser cannot say (tests).
+
+**Why:** the dashboard updates live; motion makes those changes noticeable without reading every number again, and placeholders make loading feel shorter than a word.
+**Alternatives considered:** an animation library such as Framer Motion (a large dependency for a few effects); the risk bar sweeping on every change (offered, not chosen: it already glides to its new width).
+**Trade-offs:** a number is briefly not its final value while counting (half a second); screen readers are not told the in-between values of the live timeline, which stays announced politely as before.
+**Addition (2026-11-19, Mohit's choice):** two components from React Bits (MIT + Commons Clause: use inside an application allowed, the notice kept with the code, the components not sold or redistributed on their own; see `THIRD_PARTY_NOTICES.md`): the branched menu becomes the sidebar's menu, and the lattice loader shows anything still investigating, replacing the scanning line. Both were ported to TypeScript and to the project's rules: Lucide icons instead of a new icon package, colours, sizes and timings from tokens, no second live region, the global reduced-motion rule. The rule tests now check every stylesheet.

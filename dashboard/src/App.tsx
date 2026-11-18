@@ -4,6 +4,7 @@ import { api, setSessionLostHandler } from "./api";
 import { followIncidents, type LiveState } from "./live";
 import { IncidentPage, useFocusEvidence, type Tab } from "./components/IncidentPage";
 import { Login } from "./components/Login";
+import { Skeleton } from "./motion";
 import { Overview } from "./components/Overview";
 import { Scenarios } from "./components/Scenarios";
 import { Sidebar, type Page } from "./components/Sidebar";
@@ -170,6 +171,12 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     <div className="shell">
       <Sidebar
         current={route.page === "incident" ? null : route.page}
+        incident={
+          route.page === "incident" && detail && detail.id === selected
+            ? { id: detail.id, waiting: detail.actions.filter((action) => action.status === "pending").length, tab }
+            : null
+        }
+        onTab={setTab}
         user={user}
         audit={audit}
         live={live}
@@ -215,7 +222,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
                   {detailError}
                 </p>
               ) : (
-                <p className="muted">Loading...</p>
+                <Skeleton kind="page" />
               )}
             </div>
           ))}
