@@ -1,0 +1,17 @@
+# Caddy inside a GitHub Codespace (step 19d, ADR-62), chosen by deploy/compose.codespaces.yaml.
+# GitHub's port forwarding gives the visitor HTTPS (https://<codespace>-80.app.github.dev) and passes
+# requests on to port 80 here, so Caddy serves the same site (site.caddy) over plain HTTP behind it
+# and never asks Let's Encrypt for a certificate. The forwarded port is private: only the person who
+# opened the codespace can reach it.
+
+{
+	admin off
+	http_port 8080
+	https_port 8443
+	auto_https off
+}
+
+# Any host name: GitHub's forwarding may pass on its own name or "localhost".
+http://:8080 {
+	import /etc/caddy/site.caddy
+}

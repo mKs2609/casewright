@@ -38,12 +38,12 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 19a | **Containers** | Docker, Compose, reverse proxies, least privilege in containers | The whole system starts in containers in CI and passes a visitor's journey and the isolation checks | ✅ |
 | 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | ✅ |
 | 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | ✅ |
-| 19d | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ waiting for the Oracle Cloud account |
+| 19d | **Try it yourself** | Dev containers, GitHub Codespaces, port forwarding | Anyone with a GitHub account opens a private, working copy from the README; a short demo video shows it (ADR-62) | 🟡 |
+| 19e | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ when a hosting account works (Oracle Cloud's card check and Azure for Students' sign-up both refused) |
 | 20a | **The new look** | Design tokens, self-hosted fonts, contrast, canvas animation | Every screen in one "signal" style (near-black on a blueprint grid, one soft indigo signal colour, editorial serif, icons with the labels); a simple centred login over a dotted globe (ADR-57) | ✅ |
 | 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | ✅ (two sections: how it investigates; two reports and a person decides) |
 | 20c | **Dashboard layout** | Navigation, information architecture, accessible tabs | A sidebar with Overview and Scenarios; each incident on its own page with Evidence / Reports / Actions tabs | ✅ |
-| 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, the risk meter sweeping, steps arriving like a feed, skeletons while loading (ADR-61) | 🟡 |
-| 21 | **Final handbook** | Writing it all up | The handbook chapters assembled into one | ⬜ |
+| 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, steps arriving like a feed, skeletons while loading, a branched menu and a lattice loader (ADR-61) | ✅ |
 
 ## Suggested pace (8 weeks)
 
@@ -64,6 +64,6 @@ Uploading `.eml` files · a real threat-intel feed behind a flag · analyst feed
 
 ## After step 18b
 
-Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish** (steps 20a to 20c, from Mohit's style references), then the final handbook (step 21). While 19d waits for the Oracle Cloud account (the sign-up needs a card that works), the design and UI/UX polish comes first.
+Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish** (steps 20a to 20d, from Mohit's style references). Going live was then blocked from outside the project (Oracle Cloud's card check and Azure for Students' sign-up both refused), so step 19d became **Try it yourself**: an "Open in GitHub Codespaces" button and a demo video (ADR-62); going live is step 19e, whenever a hosting account works. The final handbook was dropped: the handbook stays Mohit's own notes.
 
 The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating).

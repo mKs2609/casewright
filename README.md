@@ -10,7 +10,18 @@
 
 Given a suspicious email, a burst of login attempts or a phone-call transcript, the system investigates step by step with tools, produces an evidence-backed verdict, explains it twice (a technical report and a plain-language one), and waits for a human before any high-risk action.
 
-**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log. The dashboard has a sidebar with an **Overview** (key figures and every incident) and a **Scenarios** page of made-up attacks to fire, and each incident opens on its own page with **Evidence**, **Reports** and **Actions** tabs that update live as the investigation runs. A red-team probe plays a hijacked AI. Before logging in, a short front page explains how it works. Its accuracy is measured on 100 labelled incidents ([results](docs/EVALUATION.md)). Everything is ready to run on a server as a public demo, but it is not online yet. See the [roadmap](docs/ROADMAP.md). It is a portfolio project, not a production system: see [Limitations](#limitations).
+**Status:** it works end to end: investigation, verdicts, both reports, human approval and the audit log. The dashboard has a sidebar with an **Overview** (key figures and every incident) and a **Scenarios** page of made-up attacks to fire, and each incident opens on its own page with **Evidence**, **Reports** and **Actions** tabs that update live as the investigation runs. A red-team probe plays a hijacked AI. Before logging in, a short front page explains how it works. Its accuracy is measured on 100 labelled incidents ([results](docs/EVALUATION.md)). You can [try it yourself](#try-it-yourself): one button starts your own private copy in GitHub Codespaces. See the [roadmap](docs/ROADMAP.md). It is a portfolio project, not a production system: see [Limitations](#limitations).
+
+## Try it yourself
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mKs2609/casewright?quickstart=1)
+
+1. Press the button. You need a GitHub account; it runs on your own free Codespaces hours.
+2. Wait about 10 minutes the first time: it builds the gateway, the agent, the database and the dashboard in containers, exactly as a server would. The terminal says **Casewright is ready** when it is done.
+3. Open the **Ports** tab, then port 80 ("Casewright", the globe icon), and press **Try the demo**. On **Scenarios**, fire one and watch it being investigated live.
+4. When you are done, delete the codespace at [github.com/codespaces](https://github.com/codespaces), so it stops using your free hours and storage.
+
+Your copy is private to you and makes its own secrets. It runs the public demo mode: no sign-up, the made-up scenarios, simulated actions. [How it works](docs/DEPLOYMENT.md#github-codespaces).
 
 ## The problem
 
@@ -61,7 +72,7 @@ The held-out set is the honest number: the rule engine rarely cries wolf, but mi
 | Agent (Python) | 656 | The six demo scenarios reaching their verdicts with and without the AI; the 100-incident evaluation; a **red-team suite** where a scripted hijacked model tries tools off the allow-list, values not in the incident, smuggled arguments, invented evidence, skipped checks and a false "benign" claim, and every attempt is refused or overruled |
 | Dashboard (TypeScript) | 128 | Hostile markup in every incident field staying text, on every page and tab; no links built from incident data; viewers getting no approval buttons; session renewal; the live feed; keyboard-accessible tabs; colours, sizes and durations only from design tokens; the front page naming only reserved examples |
 
-**The whole system in containers.** Every pull request also builds the server's containers, starts them, and uses them like a visitor of the public demo: a verified HTTPS connection, sign-up closed and the **Try the demo** button, a demo investigation from start to finish, the audit chain, and the walls between the containers. It does this twice, on an ordinary x86 machine and on an ARM machine like the free server it is meant for ([Deployment](docs/DEPLOYMENT.md)).
+**The whole system in containers.** Every pull request also builds the server's containers, starts them, and uses them like a visitor of the public demo: a verified HTTPS connection, sign-up closed and the **Try the demo** button, a demo investigation from start to finish, the audit chain, and the walls between the containers. It does this twice, on an ordinary x86 machine and on an ARM machine like the free server it is meant for, and also starts it the way a codespace does and checks that too ([Deployment](docs/DEPLOYMENT.md)).
 
 **Security checks in CI.** Every pull request also runs a dependency audit (OSV-Scanner on every library, plus GitHub's dependency review), a secret scan of the whole git history (gitleaks) and static analysis (CodeQL on Java, Python, TypeScript and the workflows); any finding fails it, and the scans repeat every Monday. Python packages are pinned by hash. The first audit found 13 known vulnerabilities in three libraries, all fixed by upgrades; see [SECURITY.md](SECURITY.md).
 
@@ -75,7 +86,7 @@ The held-out set is the honest number: the rule engine rarely cries wolf, but mi
 - **Accuracy targets are not met.** On the held-out set the rule engine caught 60% of attacks against a 90% target; the local AI model caught all of them but raised false alarms on 65% of harmless incidents. The incidents are synthetic, in English, and written by the same author as the detectors, and 100 is a small set, so the numbers are a rough guide, not a benchmark.
 - **A small local model.** The AI runs on the same machine (Qwen3 8B through Ollama). It is often slow, and spotting injected instructions relies on pattern matching that new phrasing may evade. The other layers do not depend on detection, so the cost is a missed finding, not an unsafe action.
 - **One person can both submit and approve.** This keeps the demo usable with one analyst; a real deployment would want a second approver. On the public demo, visitors share one demo account, so one can approve an action another is looking at (it is all simulated).
-- **Not online yet.** The containers for a server are built and checked in CI ([Deployment](docs/DEPLOYMENT.md)), but the public demo is not live. Locally, HTTPS uses a self-signed certificate, the setup scripts are for Windows, and the live feed keeps its connections in one gateway's memory, so several gateways would need a shared channel.
+- **No public server yet.** The containers for a server are built and checked in CI ([Deployment](docs/DEPLOYMENT.md)), but the hosting sign-ups tried so far refused; meanwhile anyone can [run their own copy](#try-it-yourself). Locally, HTTPS uses a self-signed certificate, the setup scripts are for Windows, and the live feed keeps its connections in one gateway's memory, so several gateways would need a shared channel.
 - **The audit log is tamper-evident, not tamper-proof.** Someone with both database access and the signing key could rewrite it; the log file records the latest entry outside the database as a second check.
 - **The red-team probe plays one script.** It shows the checks hold against those attempts, not against every possible attack; a compromised agent attacking the gateway directly is covered by the gateway's tests, not by the probe.
 
@@ -121,7 +132,8 @@ Your account needs the `ANALYST` or `ADMIN` role, which `scripts\set-role.ps1` c
 ├── gateway/     Java Spring Boot: public API, auth, rate limiting, approvals, audit log
 ├── agent/       Python: the investigation, its tools, the verdict and both reports
 ├── dashboard/   React: the front page and login, Overview, Scenarios, and each incident's evidence, reports and approvals
-├── deploy/      Containers for a server: Compose, Caddy, setup scripts, the smoke test
+├── .devcontainer/  GitHub Codespaces: what "Try it yourself" starts
+├── deploy/      Containers for a server or a codespace: Compose, Caddy, setup scripts, the smoke tests
 ├── docs/        Project documents
 ├── AGENTS.md    Instructions for AI coding assistants
 └── SECURITY.md  Security checklist and status

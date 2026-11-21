@@ -103,7 +103,8 @@ The live feed (ADR-49) carries only incident numbers. It learns of changes from 
 │       ├── meaning.tsx      each state's word, icon and colour
 │       ├── components/      login, demo buttons, incident list, investigation, reports, approval
 │       └── styles/          design tokens and the styles built on them
-├── deploy/         containers for a server: compose.yaml, Caddyfile, scripts (ADR-54)
+├── .devcontainer/  GitHub Codespaces: a private copy for anyone (ADR-62)
+├── deploy/         containers for a server or a codespace: compose.yaml, Caddy settings, scripts (ADR-54)
 ├── docs/           this folder
 ├── AGENTS.md       instructions for AI coding assistants
 ├── README.md

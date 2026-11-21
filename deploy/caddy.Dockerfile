@@ -20,7 +20,8 @@ FROM caddy:2.11.6-alpine@sha256:d44355d3c2149dc580ce2cac735955d1c08d3d00882c3048
 # with every right dropped (compose.yaml), Linux would refuse to start a binary that asks for one.
 RUN addgroup -S web && adduser -S -G web -H web && chown -R web:web /data /config \
     && setcap -r /usr/bin/caddy
-COPY deploy/Caddyfile /etc/caddy/Caddyfile
+# The server's settings, the Codespaces ones (ADR-62), and the site's rules both share.
+COPY deploy/Caddyfile deploy/Caddyfile.codespaces deploy/site.caddy /etc/caddy/
 COPY --from=dashboard /page-headers.caddy /etc/caddy/page-headers.caddy
 COPY --from=dashboard /src/dist /srv
 USER web

@@ -1,0 +1,8 @@
+# Only for GitHub Codespaces (step 19d, ADR-62), layered on compose.yaml by deploy/codespaces-start.sh:
+#   docker compose -f deploy/compose.yaml -f deploy/compose.codespaces.yaml ...
+# Everything else (the containers, their hardening, the internal networks) is exactly as on a server.
+
+services:
+  caddy:
+    # GitHub provides the HTTPS in a codespace: Caddy serves the same site over plain HTTP behind it.
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.codespaces", "--adapter", "caddyfile"]

@@ -3,41 +3,34 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-22
 
 ---
 
 ## Now
 
-### Step 20d: Design motion (on `feature/design-motion`)
-Mohit chose: numbers count up, steps arrive like a feed, smooth loading and page changes (the risk bar keeps its existing glide).
+### Step 19d: Try it yourself (on `feature/try-it-yourself`)
+Going live is blocked from outside the project: Oracle Cloud's card check refused every card tried (the bank never saw the attempts), and Azure for Students blocked the sign-up at its automatic check. Mohit chose instead: an "Open in GitHub Codespaces" button and a demo video (ADR-62). The server setup stays ready.
 - [x] Plan agreed with Mohit
-- [x] Numbers count up (Overview figures, risk score): from 0 when a page opens, from the old value on a live change (`motion.tsx`)
-- [x] Evidence steps found during a live investigation slide in (only those, not every step on opening); a scanning line runs while it is still investigating
-- [x] Placeholder shapes with a shimmer instead of "Loading..." (read out as Loading); pages and tab contents fade in
-- [x] All of it stops under reduced motion; the count shows the final number at once
-- [x] Mohit's two React Bits components, adapted (MIT + Commons Clause; notice kept in each file and in `THIRD_PARTY_NOTICES.md`): the **branched menu** in the sidebar (Dashboard: Overview, Scenarios; plus the open incident's Evidence / Reports / Actions, the line tracing to where you are; the incident branch hidden on phones, where the page's tabs do the job) and the **lattice loader** for anything still investigating (the incident page, with a stopwatch from submission, replacing the scanning line; the incident cards). Lucide icons instead of Hugeicons, so no new package; colours, sizes and timings from tokens
-- [x] The rule tests now check every stylesheet, not only `app.css`
-- [x] Tests: dashboard 128; 11 mutation checks, all caught; real runs captured demos #74 and #75 while investigating and when finished, and the phone view
-- [x] New README screenshot with the branched menu (incident #75, one decision waiting, live)
+- [x] `.devcontainer/devcontainer.json`: Ubuntu and Docker inside the codespace, both pinned by digest; starts `deploy/codespaces-start.sh` every time the codespace starts
+- [x] `deploy/codespaces-start.sh`: fresh secrets for that codespace, builds the same containers as a server, starts the front door only once the gateway is up, says where to open it
+- [x] Caddy's site rules moved into `deploy/site.caddy`, shared by the server's `Caddyfile` and the new `Caddyfile.codespaces` (plain HTTP behind GitHub's private, HTTPS port forwarding; chosen by `deploy/compose.codespaces.yaml`)
+- [x] CI: both Containers jobs also start the system the codespace way and run `deploy/codespaces-check.sh`
 - [ ] All checks pass on GitHub
+- [ ] A real run: Mohit opens a codespace on this branch; Try the demo, a scenario investigated live, an approval
+- [ ] README: the button and how to use it; the demo video at the top (Mohit records it, from a shot list)
 - [ ] Merged
 
 ## Waiting
 
-### Step 19d: Going live (paused: the Oracle Cloud sign-up needs a card that works)
-Decided: Oracle Cloud's free ARM server in India South (Hyderabad), staying on the free tier (ADR-56), the DuckDNS name `casewright`.
-- [ ] Oracle Cloud account (Mohit; the sign-up stopped at the card check)
-- [ ] The free ARM server (Ubuntu, Ampere A1), with an SSH key made on the laptop
-- [ ] Ports 80 and 443 open (Oracle's network rules and the server's own firewall)
+### Going live on a server (when a hosting account works)
+Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support lifts the block. Everything for it is built and checked in CI.
+- [ ] A hosting account
+- [ ] The server (Ubuntu, ARM), with an SSH key made on the laptop; ports 80 and 443 open
 - [ ] The DuckDNS name `casewright` points at the server (Mohit)
 - [ ] Docker installed; the system started with `deploy/make-secrets.sh` and `docker compose up`
 - [ ] Checked from outside: HTTPS, the demo button, a demo run, the audit chain
 - [ ] `docs/DEPLOYMENT.md`: how it was set up and how to look after it; the live link in the README
-
-## Later
-
-Step 21: the final handbook.
 
 ## Open questions
 
@@ -47,6 +40,7 @@ Step 21: the final handbook.
 
 ## Done
 
+- **2026-11-19:** Step 20d (design motion, with the React Bits branched menu and lattice loader) merged: PR #28. The final handbook (step 21) is dropped: the handbook stays Mohit's own notes.
 - **2026-11-18:** Step 20c (dashboard pages) merged: PR #27, with the picomatch exception (ADR-60, until 2026-12-18) and the LiveUpdatesTest race fix.
 - **2026-11-17:** Step 20b (front page) merged.
 - **2026-11-16:** Step 20a (the new look) merged: PR #25. The first Containers run on `main` failed once: Maven's download server briefly answered 404 for a file it has (checked: the file is there); the failed job is re-run.
