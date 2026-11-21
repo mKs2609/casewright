@@ -16,12 +16,18 @@ Going live is blocked from outside the project: Oracle Cloud's card check refuse
 - [x] `deploy/codespaces-start.sh`: fresh secrets for that codespace, builds the same containers as a server, starts the front door only once the gateway is up, says where to open it
 - [x] Caddy's site rules moved into `deploy/site.caddy`, shared by the server's `Caddyfile` and the new `Caddyfile.codespaces` (plain HTTP behind GitHub's private, HTTPS port forwarding; chosen by `deploy/compose.codespaces.yaml`)
 - [x] CI: both Containers jobs also start the system the codespace way and run `deploy/codespaces-check.sh`
-- [ ] All checks pass on GitHub
 - [x] A real run, first try (codespace on this branch): it built and started by itself ("Casewright is ready", gateway and database UP), but the login was refused as cross-site. A header check in the codespace showed why: GitHub rewrites every request's Origin and Host to `http://localhost:80`, while the browser's `Sec-Fetch-Site` and `Referer` pass through untouched
 - [x] Fix: in a codespace the gateway also accepts that Origin; CI proves a login as GitHub delivers it is accepted and `Sec-Fetch-Site: cross-site` is still refused. Also: only port 80 published (443 had shown up as a broken second address); the Docker feature pinned by exact version with its digest in `devcontainer-lock.json` (the editor flagged the digest form)
-- [ ] A real run after the fix: Try the demo, a scenario investigated live, an approval
-- [ ] README: the button and how to use it; the demo video at the top (Mohit records it, from a shot list)
+- [x] A real run after the fix (the same codespace, after `git pull` and the start script): Try the demo, four scenarios investigated (live feed on), an action approved ("Block this number": done, simulated, by demo; the incident moved to needs review), the audit chain intact. Logging in with a laptop account is refused as it should be: the codespace has its own empty database and sign-up is closed
+- [x] README: the button and how to use it
+- [x] All checks pass on GitHub (the first commit, and the fix)
 - [ ] Merged
+
+## Next
+
+### Step 19e: Finishing touches (after this step merges)
+- [ ] Mohit's note: the sidebar's foot (the user chip and Log out) and the login page's Log in button look out of place: make them match the rest
+- [ ] The demo video at the top of the README (Mohit records it, from a shot list)
 
 ## Waiting
 
