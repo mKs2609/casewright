@@ -28,14 +28,27 @@ ok "the dashboard is served with the same security policy and HSTS, and no Serve
 ok "sign-up is closed and Try the demo is offered, as on the public site"
 
 origin="$(grep '^PUBLIC_ORIGIN=' deploy/.env | cut -d= -f2-)"
-code() { curl --silent -o /dev/null -w '%{http_code}' -H "Origin: $1" -X POST "$site/api/auth/demo-login"; }
+code() { curl --silent -o /dev/null -w '%{http_code}' -H "Origin: $1" ${2:+-H "Sec-Fetch-Site: $2"} \
+    -X POST "$site/api/auth/demo-login"; }
 [ "$(code https://attacker.example)" = 403 ] || fail "a request from another website is accepted"
 [ "$(code "$origin")" = 200 ] || fail "control: a request from the codespace's own address is refused"
 ok "the cross-site check still refuses other websites, and accepts the codespace's own address"
+
+# What GitHub's forwarding delivers (seen in a real codespace): the Origin rewritten to
+# http://localhost:80, the browser's own Sec-Fetch-Site untouched.
+[ "$(code http://localhost:80 same-origin)" = 200 ] || fail "the codespace's own login, as GitHub delivers it, is refused"
+[ "$(code http://localhost:80 cross-site)" = 403 ] \
+    || fail "another website's request is accepted once GitHub has rewritten its Origin"
+ok "a login as GitHub delivers it is accepted, and another website's request is still refused by Sec-Fetch-Site"
 
 [ "$(compose exec -T caddy id -u)" != 0 ] || fail "Caddy runs as root"
 # Caddy is process 1 in its container; its command line names the settings file it was started with.
 compose exec -T caddy cat /proc/1/cmdline | tr '\000' ' ' | grep -q 'Caddyfile.codespaces' || fail "Caddy is not using the Codespaces settings"
 ok "Caddy runs as an ordinary user, with the Codespaces settings"
+
+published="$(docker port "$(compose ps -q caddy)")"
+grep -q '^8080/tcp -> ' <<<"$published" || fail "control: Caddy's port 80 is not published"
+grep -q '^8443/' <<<"$published" && fail "port 443 is still published in a codespace: $published"
+ok "only port 80 is published, the one GitHub forwards"
 
 echo "All $pass Codespaces checks passed."

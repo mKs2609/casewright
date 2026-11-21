@@ -3,8 +3,8 @@
 # .devcontainer/devcontainer.json every time the codespace starts; safe to run again.
 #
 # The codespace belongs to whoever opened it: their own copy, their own fresh secrets, private to
-# them. The containers are the ones a server runs (deploy/compose.yaml); only Caddy's settings differ
-# (deploy/compose.codespaces.yaml), because GitHub provides the HTTPS.
+# them. The containers are the ones a server runs (deploy/compose.yaml); only Caddy's settings and the
+# Origins the gateway accepts differ (deploy/compose.codespaces.yaml), because of GitHub's forwarding.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
