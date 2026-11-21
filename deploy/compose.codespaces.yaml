@@ -1,0 +1,22 @@
+# Only for GitHub Codespaces (step 19d, ADR-62), layered on compose.yaml by deploy/codespaces-start.sh:
+#   docker compose -f deploy/compose.yaml -f deploy/compose.codespaces.yaml ...
+# Everything else (the containers, their hardening, the internal networks, every other setting) is
+# exactly as on a server.
+
+services:
+  gateway:
+    environment:
+      # GitHub's port forwarding rewrites every request's Origin (and Host) to http://localhost:80 on
+      # the way in, so the gateway would refuse the codespace's own logins (seen in a real codespace,
+      # ADR-62). The cross-site check still works: browsers' own Sec-Fetch-Site header passes through
+      # untouched, and "cross-site" there is refused whatever the Origin says
+      # (deploy/codespaces-check.sh proves both). The login cookies are SameSite=Strict as well.
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?missing in deploy/.env},http://localhost:80
+
+  caddy:
+    # GitHub provides the HTTPS in a codespace: Caddy serves the same site over plain HTTP behind it.
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.codespaces", "--adapter", "caddyfile"]
+    # Only port 80, which GitHub forwards with HTTPS. The server's 443 has nothing behind it here, and
+    # would otherwise show up in the codespace's Ports tab as a second, broken address.
+    ports: !override
+      - "80:8080"

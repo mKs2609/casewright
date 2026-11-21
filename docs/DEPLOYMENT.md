@@ -1,6 +1,6 @@
 # Deployment
 
-How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)). The public demo is not online yet: step 19d puts it on a server.
+How Casewright runs on a server (step 19a, [ADR-54](DECISIONS.md)), and in GitHub Codespaces (step 19d, [ADR-62](DECISIONS.md)). There is no public server yet: anyone can start their own copy in a codespace instead ([below](#github-codespaces)).
 
 ## The public demo mode
 
@@ -40,7 +40,11 @@ Every container drops all special Linux rights and cannot gain new ones; Caddy, 
 | File | What it is |
 |---|---|
 | `deploy/compose.yaml` | The whole system: containers, networks, volumes |
-| `deploy/Caddyfile` | Caddy's settings |
+| `deploy/Caddyfile` | Caddy's settings on a server |
+| `deploy/site.caddy` | The site's rules (the API route, the page's headers), imported by both Caddy settings files |
+| `deploy/Caddyfile.codespaces`, `deploy/compose.codespaces.yaml` | Caddy's settings in a codespace, and the Compose layer that chooses them |
+| `.devcontainer/devcontainer.json`, `deploy/codespaces-start.sh` | What a codespace is made of, and how it starts everything |
+| `deploy/codespaces-check.sh` | What CI runs against the codespace-style start |
 | `deploy/caddy.Dockerfile`, `gateway/Dockerfile`, `agent/Dockerfile` | How each image is built (base images pinned by digest) |
 | `deploy/make-secrets.sh` | Creates `deploy/.env` with fresh random secrets, once |
 | `deploy/make-gateway-certificate.sh` | Makes the gateway's internal certificate at first start |
@@ -70,6 +74,16 @@ The first command runs once and refuses to overwrite an existing `deploy/.env`: 
 
 `down --volumes` also deletes the database, the certificates and the audit log, for good.
 
+## GitHub Codespaces
+
+The README's **Open in GitHub Codespaces** button gives anyone with a GitHub account their own private copy of the whole system, on their own free Codespaces hours:
+
+1. GitHub makes the codespace from `.devcontainer/devcontainer.json`: Ubuntu (pinned by digest) with Docker inside it (an exact version of the docker-in-docker feature, its digest in `devcontainer-lock.json`), on the smallest machine (2 cores, 8 GB).
+2. Every time the codespace starts, it runs `deploy/codespaces-start.sh`: fresh secrets for this codespace (once, with `make-secrets.sh`), then the same containers as a server, built and started with `deploy/compose.codespaces.yaml` layered on `compose.yaml`. The front door (Caddy) starts last, once the gateway is up, and the script prints **Casewright is ready** with the address.
+3. GitHub forwards Caddy's port 80 as `https://<codespace>-80.app.github.dev`. GitHub provides the HTTPS and lets only the codespace's owner in, so Caddy serves the site over plain HTTP behind it (`Caddyfile.codespaces`) with the same rules as a server (`site.caddy`). GitHub rewrites every request's Origin and Host to `http://localhost:80` on the way in, so in a codespace the gateway accepts that Origin too (`compose.codespaces.yaml`); other websites are still refused by the browser's own `Sec-Fetch-Site` header, which GitHub passes on untouched. Only port 80 is published.
+
+The first start takes about 10 minutes (it builds everything); later starts take seconds. A free GitHub account has 120 core-hours a month (60 hours on this machine) and 15 GB of storage; delete the codespace afterwards so it stops using them.
+
 ## Checked on every pull request
 
-CI's "Containers" job, twice (on GitHub's usual x86 machine and, as "Containers (ARM)", on an ARM machine like the server's, ADR-56), builds the images, starts everything with throwaway secrets (Caddy makes its own certificate authority for `localhost`), and runs `deploy/smoke-test.sh`: a verified HTTPS connection, the page's security headers and HSTS, the HTTP-to-HTTPS redirect, sign-up closed and the "Try the demo" button, the demo account unable to submit text of its own, a demo investigation from start to finish, the audit chain, the cross-site check, and the walls between the containers. Then it checks that every container runs on that machine's own kind of processor.
+CI's "Containers" job, twice (on GitHub's usual x86 machine and, as "Containers (ARM)", on an ARM machine like the server's, ADR-56), builds the images, starts everything with throwaway secrets (Caddy makes its own certificate authority for `localhost`), and runs `deploy/smoke-test.sh`: a verified HTTPS connection, the page's security headers and HSTS, the HTTP-to-HTTPS redirect, sign-up closed and the "Try the demo" button, the demo account unable to submit text of its own, a demo investigation from start to finish, the audit chain, the cross-site check, and the walls between the containers. Then it checks that every container runs on that machine's own kind of processor, and starts the system once more the way a codespace does (`codespaces-start.sh`), checking it with `deploy/codespaces-check.sh`: the page and its headers over plain HTTP, the public demo mode, the cross-site check (including requests as GitHub delivers them: a login accepted, another website's request refused), Caddy as an ordinary user with the Codespaces settings, and only port 80 published.

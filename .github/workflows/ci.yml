@@ -162,6 +162,16 @@ jobs:
             [ "$actual" = "$EXPECTED" ] || { echo "FAIL $service runs on $actual, expected $EXPECTED" >&2; exit 1; }
           done
 
+      # "Open in GitHub Codespaces" (ADR-62): the same start script a codespace runs, with names
+      # like the ones GitHub gives a codespace; Caddy switches to plain HTTP behind GitHub's forwarding.
+      - name: Start it the way a codespace does, and check it
+        env:
+          CODESPACE_NAME: ci-check
+          GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: app.github.dev
+        run: |
+          bash deploy/codespaces-start.sh
+          bash deploy/codespaces-check.sh
+
       - name: Show the containers' logs if something failed
         if: failure()
         run: docker compose -f deploy/compose.yaml logs --no-color --timestamps

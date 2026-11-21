@@ -1,0 +1,30 @@
+# The site itself: what Caddy does with every request (steps 19a and 19d, ADR-54, ADR-62). Shared by
+# deploy/Caddyfile (a server, with HTTPS from Let's Encrypt) and deploy/Caddyfile.codespaces (a GitHub
+# Codespace, where GitHub provides the HTTPS), so the two can never drift apart.
+
+# Don't announce what software runs here.
+header -Server
+
+# The API: to the gateway, still over HTTPS, trusting exactly the gateway's own certificate for
+# the name "gateway" and nothing else (deploy/make-gateway-certificate.sh). Caddy replaces any
+# X-Forwarded-For a visitor sends with the visitor's real address, which the gateway believes
+# only from Caddy (application-production.properties).
+handle /api/* {
+	reverse_proxy https://gateway:8443 {
+		transport http {
+			tls_trusted_ca_certs /gateway-ca/gateway.crt
+			tls_server_name gateway
+		}
+	}
+}
+
+# Everything else: the dashboard's files, with the page's security policy (generated from
+# dashboard/pagePolicy.ts) and "only ever use HTTPS for this site".
+handle {
+	root * /srv
+	import /etc/caddy/page-headers.caddy
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	encode zstd gzip
+	try_files {path} /index.html
+	file_server
+}
