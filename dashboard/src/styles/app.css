@@ -145,6 +145,9 @@ th {
 .button {
   display: inline-flex;
   align-items: center;
+  /* Centred, so a button stretched to a column's width (the login card, the sidebar) reads the same
+     as the main one. */
+  justify-content: center;
   gap: var(--space-2);
   min-height: var(--target-min);
   padding: var(--space-1) var(--space-3);
@@ -171,7 +174,6 @@ th {
 }
 
 .button-primary {
-  justify-content: center;
   border-color: var(--color-text-strong);
   background: var(--color-text-strong);
   color: var(--color-void);
@@ -316,12 +318,27 @@ th {
   background: var(--color-void);
 }
 
+/* The sidebar's foot: two groups (the system's state, then who is logged in), each a column whose
+   buttons span its full width, divided by the same thin rules as the rest of the page. */
 .sidebar-foot {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin-top: auto;
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-thin) solid var(--color-border);
+}
+
+.sidebar-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .main {
@@ -351,6 +368,84 @@ th {
 
 .figure {
   gap: var(--space-3);
+}
+
+/* Figures that filter the incidents below: the whole card is the button; the one in use is lit. */
+.figures > li {
+  display: flex;
+}
+
+.figure-button {
+  width: 100%;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
+}
+
+.figure-button:hover {
+  border-color: var(--color-border-control);
+}
+
+.figure-button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 var(--glow-radius) var(--glow-accent);
+}
+
+/* The type filters (All, Email, Sign-ins, Phone calls), and how many are shown. */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-thin) solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.filter:hover {
+  border-color: var(--color-text);
+  color: var(--color-text-strong);
+}
+
+.filter[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.filter-count {
+  font: var(--text-small) / var(--line-small) var(--font-mono);
+}
+
+.filter-summary {
+  margin: 0;
 }
 
 .figure-value {
@@ -476,10 +571,14 @@ th {
   }
 
 
-  .sidebar-foot {
+  /* Across the top on small screens: everything in one wrapping row, without the dividing rules. */
+  .sidebar-foot,
+  .sidebar-group {
     flex-flow: row wrap;
     align-items: center;
     margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 
   .page {
@@ -524,13 +623,16 @@ th {
   line-height: var(--line-headline);
 }
 
+/* Who is logged in: the name, then the role as a stamp. */
 .user {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  border: var(--border-thin) solid var(--color-border);
-  border-radius: var(--radius-pill);
+}
+
+.user-name {
+  color: var(--color-text-strong);
+  font-weight: var(--weight-medium);
 }
 
 .panel {
@@ -1060,9 +1162,14 @@ td {
   text-transform: uppercase;
 }
 
-.front-card input {
+/* The login card's fields and buttons share one size: the same padding, so the same height. */
+.front-card input,
+.front-card .button {
   min-height: var(--target-min);
   padding: var(--space-2) var(--space-3);
+}
+
+.front-card input {
   border: var(--border-thin) solid var(--color-border-control);
   border-radius: var(--radius-button);
   background: var(--color-void);
@@ -1075,6 +1182,16 @@ td {
 .front-card input:focus-visible {
   border-color: var(--color-accent);
   outline-offset: 0;
+}
+
+/* A browser filling in a saved login paints the fields with its own light background, which no
+   background colour can override; an inset shadow covering the whole field keeps them black. */
+.front-card input:-webkit-autofill,
+.front-card input:-webkit-autofill:hover,
+.front-card input:-webkit-autofill:focus {
+  box-shadow: inset 0 0 0 var(--autofill-cover) var(--color-void);
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
 }
 
 /* "Or log in with your own account", between the demo button and the form (step 19b). */
@@ -1288,6 +1405,17 @@ td {
 .page,
 .tab-panel {
   animation: fade-in var(--motion-slow) var(--ease-out);
+}
+
+/* Refresh's icon turns while it works. */
+.spin {
+  animation: spin var(--motion-spin) linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 @keyframes fade-in {

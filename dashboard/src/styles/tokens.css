@@ -118,6 +118,8 @@
   --lattice-gap: 2px;
   --lattice-idle: 0.15;
   --login-width: 420px;
+  /* Deep enough for an inset shadow to cover a whole field (the autofill fix on the login card). */
+  --autofill-cover: 100vmax;
   --page-max: 1600px;
   --front-section-max: 1080px;
   --icon-box: 40px;
@@ -134,6 +136,7 @@
   --motion-stagger: 120ms;
   --motion-pulse: 1800ms;
   --motion-shimmer: 1400ms;
+  --motion-spin: 900ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }

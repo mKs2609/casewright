@@ -1,6 +1,6 @@
 # Third-party notices
 
-Code adapted from other projects, with the notices their licences ask to be kept with it. Packages installed through npm, Maven and pip carry their own licences in their packages and are not listed here.
+Code adapted from other projects, with the notices their licences ask to be kept with it. The project's own code is under the MIT licence (`LICENSE`); the files listed here keep their original licences instead. Packages installed through npm, Maven and pip carry their own licences in their packages and are not listed here.
 
 ## React Bits
 

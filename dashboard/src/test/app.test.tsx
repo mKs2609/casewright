@@ -69,6 +69,23 @@ describe("logging in", () => {
     expect(screen.getByRole("button", { name: "Log in" })).toBeEnabled();
   });
 
+  it("on a development machine, Log in is the white main button", async () => {
+    fakeGateway(noSession);
+    render(<App />);
+
+    await screen.findByLabelText("Password");
+    expect(screen.getByRole("button", { name: "Log in" })).toHaveClass("button-primary");
+  });
+
+  it("on the public demo, Try the demo is the white main button and Log in is outlined", async () => {
+    fakeGateway(publicDemo);
+    render(<App />);
+
+    // The page learns which kind of site it is after it opens: check once it knows.
+    expect(await screen.findByRole("button", { name: "Try the demo" })).toHaveClass("button-primary");
+    expect(screen.getByRole("button", { name: "Log in" })).not.toHaveClass("button-primary");
+  });
+
   it("offers no demo button on a development machine", async () => {
     fakeGateway(noSession);
     render(<App />);

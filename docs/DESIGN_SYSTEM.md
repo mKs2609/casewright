@@ -38,7 +38,7 @@ Dark theme only. Contrast ratios were measured (WCAG 2.1): body text needs at le
 | `--color-accent` | `#6798ff` | The signal (black on it: 7.5; never white text on it: 2.8) | 7.2 / 6.7 / 6.1 |
 | `--color-grid` | white at 3.5% | The blueprint grid behind the page (decoration) | – |
 
-The main button is white with black text (21:1). The signal's glow (`--glow-accent`) is the only shadow in the system: on the logo tile, the headline tile, the open incident, the timeline's markers and a hovered main button.
+The main button is white with black text (21:1); on the login card, the main action is white: Log in, or Try the demo on the public site (where Log in is outlined under it). The fields are black, and stay black when a browser autofills them; the card's fields and buttons share one height. Every button centres its text. The signal's glow (`--glow-accent`) is the only shadow in the system: on the logo tile, the headline tile, the open incident, the timeline's markers and a hovered main button.
 
 ### Meaning (verdicts and states)
 | Token | Hex | Meaning | Icon | Word | Contrast on bg / surface / surface-2 |
@@ -117,10 +117,11 @@ Layout: a 232px sidebar and the open page beside it; under 900px the sidebar bec
 
 | Component | Purpose | Rules |
 |---|---|---|
-| **Sidebar** | Logo tile and wordmark; the branched menu; at its foot the live badge, Refresh, the audit badge, the user and Log out | Black, sticky, full height; a bar across the top under 900px. Pages change by buttons (no links). |
+| **Sidebar** | Logo tile and wordmark; the branched menu; at its foot two groups: the system's state (the live badge and the audit badge side by side, Refresh under them) and who is logged in (name, role, Log out) | Black, sticky, full height; each foot group under a hairline, its buttons at full width; Refresh's icon turns while it works, then "Updated <time>" in muted small text. A bar across the top under 900px, the foot in one wrapping row. Pages change by buttons (no links). |
 | **Branched menu** | The sidebar's menu (adapted from React Bits): a "Dashboard" branch (Overview, Scenarios) and, when an incident is open, its branch (Evidence, Reports, Actions, with "n waiting") | One rail; each entry branches from a trunk; an indigo line traces to the current entry (`aria-current="page"`) and a marker on the rail follows its branch; a heading folds its branch. Under 900px only the first branch is shown. |
 | **Live badge** | In the sidebar, on every page: Live, Connecting, or Live updates paused | Icon + word, read out politely (`role="status"`). Refresh stays available. |
-| **Overview figures** | Incidents, attacks found, waiting for a decision, audit log entries | Serif light numbers in cards, as a definition list; "Tampered" if the audit chain is broken. |
+| **Overview figures** | Incidents, attacks found, waiting for a decision, audit log entries | Serif light numbers in cards. The first three are filter buttons (`aria-pressed`): the one in use has an indigo border and glow; they count within the chosen type. "Tampered" if the audit chain is broken. |
+| **Type filters** | The row under the figures: All, Email, Sign-ins, Phone calls, each with its count | Outlined pills; the one in use filled indigo with black text. "Showing n of m" and Show all at the row's end while anything is filtered. The filters live in the address (`#/?show=attacks&kind=email`). |
 | **Scenario cards** | One per demo on the Scenarios page | What it is, then its button. One white "Attempt breach"; others charcoal; the description also read out as the button's description. Disabled for `VIEWER`, with a note why. A note when the gateway has demos off. |
 | **Incident page and tabs** | One incident: All incidents, the header and risk, a "decisions waiting" note, then Evidence / Reports / Actions | WAI-ARIA tabs: arrow keys, Home and End move between them; only the open tab is shown; the Actions tab says how many decisions are waiting. |
 | **Red-team button and scorecard** | "Red-team the agent"; on a run, a card listing each attempt, what is meant to stop it, and the outcome | Outcomes are icon + word: Blocked, Not blocked, Waiting. The card sits on an indigo hairline and wash. |

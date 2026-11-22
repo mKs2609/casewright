@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
+import { useState } from "react";
 
 import type { LiveState } from "../live";
 import { liveMeaning } from "../meaning";
@@ -63,7 +64,8 @@ interface Props {
   audit: AuditCheck | null;
   live: LiveState;
   onGo: (address: string) => void;
-  onRefresh: () => void;
+  /** Reloads everything; resolves when it is done. */
+  onRefresh: () => Promise<void>;
   onLogout: () => void;
 }
 
@@ -96,6 +98,17 @@ export function Sidebar({ current, incident, onTab, user, audit, live, onGo, onR
       ],
     });
   }
+  // Refresh says what it did: the icon turns while it works, then the time it finished. With the
+  // live feed on there is often nothing new, and without this it would look as if nothing happened.
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const refresh = () => {
+    setRefreshing(true);
+    onRefresh().finally(() => {
+      setRefreshing(false);
+      setUpdatedAt(new Date());
+    });
+  };
   const active = incident ? `tab:${incident.tab}` : (current ?? "");
   const select = (value: string) => {
     if (value.startsWith("tab:")) {
@@ -115,22 +128,31 @@ export function Sidebar({ current, incident, onTab, user, audit, live, onGo, onR
       </span>
       <BranchedMenu label="Pages" sections={sections} active={active} onSelect={select} />
       <div className="sidebar-foot">
-        {/* Whether updates arrive by themselves, on every page; Refresh works either way. */}
-        <span role="status">
-          <StatusChip meaning={liveMeaning(live)} />
-        </span>
-        <button type="button" className="button" onClick={onRefresh}>
-          <RefreshCw aria-hidden="true" size={16} />
-          Refresh
-        </button>
-        <AuditBadge check={audit} />
-        <span className="user">
-          {user.username} <span className="role">{user.role.toLowerCase()}</span>
-        </span>
-        <button type="button" className="button" onClick={onLogout}>
-          <LogOut aria-hidden="true" size={16} />
-          Log out
-        </button>
+        {/* The system's state: whether updates arrive by themselves (Refresh works either way), and
+            whether the audit log verifies. */}
+        <div className="sidebar-group">
+          <div className="sidebar-status">
+            <span role="status">
+              <StatusChip meaning={liveMeaning(live)} />
+            </span>
+            <AuditBadge check={audit} />
+          </div>
+          <button type="button" className="button" onClick={refresh} aria-busy={refreshing}>
+            <RefreshCw aria-hidden="true" size={16} className={refreshing ? "spin" : undefined} />
+            Refresh
+          </button>
+          {updatedAt && <span className="small muted">Updated {updatedAt.toLocaleTimeString()}</span>}
+        </div>
+        {/* Who is logged in. */}
+        <div className="sidebar-group sidebar-account">
+          <span className="user">
+            <span className="user-name">{user.username}</span> <span className="role">{user.role.toLowerCase()}</span>
+          </span>
+          <button type="button" className="button" onClick={onLogout}>
+            <LogOut aria-hidden="true" size={16} />
+            Log out
+          </button>
+        </div>
       </div>
     </aside>
   );
