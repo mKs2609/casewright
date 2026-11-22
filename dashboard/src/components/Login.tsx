@@ -108,6 +108,7 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
                 {error}
               </p>
             )}
+            {/* The main action is white: Log in, unless the public site's "Try the demo" is the main one. */}
             <button type="submit" className={demoLogin ? "button" : "button button-primary"} disabled={busy}>
               {busy ? "Logging in..." : "Log in"}
             </button>

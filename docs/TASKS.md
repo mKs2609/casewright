@@ -3,31 +3,33 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-23
 
 ---
 
 ## Now
 
-### Step 19d: Try it yourself (on `feature/try-it-yourself`)
-Going live is blocked from outside the project: Oracle Cloud's card check refused every card tried (the bank never saw the attempts), and Azure for Students blocked the sign-up at its automatic check. Mohit chose instead: an "Open in GitHub Codespaces" button and a demo video (ADR-62). The server setup stays ready.
-- [x] Plan agreed with Mohit
-- [x] `.devcontainer/devcontainer.json`: Ubuntu (pinned by digest) and Docker inside the codespace (an exact version, its digest in `devcontainer-lock.json`, the editor's accepted form); starts `deploy/codespaces-start.sh` every time the codespace starts
-- [x] `deploy/codespaces-start.sh`: fresh secrets for that codespace, builds the same containers as a server, starts the front door only once the gateway is up, says where to open it
-- [x] Caddy's site rules moved into `deploy/site.caddy`, shared by the server's `Caddyfile` and the new `Caddyfile.codespaces` (plain HTTP behind GitHub's private, HTTPS port forwarding; chosen by `deploy/compose.codespaces.yaml`)
-- [x] CI: both Containers jobs also start the system the codespace way and run `deploy/codespaces-check.sh`
-- [x] A real run, first try (codespace on this branch): it built and started by itself ("Casewright is ready", gateway and database UP), but the login was refused as cross-site. A header check in the codespace showed why: GitHub rewrites every request's Origin and Host to `http://localhost:80`, while the browser's `Sec-Fetch-Site` and `Referer` pass through untouched
-- [x] Fix: in a codespace the gateway also accepts that Origin; CI proves a login as GitHub delivers it is accepted and `Sec-Fetch-Site: cross-site` is still refused. Also: only port 80 published (443 had shown up as a broken second address); the Docker feature pinned by exact version with its digest in `devcontainer-lock.json` (the editor flagged the digest form)
-- [x] A real run after the fix (the same codespace, after `git pull` and the start script): Try the demo, four scenarios investigated (live feed on), an action approved ("Block this number": done, simulated, by demo; the incident moved to needs review), the audit chain intact. Logging in with a laptop account is refused as it should be: the codespace has its own empty database and sign-up is closed
-- [x] README: the button and how to use it
-- [x] All checks pass on GitHub (the first commit, and the fix)
+### Step 19e: Finishing touches, filters and the README (on `feature/polish-and-readme`)
+Mohit's notes from the Codespaces run and the local dashboard; he chose to include the filters in this PR, and an MIT licence.
+- [x] The sidebar's foot in two groups: the system's state (Live and Audit badges, Refresh at full width) and who is logged in (name and role, Log out at full width), each under a hairline; one wrapping row on small screens
+- [x] Every button centres its text (Log in sat on the left on the public demo); Log in is the white main button, or outlined under Try the demo on the public site (Mohit's choice, after trying white fields); the fields stay black, even when a browser autofills them; the card's fields and buttons share one height
+- [x] Refresh says what it did: its icon turns while it works, then "Updated <time>" (with the live feed on there was often nothing new, so a click looked like nothing happened)
+- [x] The Overview's figures filter the incidents: Incidents (all), Attacks found, Waiting for a decision (with exactly one waiting, it opens that incident on its Actions tab; otherwise it lists them, and each opens on its Actions tab); plus a Type row (All, Email, Sign-ins, Phone calls, with counts); "Showing n of m" and Show all; the filters live in the address (`#/?show=attacks&kind=email`, read strictly) and All incidents goes back to the list as it was filtered
+- [x] This step's own code simplified (the audit check loaded in one place; the type labels a plain list); no behaviour change
+- [x] Tests: dashboard 142 (13 new); 9 mutation checks, all caught (one test was found checking the public demo before the page knew it was one, and fixed); a real run in the browser on desktop and phone sizes
+- [x] MIT licence (`LICENSE`); `THIRD_PARTY_NOTICES.md` says the React Bits files keep their own
+- [x] README rewritten for someone deciding about Mohit: what it is, highlights, try it, how it works (a Mermaid diagram), safety by design, tech stack, quality and evidence (every number re-run: gateway 364, agent 656, dashboard 142; every link checked), limitations; the setup steps moved, unchanged, to `docs/DEVELOPMENT.md`
+- [x] A fresh README screenshot: a Scam phone call demo (#79, risk 85, led by the AI model, one decision waiting) with the new sidebar foot
+- [ ] All checks pass on GitHub
 - [ ] Merged
 
 ## Next
 
-### Step 19e: Finishing touches (after this step merges)
-- [ ] Mohit's note: the sidebar's foot (the user chip and Log out) and the login page's Log in button look out of place: make them match the rest
-- [ ] The demo video at the top of the README (Mohit records it, from a shot list)
+### Simplify the code (Mohit's request)
+- [ ] A pass over the gateway, agent and dashboard to reduce complexity without changing behaviour: every suite and the mutation checks after each change, in its own pull request
+
+### The demo video
+- [ ] A short video at the top of the README (Mohit records it, from a shot list)
 
 ## Waiting
 
@@ -48,6 +50,7 @@ Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support li
 
 ## Done
 
+- **2026-11-22:** Step 19d (Try it yourself in GitHub Codespaces) merged: PR #29, after a real codespace run (the login fix for GitHub's rewritten Origin).
 - **2026-11-19:** Step 20d (design motion, with the React Bits branched menu and lattice loader) merged: PR #28. The final handbook (step 21) is dropped: the handbook stays Mohit's own notes.
 - **2026-11-18:** Step 20c (dashboard pages) merged: PR #27, with the picomatch exception (ADR-60, until 2026-12-18) and the LiveUpdatesTest race fix.
 - **2026-11-17:** Step 20b (front page) merged.

@@ -23,6 +23,22 @@ describe("the sidebar", () => {
     expect(within(pages()).getByRole("button", { name: "Scenarios" })).toHaveAttribute("aria-current", "page");
     expect(within(pages()).getByRole("button", { name: "Overview" })).not.toHaveAttribute("aria-current");
   });
+
+  it("keeps its foot in two groups: the system's state with Refresh, then who is logged in with Log out", async () => {
+    fakeGateway(loggedInAs(analyst));
+    render(<App />);
+
+    const refresh = await screen.findByRole("button", { name: "Refresh" });
+    const state = refresh.closest(".sidebar-group") as HTMLElement;
+    expect(within(state).getByRole("status")).toBeInTheDocument();
+    expect(await within(state).findByText("Audit log intact")).toBeInTheDocument();
+
+    const account = screen.getByRole("button", { name: "Log out" }).closest(".sidebar-group") as HTMLElement;
+    expect(account).not.toBe(state);
+    expect(within(account).getByText("test.analyst")).toBeInTheDocument();
+    expect(within(account).getByText("analyst")).toBeInTheDocument();
+    expect(within(account).queryByRole("button", { name: "Refresh" })).toBeNull();
+  });
 });
 
 describe("the overview", () => {
@@ -37,7 +53,7 @@ describe("the overview", () => {
     render(<App />);
 
     const glance = await screen.findByLabelText("At a glance");
-    const value = (words: string) => within(glance).getByText(words).closest(".figure")!.querySelector("dd")!.textContent;
+    const value = (words: string) => within(glance).getByText(words).closest(".figure")!.querySelector(".figure-value")!.textContent;
     await waitFor(() => expect(value("Incidents")).toBe("3"));
     expect(value("Attacks found")).toBe("2");
     expect(value("Waiting for a decision")).toBe("1");

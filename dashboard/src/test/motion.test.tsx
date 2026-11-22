@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 import { EvidenceTimeline, IncidentHeader } from "../components/Investigation";
 import { Overview } from "../components/Overview";
+import { NO_FILTERS } from "../filters";
 import { CountUp } from "../motion";
 import { analyst, fakeGateway, incident, loggedInAs, summary } from "./fixtures";
 
@@ -66,11 +67,11 @@ describe("evidence arriving", () => {
 
 describe("loading", () => {
   it("shows placeholder shapes, read out as Loading, until the incidents arrive", () => {
-    const { rerender } = render(<Overview incidents={null} audit={null} error={null} onOpen={() => {}} />);
+    const { rerender } = render(<Overview incidents={null} audit={null} error={null} filters={NO_FILTERS} onFilter={() => {}} onOpen={() => {}} />);
     expect(screen.getByText("Loading...").closest("[aria-busy='true']")).not.toBeNull();
     expect(screen.queryByRole("region", { name: "Incidents" })).not.toBeInTheDocument();
 
-    rerender(<Overview incidents={[summary]} audit={null} error={null} onOpen={() => {}} />);
+    rerender(<Overview incidents={[summary]} audit={null} error={null} filters={NO_FILTERS} onFilter={() => {}} onOpen={() => {}} />);
     expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Incidents" })).toBeInTheDocument();
   });

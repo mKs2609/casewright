@@ -8,6 +8,7 @@ import { Skeleton } from "./motion";
 import { Overview } from "./components/Overview";
 import { Scenarios } from "./components/Scenarios";
 import { Sidebar, type Page } from "./components/Sidebar";
+import { NO_FILTERS, addressFor, filtersFrom, type Filters } from "./filters";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
 
 const message = (failure: unknown) => (failure instanceof Error ? failure.message : "Something went wrong. Try again.");
@@ -38,10 +39,13 @@ function coalesced(work: () => Promise<void>): () => void {
 }
 
 /**
- * The page lives in the address, so a reload keeps your place: #/ (Overview), #/scenarios, or
- * #/incidents/57. Anything else is the Overview.
+ * The page lives in the address, so a reload keeps your place: #/ (Overview, with its filters as
+ * #/?show=attacks&kind=email), #/scenarios, or #/incidents/57. Anything else is the Overview.
  */
-type Route = { page: Page } | { page: "incident"; id: number };
+type Route =
+  | { page: "overview"; filters: Filters }
+  | { page: Exclude<Page, "overview"> }
+  | { page: "incident"; id: number };
 
 function routeFromAddress(): Route {
   const hash = window.location.hash;
@@ -49,7 +53,11 @@ function routeFromAddress(): Route {
     return { page: "scenarios" };
   }
   const match = /^#\/incidents\/(\d{1,15})$/.exec(hash);
-  return match ? { page: "incident", id: Number(match[1]) } : { page: "overview" };
+  if (match) {
+    return { page: "incident", id: Number(match[1]) };
+  }
+  const query = /^#\/\?(.*)$/.exec(hash);
+  return { page: "overview", filters: query ? filtersFrom(query[1]) : NO_FILTERS };
 }
 
 const selectedIn = (route: Route) => (route.page === "incident" ? route.id : null);
@@ -60,6 +68,15 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [route, setRoute] = useState<Route>(routeFromAddress);
   const selected = selectedIn(route);
   const [tab, setTab] = useState<Tab>("evidence");
+  // The tab the next incident opens on: Evidence, unless it was opened from "waiting for a decision".
+  const openOn = useRef<Tab>("evidence");
+  // Where "All incidents" goes back to: the Overview as you left it, filters included.
+  const overviewAddress = useRef("#/");
+  useEffect(() => {
+    if (route.page === "overview") {
+      overviewAddress.current = addressFor(route.filters);
+    }
+  }, [route]);
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [audit, setAudit] = useState<AuditCheck | null>(null);
@@ -83,8 +100,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
 
   // Walks the whole audit chain on the server, so not on every live change: on load, Refresh and decisions.
   const loadList = useCallback(async () => {
-    await loadIncidents();
-    api.auditCheck().then(setAudit, () => setAudit(null));
+    await Promise.all([loadIncidents(), api.auditCheck().then(setAudit, () => setAudit(null))]);
   }, [loadIncidents]);
 
   const loadDetail = useCallback(async (id: number | null) => {
@@ -115,7 +131,8 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
 
   useEffect(() => {
     setHighlighted(null);
-    setTab("evidence");
+    setTab(openOn.current);
+    openOn.current = "evidence";
     void loadDetail(selected);
   }, [selected, loadDetail]);
 
@@ -151,9 +168,9 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
     window.scrollTo?.(0, 0);
   }, []);
 
-  const refresh = useCallback(() => {
-    void loadList();
-    void loadDetail(selected);
+  // Everything again; resolves when all of it has answered (Refresh shows that).
+  const refresh = useCallback(async () => {
+    await Promise.all([loadList(), loadDetail(selected)]);
   }, [loadList, loadDetail, selected]);
 
   const focusEvidence = useFocusEvidence(tab, highlighted);
@@ -190,7 +207,12 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
             incidents={incidents}
             audit={audit}
             error={listError}
-            onOpen={(id) => go(`#/incidents/${id}`)}
+            filters={route.filters}
+            onFilter={(filters) => go(addressFor(filters))}
+            onOpen={(id, openTab) => {
+              openOn.current = openTab ?? "evidence";
+              go(`#/incidents/${id}`);
+            }}
           />
         )}
         {route.page === "scenarios" && (
@@ -211,7 +233,7 @@ function Dashboard({ user, onLogout }: { user: User; onLogout: () => void }) {
               highlighted={highlighted}
               onCite={cite}
               onDecided={refresh}
-              onBack={() => go("#/")}
+              onBack={() => go(overviewAddress.current)}
               tab={tab}
               onTab={setTab}
             />

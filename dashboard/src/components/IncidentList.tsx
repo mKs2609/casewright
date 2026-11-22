@@ -10,9 +10,11 @@ interface Props {
   selected: number | null;
   error: string | null;
   onSelect: (id: number) => void;
+  /** What to say when there are none (by default, that there are none yet). */
+  empty?: string;
 }
 
-export function IncidentList({ incidents, selected, error, onSelect }: Props) {
+export function IncidentList({ incidents, selected, error, onSelect, empty = "No incidents yet." }: Props) {
   return (
     <section className="panel incidents" aria-label="Incidents">
       <div className="panel-title">
@@ -26,7 +28,7 @@ export function IncidentList({ incidents, selected, error, onSelect }: Props) {
           {error}
         </p>
       )}
-      {incidents?.length === 0 && <p className="muted">No incidents yet.</p>}
+      {incidents?.length === 0 && <p className="muted">{empty}</p>}
       <ul className="incident-list">
         {incidents?.map((incident) => {
           const KindIcon = KIND_ICONS[incident.kind] ?? CircleHelp;
