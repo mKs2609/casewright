@@ -1,7 +1,7 @@
 // What the gateway's API sends back. Every string that came from an incident is untrusted:
 // it is only ever shown as plain text.
 
-export type Role = "VIEWER" | "ANALYST" | "ADMIN";
+type Role = "VIEWER" | "ANALYST" | "ADMIN";
 
 export interface User {
   username: string;
@@ -48,7 +48,7 @@ export interface Evidence {
   createdAt: string;
 }
 
-export interface SocFinding {
+interface SocFinding {
   evidence: string;
   signal: string;
   text: string;

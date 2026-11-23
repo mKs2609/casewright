@@ -96,21 +96,10 @@ def plain_headline(kind: str, final: str, attack: str) -> str:
     return f"This {thing} is a scam." if final == "malicious" else f"This {thing} looks suspicious."
 
 
-def counted_findings(steps: list[StepEvent]) -> list[tuple[str, Signal]]:
-    """The findings that count (the strongest of each kind) with their evidence label,
-    strongest first; ties by kind, so the order is always the same."""
-    best: dict[str, tuple[str, Signal]] = {}
-    for step in steps:
-        for signal in step.signals:
-            if signal.id not in best or signal.weight > best[signal.id][1].weight:
-                best[signal.id] = (step.label, signal)
-    return sorted(best.values(), key=lambda pair: (-pair[1].weight, pair[1].id))
-
-
 def build(kind: str, steps: list[StepEvent], final: str, attack: str, score: int,
           ai_summary: str | None = None) -> tuple[SocReport, PlainReport]:
     """Both reports. `final` is the verdict after the score floor (what the gateway will record)."""
-    findings = counted_findings(steps)
+    findings = decide.counted_findings(steps)
     shown_attack = attack if final != "benign" else "none"
 
     soc = SocReport.model_validate({

@@ -1,10 +1,10 @@
 import { ShieldCheck, UserRoundCheck } from "lucide-react";
 import { useState } from "react";
 
-import { api } from "../api";
+import { api, errorText } from "../api";
 import { ACTION_WORDS, actionStatusMeaning, when } from "../meaning";
 import type { Action, Evidence, User } from "../types";
-import { EvidenceChip, SignalChip, StatusChip } from "./Chips";
+import { EvidenceChip, SignalChips, StatusChip } from "./Chips";
 
 const canDecide = (user: User) => user.role === "ANALYST" || user.role === "ADMIN";
 
@@ -29,7 +29,7 @@ function ApprovalCard({ action, step, user, onCite, onDecided }: ApprovalProps) 
       await api.decide(action.id, decision);
       onDecided();
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Could not save your decision. Try again.");
+      setError(errorText(failure, "Could not save your decision. Try again."));
       setBusy(false);
     }
   }
@@ -43,13 +43,7 @@ function ApprovalCard({ action, step, user, onCite, onDecided }: ApprovalProps) 
       <div className="approval-evidence">
         <EvidenceChip label={action.evidence} onCite={onCite} />
         <span>{step?.summary}</span>
-        {step && step.signals.length > 0 && (
-          <div className="chip-row">
-            {step.signals.map((signal) => (
-              <SignalChip key={signal.id + (signal.indicator ?? "")} signal={signal} />
-            ))}
-          </div>
-        )}
+        {step && <SignalChips signals={step.signals} />}
       </div>
       {action.expiresAt && <p className="small muted">Must be decided by {when(action.expiresAt)}</p>}
       {canDecide(user) ? (

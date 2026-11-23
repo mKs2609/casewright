@@ -1,7 +1,7 @@
 import { ArrowDown, Radar, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { api } from "../api";
+import { api, errorText } from "../api";
 import type { User } from "../types";
 import { FrontSections } from "./FrontSections";
 import { SignalOrb } from "./SignalOrb";
@@ -32,7 +32,7 @@ export function Login({ onLogin }: { onLogin: (user: User) => void }) {
       onLogin(await login());
     } catch (failure) {
       setPassword("");
-      setError(failure instanceof Error ? failure.message : "Could not log in. Try again.");
+      setError(errorText(failure, "Could not log in. Try again."));
       setBusy(false);
     }
   }

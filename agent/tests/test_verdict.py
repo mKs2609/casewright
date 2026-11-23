@@ -91,6 +91,14 @@ def test_the_verdict_cites_the_evidence_behind_the_findings_that_count() -> None
     assert verdict.cited_evidence(steps) == ["E3", "E4"]
 
 
+def test_of_two_equally_strong_findings_of_one_kind_the_first_is_the_one_cited() -> None:
+    steps = [StepEvent(label=label, tool="reputation_lookup", args={}, summary="s", result={},
+                       signals=[sig("REP-MALICIOUS", 45)]) for label in ("E1", "E2")]
+
+    assert [label for label, _ in verdict.counted_findings(steps)] == ["E1"]
+    assert verdict.cited_evidence(steps) == ["E1"]
+
+
 # ------------------------------------------------------------------ the six demo scenarios, end to end
 
 @pytest.mark.parametrize("name", list(SCENARIOS))

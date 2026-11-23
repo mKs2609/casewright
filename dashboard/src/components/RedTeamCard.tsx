@@ -1,7 +1,7 @@
 import { Crosshair } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { api } from "../api";
+import { api, errorText } from "../api";
 import { redTeamOutcomeMeaning } from "../meaning";
 import type { IncidentDetail, RedTeamCard as Card } from "../types";
 import { StatusChip } from "./Chips";
@@ -38,7 +38,7 @@ export function RedTeamCard({ incident }: { incident: IncidentDetail }) {
       },
       (failure: unknown) => {
         if (request === latest.current) {
-          setError(failure instanceof Error ? failure.message : "Could not load the scorecard.");
+          setError(errorText(failure, "Could not load the scorecard."));
         }
       },
     );

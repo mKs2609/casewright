@@ -9,24 +9,15 @@ Updated at the start and end of every step.
 
 ## Now
 
-### Step 19e: Finishing touches, filters and the README (on `feature/polish-and-readme`)
-Mohit's notes from the Codespaces run and the local dashboard; he chose to include the filters in this PR, and an MIT licence.
-- [x] The sidebar's foot in two groups: the system's state (Live and Audit badges, Refresh at full width) and who is logged in (name and role, Log out at full width), each under a hairline; one wrapping row on small screens
-- [x] Every button centres its text (Log in sat on the left on the public demo); Log in is the white main button, or outlined under Try the demo on the public site (Mohit's choice, after trying white fields); the fields stay black, even when a browser autofills them; the card's fields and buttons share one height
-- [x] Refresh says what it did: its icon turns while it works, then "Updated <time>" (with the live feed on there was often nothing new, so a click looked like nothing happened)
-- [x] The Overview's figures filter the incidents: Incidents (all), Attacks found, Waiting for a decision (with exactly one waiting, it opens that incident on its Actions tab; otherwise it lists them, and each opens on its Actions tab); plus a Type row (All, Email, Sign-ins, Phone calls, with counts); "Showing n of m" and Show all; the filters live in the address (`#/?show=attacks&kind=email`, read strictly) and All incidents goes back to the list as it was filtered
-- [x] This step's own code simplified (the audit check loaded in one place; the type labels a plain list); no behaviour change
-- [x] Tests: dashboard 142 (13 new); 9 mutation checks, all caught (one test was found checking the public demo before the page knew it was one, and fixed); a real run in the browser on desktop and phone sizes
-- [x] MIT licence (`LICENSE`); `THIRD_PARTY_NOTICES.md` says the React Bits files keep their own
-- [x] README rewritten for someone deciding about Mohit: what it is, highlights, try it, how it works (a Mermaid diagram), safety by design, tech stack, quality and evidence (every number re-run: gateway 364, agent 656, dashboard 142; every link checked), limitations; the setup steps moved, unchanged, to `docs/DEVELOPMENT.md`
-- [x] A fresh README screenshot: a Scam phone call demo (#79, risk 85, led by the AI model, one decision waiting) with the new sidebar foot
+### Step 21: Code cleanup (on `feature/code-cleanup`)
+Mohit asked for simpler code with no change in what the app does. One area at a time, each with its full test suite, and mutation checks on anything risky.
+- [x] Dashboard: every API call names its method (`get`, `post`) instead of a rule guessing it from the path and body; one `errorText` helper instead of the same line in five places; one `SignalChips` component instead of two copies; seven types no other file uses are no longer exported. Dashboard 142 tests pass; 2 mutation checks (a wrong method for logout, and for the login options), both caught
+- [x] Agent: "the strongest finding of each kind, with its evidence" was worked out twice (the report and the verdict's citations): now once, in `verdict.counted_findings`, which `cited_evidence` reuses; the tool box's accepted-call counter was always the number of steps, so it is gone; a reputation finding's score-and-tags text is built once. 657 agent tests pass, the evaluation report unchanged; 4 mutation checks, which first found two gaps the old code had too (which of two equally strong findings is cited; the tags in a reputation label), each now tested
+- [x] Gateway: the "202 Accepted, follow it at /api/incidents/{id}" reply written once (`IncidentResponses.accepted`) instead of in three controllers; `EvidenceService` reads "this incident's accepted evidence" and "an optional text field" in one place each; `ReportCheck` finds a report's recorded finding, or refuses the report, in one place. 364 gateway tests pass in both orders; 4 mutation checks: 3 caught, and one (refused calls counted as accepted evidence) that no outcome could show, since only E-labels can be cited and refused calls carry no findings, is now checked directly in `InvestigationTest`; one more (a report naming an unrecorded finding) is still refused by the next check, which compares the finding's words
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
 ## Next
-
-### Simplify the code (Mohit's request)
-- [ ] A pass over the gateway, agent and dashboard to reduce complexity without changing behaviour: every suite and the mutation checks after each change, in its own pull request
 
 ### The demo video
 - [ ] A short video at the top of the README (Mohit records it, from a shot list)
@@ -50,6 +41,7 @@ Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support li
 
 ## Done
 
+- **2026-11-23:** Step 19e (finishing touches, filters, the README, MIT) merged: PR #30.
 - **2026-11-22:** Step 19d (Try it yourself in GitHub Codespaces) merged: PR #29, after a real codespace run (the login fix for GitHub's rewritten Origin).
 - **2026-11-19:** Step 20d (design motion, with the React Bits branched menu and lattice loader) merged: PR #28. The final handbook (step 21) is dropped: the handbook stays Mohit's own notes.
 - **2026-11-18:** Step 20c (dashboard pages) merged: PR #27, with the picomatch exception (ADR-60, until 2026-12-18) and the LiveUpdatesTest race fix.

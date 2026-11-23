@@ -3,7 +3,7 @@ The model is a scripted stand-in; the lines it "writes" include what a hijacked 
 
 import pytest
 
-from app import report, summary
+from app import summary, verdict
 from app.budget import DailyBudget
 from app.case import Case
 from app.investigation import investigate
@@ -127,7 +127,7 @@ def checked(line: str, final: str) -> tuple[str | None, str]:
     events = list(investigate(request("vishing_call"), model=None))
     steps = [e for e in events if isinstance(e, StepEvent)]
     case = Case.of(request("vishing_call").incident, request("vishing_call").baseline)
-    return summary.check(line, case, report.counted_findings(steps), {s.label for s in steps}, final)
+    return summary.check(line, case, verdict.counted_findings(steps), {s.label for s in steps}, final)
 
 
 def test_reassuring_words_are_refused_only_when_the_verdict_is_not_benign() -> None:

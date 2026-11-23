@@ -46,6 +46,8 @@ def test_a_known_attacker_ip_is_flagged_and_numbered_e1() -> None:
     assert isinstance(event, StepEvent)
     assert event.label == "E1"
     assert signal_ids(event) == ["REP-MALICIOUS"]
+    # The analysts' label says why: the score and the list's tags.
+    assert event.signals[0].label == "203.0.113.66 is known-malicious (score 92: tor-exit-node, credential-stuffing-source)"
     assert event.signals[0].plain == "This internet address is on lists of known attackers."
     assert event.result["score"] == 92
 

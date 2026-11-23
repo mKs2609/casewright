@@ -70,6 +70,7 @@ def reputation_lookup(case: Case, args: dict[str, str]) -> ToolResult:
         record = {"score": None, "tags": ["private-address"]}
 
     signals: list[Signal] = []
+    rated = f"score {record['score']}: {', '.join(record['tags'])}" if record else ""
     if record is None:
         record = {"score": None, "tags": ["no-intel"]}
         if indicator_type in ("domain", "email"):
@@ -78,12 +79,12 @@ def reputation_lookup(case: Case, args: dict[str, str]) -> ToolResult:
                                   weight=8, indicator=value))
     elif record["score"] is not None and record["score"] >= 80:
         signals.append(Signal(id="REP-MALICIOUS",
-                              label=f"{short(value)} is known-malicious (score {record['score']}: {', '.join(record['tags'])})",
+                              label=f"{short(value)} is known-malicious ({rated})",
                               plain=PLAIN_KNOWN_BAD[indicator_type],
                               weight=45, mitre="T1583", indicator=value))
     elif record["score"] is not None and record["score"] >= 50:
         signals.append(Signal(id="REP-SUSPICIOUS",
-                              label=f"{short(value)} has a poor reputation (score {record['score']}: {', '.join(record['tags'])})",
+                              label=f"{short(value)} has a poor reputation ({rated})",
                               plain=PLAIN_POOR[indicator_type],
                               weight=20, indicator=value))
 
@@ -126,8 +127,7 @@ class ToolBox:
 
     def __init__(self, case: Case) -> None:
         self.case = case
-        self.steps: list[StepEvent] = []   # accepted calls, for the verdict to cite
-        self.accepted = 0
+        self.steps: list[StepEvent] = []   # accepted calls (E1, E2, ...), for the verdict to cite
         self.rejected = 0
 
     def call(self, tool: str, args: object) -> StepEvent | GuardrailEvent:
@@ -153,8 +153,7 @@ class ToolBox:
             except ValidationError:
                 # Arguments too odd to even record (e.g. huge or strangely named): keep the refusal, drop them.
                 return GuardrailEvent(label=label, tool=name, args={}, reason=f"{refusal} (arguments not recordable)")
-        self.accepted += 1
-        step = StepEvent(label=f"E{self.accepted}", tool=tool, args=args, summary=summary, result=result,
+        step = StepEvent(label=f"E{len(self.steps) + 1}", tool=tool, args=args, summary=summary, result=result,
                          signals=signals)
         self.steps.append(step)
         return step

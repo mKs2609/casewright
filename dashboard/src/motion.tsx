@@ -7,7 +7,7 @@ const COUNT_MS = 600;
  * True when motion should not play: the visitor asked for reduced motion, or the browser cannot
  * say (as in tests), in which case the final state is simply shown.
  */
-export function prefersStill(): boolean {
+function prefersStill(): boolean {
   return typeof window.matchMedia !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 

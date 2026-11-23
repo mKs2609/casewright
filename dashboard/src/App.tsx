@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, setSessionLostHandler } from "./api";
+import { api, errorText, setSessionLostHandler } from "./api";
 import { followIncidents, type LiveState } from "./live";
 import { IncidentPage, useFocusEvidence, type Tab } from "./components/IncidentPage";
 import { Login } from "./components/Login";
@@ -11,7 +11,7 @@ import { Sidebar, type Page } from "./components/Sidebar";
 import { NO_FILTERS, addressFor, filtersFrom, type Filters } from "./filters";
 import type { AuditCheck, IncidentDetail, IncidentSummary, User } from "./types";
 
-const message = (failure: unknown) => (failure instanceof Error ? failure.message : "Something went wrong. Try again.");
+const message = (failure: unknown) => errorText(failure, "Something went wrong. Try again.");
 
 /** Time between live reloads, so a burst of changes becomes a few reloads instead of dozens. */
 const RELOAD_GAP_MS = 300;

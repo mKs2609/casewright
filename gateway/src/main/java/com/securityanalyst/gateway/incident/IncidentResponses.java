@@ -1,7 +1,10 @@
 package com.securityanalyst.gateway.incident;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+
+import org.springframework.http.ResponseEntity;
 
 import com.securityanalyst.gateway.action.ActionService;
 import com.securityanalyst.gateway.evidence.EvidenceService;
@@ -14,6 +17,14 @@ import tools.jackson.databind.json.JsonMapper;
 public final class IncidentResponses {
 
     private IncidentResponses() {
+    }
+
+    /**
+     * 202 Accepted: the incident is stored and its investigation has started; the Location header
+     * says where to follow it. The same for every way of submitting one (the API, a demo, a red-team run).
+     */
+    public static ResponseEntity<Detail> accepted(Detail created) {
+        return ResponseEntity.accepted().location(URI.create("/api/incidents/" + created.id())).body(created);
     }
 
     /** One line in the incident list: no payload, so the list stays small. The verdict and score are null until there is a verdict. */

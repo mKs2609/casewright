@@ -25,7 +25,7 @@ export type Page = "overview" | "scenarios";
 const ADDRESSES: Record<Page, string> = { overview: "#/", scenarios: "#/scenarios" };
 
 /** The open incident, for its branch of the menu: its number and how many decisions wait. */
-export interface OpenIncident {
+interface OpenIncident {
   id: number;
   waiting: number;
   tab: Tab;

@@ -1,6 +1,5 @@
 package com.securityanalyst.gateway.incident;
 
-import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -38,7 +37,7 @@ public class IncidentController {
     public ResponseEntity<IncidentResponses.Detail> submit(@Valid @RequestBody IncidentRequest request,
             @AuthenticationPrincipal AuthenticatedUser user) {
         IncidentResponses.Detail created = incidents.submit(request, user, Incident.SOURCE_API);
-        return ResponseEntity.accepted().location(URI.create("/api/incidents/" + created.id())).body(created);
+        return IncidentResponses.accepted(created);
     }
 
     /** The newest 100 incidents, newest first. */

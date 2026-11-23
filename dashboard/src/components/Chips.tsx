@@ -20,11 +20,25 @@ export function EvidenceChip({ label, onCite }: { label: string; onCite: (label:
   );
 }
 
-export function SignalChip({ signal }: { signal: Signal }) {
+function SignalChip({ signal }: { signal: Signal }) {
   const strength = signal.weight >= 30 ? "strong" : signal.weight > 0 ? "some" : "none";
   return (
     <span className={`signal-chip signal-${strength}`}>
       {signal.label} <span className="weight">+{signal.weight}</span>
     </span>
+  );
+}
+
+/** The signals a step found, as one row of chips; nothing when it found none. */
+export function SignalChips({ signals }: { signals: Signal[] }) {
+  if (signals.length === 0) {
+    return null;
+  }
+  return (
+    <div className="chip-row">
+      {signals.map((signal) => (
+        <SignalChip key={signal.id + (signal.indicator ?? "")} signal={signal} />
+      ))}
+    </div>
   );
 }
