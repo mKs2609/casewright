@@ -19,6 +19,11 @@ export class ApiError extends Error {
   }
 }
 
+/** What to show for a failure: the server's own message, or the page's fallback for anything else. */
+export function errorText(failure: unknown, fallback: string): string {
+  return failure instanceof Error ? failure.message : fallback;
+}
+
 let onSessionLost: () => void = () => {};
 
 const SCENARIO_NAME = /^[a-z_]{1,40}$/;
@@ -49,10 +54,10 @@ function refreshOnce(): Promise<boolean> {
 
 type Method = "GET" | "POST";
 
-async function send(path: string, body?: unknown, signal?: AbortSignal, method?: Method): Promise<Response> {
+async function send(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
   try {
     return await fetch(`/api${path}`, {
-      method: method ?? (body === undefined && !path.startsWith("/auth/") ? "GET" : "POST"),
+      method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
@@ -66,11 +71,11 @@ async function send(path: string, body?: unknown, signal?: AbortSignal, method?:
 }
 
 /** Sends a request, renewing the session once if it has expired. Any refusal becomes an ApiError. */
-async function authorised(path: string, body?: unknown, signal?: AbortSignal, method?: Method): Promise<Response> {
-  let response = await send(path, body, signal, method);
+async function authorised(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
+  let response = await send(method, path, body, signal);
   if (response.status === 401 && !path.startsWith("/auth/")) {
     if (await refreshOnce()) {
-      response = await send(path, body, signal, method);
+      response = await send(method, path, body, signal);
     }
     if (response.status === 401) {
       onSessionLost();
@@ -82,10 +87,13 @@ async function authorised(path: string, body?: unknown, signal?: AbortSignal, me
   return response;
 }
 
-async function request<T>(path: string, body?: unknown, method?: Method): Promise<T> {
-  const response = await authorised(path, body, undefined, method);
+async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+  const response = await authorised(method, path, body);
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
+
+const get = <T>(path: string) => request<T>("GET", path);
+const post = <T>(path: string, body?: unknown) => request<T>("POST", path, body);
 
 async function errorMessage(response: Response): Promise<string> {
   try {
@@ -100,33 +108,32 @@ async function errorMessage(response: Response): Promise<string> {
 }
 
 export const api = {
-  me: () => request<User>("/me"),
-  login: (username: string, password: string) => request<User>("/auth/login", { username, password }),
-  // GET said outright: without a body, other /auth/ paths are POSTs.
-  authOptions: () => request<AuthOptions>("/auth/options", undefined, "GET"),
+  me: () => get<User>("/me"),
+  login: (username: string, password: string) => post<User>("/auth/login", { username, password }),
+  authOptions: () => get<AuthOptions>("/auth/options"),
   // The public demo's shared account: no password is sent, because nobody knows it.
-  demoLogin: () => request<User>("/auth/demo-login", undefined, "POST"),
-  logout: () => request<void>("/auth/logout"),
-  incidents: () => request<IncidentSummary[]>("/incidents"),
-  incident: (id: number) => request<IncidentDetail>(`/incidents/${id}`),
-  decide: (id: number, decision: "approve" | "reject") => request<Action>(`/actions/${id}/decision`, { decision }),
-  auditCheck: () => request<AuditCheck>("/audit/verify"),
+  demoLogin: () => post<User>("/auth/demo-login"),
+  logout: () => post<void>("/auth/logout"),
+  incidents: () => get<IncidentSummary[]>("/incidents"),
+  incident: (id: number) => get<IncidentDetail>(`/incidents/${id}`),
+  decide: (id: number, decision: "approve" | "reject") => post<Action>(`/actions/${id}/decision`, { decision }),
+  auditCheck: () => get<AuditCheck>("/audit/verify"),
   /** The demo buttons. Names that are not plain lowercase words are dropped: they become part of a URL. */
   demoScenarios: async () =>
-    (await request<DemoScenario[]>("/demo/scenarios")).filter((scenario) => SCENARIO_NAME.test(scenario.name)),
+    (await get<DemoScenario[]>("/demo/scenarios")).filter((scenario) => SCENARIO_NAME.test(scenario.name)),
   /** Fires a demo scenario. Only its name is sent; the gateway submits its own copy. */
   runScenario: (name: string) => {
     if (!SCENARIO_NAME.test(name)) {
       return Promise.reject(new ApiError(0, "That is not a demo scenario."));
     }
-    return request<IncidentDetail>(`/demo/${name}`, undefined, "POST");
+    return post<IncidentDetail>(`/demo/${name}`);
   },
   /** Starts a red-team run: the trick email, investigated by a scripted, hijacked model. */
-  startRedTeam: () => request<IncidentDetail>("/red-team", undefined, "POST"),
-  redTeamScorecard: (incidentId: number) => request<RedTeamCard>(`/red-team/${incidentId}`),
+  startRedTeam: () => post<IncidentDetail>("/red-team"),
+  redTeamScorecard: (incidentId: number) => get<RedTeamCard>(`/red-team/${incidentId}`),
   /** The live feed (ADR-49): an open response that the gateway keeps adding to. */
   openFeed: async (signal: AbortSignal) => {
-    const response = await authorised("/incidents/events", undefined, signal);
+    const response = await authorised("GET", "/incidents/events", undefined, signal);
     if (!response.body) {
       throw new ApiError(0, "Live updates are not available in this browser.");
     }

@@ -7,7 +7,7 @@
  */
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-export interface BranchedMenuChild {
+interface BranchedMenuChild {
   value: string;
   label: string;
   icon?: ReactNode;

@@ -9,7 +9,7 @@ import { api, ApiError } from "./api";
 
 export type LiveState = "connecting" | "live" | "paused";
 
-export interface LiveHandlers {
+interface LiveHandlers {
   onReady: () => void;
   onChanged: (incidentId: number) => void;
   onState: (state: LiveState) => void;

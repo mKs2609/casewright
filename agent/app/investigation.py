@@ -152,7 +152,7 @@ def investigate(request: InvestigateRequest, model: ChatModel | None = None,
     final = decide.more_severe(verdict, band)
     ai_line = None
     if claim is not None and model is not None:
-        ai_line, why_not = summary.write(case, report.counted_findings(tools.steps),
+        ai_line, why_not = summary.write(case, decide.counted_findings(tools.steps),
                                          {step.label for step in tools.steps}, final, attack, score, model, budget)
         yield ThoughtEvent(text="The AI summary passed every check and was added to the SOC report." if ai_line
                            else f"The AI summary was left out: {why_not}.")

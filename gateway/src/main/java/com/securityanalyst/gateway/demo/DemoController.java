@@ -1,6 +1,5 @@
 package com.securityanalyst.gateway.demo;
 
-import java.net.URI;
 import java.util.List;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -52,6 +51,6 @@ public class DemoController {
         var request = scenarios.incident(scenario)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "There is no demo scenario with that name"));
         IncidentResponses.Detail created = incidents.submit(request, user, Incident.SOURCE_DEMO);
-        return ResponseEntity.accepted().location(URI.create("/api/incidents/" + created.id())).body(created);
+        return IncidentResponses.accepted(created);
     }
 }

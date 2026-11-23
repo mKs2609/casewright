@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,8 +60,7 @@ public class EvidenceService {
     /** Every finding of the incident's accepted evidence, as stored (what the risk score is recomputed from). */
     @Transactional(readOnly = true)
     public List<Finding> findings(Long incidentId) {
-        return evidence.findByIncidentIdOrderByIdAsc(incidentId).stream()
-                .filter(e -> Evidence.OK.equals(e.getStatus()))
+        return accepted(incidentId)
                 .flatMap(e -> json.readTree(e.getSignals()).valueStream())
                 .map(signal -> new Finding(signal.get("id").asString(), signal.get("weight").asInt()))
                 .toList();
@@ -74,22 +74,28 @@ public class EvidenceService {
     /** Every finding of the incident's accepted evidence, as stored (what reports are checked against). */
     @Transactional(readOnly = true)
     public List<RecordedSignal> recordedSignals(Long incidentId) {
-        return evidence.findByIncidentIdOrderByIdAsc(incidentId).stream()
-                .filter(e -> Evidence.OK.equals(e.getStatus()))
+        return accepted(incidentId)
                 .flatMap(e -> json.readTree(e.getSignals()).valueStream().map(signal -> new RecordedSignal(e.getLabel(),
                         signal.get("id").asString(), signal.get("label").asString(), signal.get("plain").asString(),
-                        signal.get("weight").asInt(), signal.hasNonNull("mitre") ? signal.get("mitre").asString() : null,
-                        signal.hasNonNull("indicator") ? signal.get("indicator").asString() : null)))
+                        signal.get("weight").asInt(), textOrNull(signal, "mitre"), textOrNull(signal, "indicator"))))
                 .toList();
     }
 
     /** The labels of the incident's accepted evidence (E1, E2, ...). */
     @Transactional(readOnly = true)
     public Set<String> acceptedLabels(Long incidentId) {
-        return evidence.findByIncidentIdOrderByIdAsc(incidentId).stream()
-                .filter(e -> Evidence.OK.equals(e.getStatus()))
+        return accepted(incidentId)
                 .map(Evidence::getLabel)
                 .collect(Collectors.toSet());
+    }
+
+    /** The incident's accepted evidence (not the refused calls), in order. */
+    private Stream<Evidence> accepted(Long incidentId) {
+        return evidence.findByIncidentIdOrderByIdAsc(incidentId).stream().filter(e -> Evidence.OK.equals(e.getStatus()));
+    }
+
+    private static String textOrNull(JsonNode node, String field) {
+        return node.hasNonNull(field) ? node.get(field).asString() : null;
     }
 
     @Transactional(readOnly = true)

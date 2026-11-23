@@ -1,7 +1,7 @@
 import { Crosshair, Play } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { api } from "../api";
+import { api, errorText } from "../api";
 import { Skeleton } from "../motion";
 import type { DemoScenario, IncidentDetail, User } from "../types";
 
@@ -55,7 +55,7 @@ export function Scenarios({ user, onStarted }: Props) {
     try {
       onStarted(await (name === RED_TEAM ? api.startRedTeam() : api.runScenario(name)));
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Could not start the scenario. Try again.");
+      setError(errorText(failure, "Could not start the scenario. Try again."));
     } finally {
       setRunning(null);
     }

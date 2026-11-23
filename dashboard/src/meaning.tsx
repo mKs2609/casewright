@@ -22,7 +22,7 @@ import {
 
 import type { LiveState } from "./live";
 
-export type Tone = "benign" | "suspicious" | "malicious" | "accent" | "muted";
+type Tone = "benign" | "suspicious" | "malicious" | "accent" | "muted";
 
 export interface Meaning {
   word: string;

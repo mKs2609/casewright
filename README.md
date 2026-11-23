@@ -109,10 +109,10 @@ Around them sit the usual web defences: Argon2 password hashes, short-lived toke
 | Suite | Tests | Covers, among other things |
 |---|---|---|
 | Gateway (Java) | 364 | Approvals (roles, two at once, expiry, deciding your own account), the action policy, the audit chain catching edited, removed or forged entries, refusing malformed agent events, auth, rate limits and headers |
-| Agent (Python) | 656 | The six demo scenarios with and without the AI, the 100-incident evaluation, and a red-team suite where a scripted hijacked model tries every trick and is refused or overruled |
+| Agent (Python) | 657 | The six demo scenarios with and without the AI, the 100-incident evaluation, and a red-team suite where a scripted hijacked model tries every trick and is refused or overruled |
 | Dashboard (TypeScript) | 142 | Hostile markup in every incident field staying text, no links built from incident data, roles, session renewal, the live feed, the filters, accessible tabs, design tokens only |
 
-**Tests of the tests.** New code is checked by breaking it on purpose, one change at a time (for example removing the role check on approvals, or the tool allow-list itself), and confirming a named test fails. The latest change: 9 of 9 caught.
+**Tests of the tests.** New code is checked by breaking it on purpose, one change at a time (for example removing the role check on approvals, or the tool allow-list itself), and confirming a named test fails. The latest change, a cleanup with no change in behaviour: 9 of 10 caught, and the tenth (a report naming a finding that was never recorded) is still refused by the next check. Three of them first slipped through because older tests never pinned that behaviour down; each now has a test.
 
 **Security in CI.** A dependency audit, a scan of the whole git history for secrets and static analysis run on every pull request and every week; any finding fails the build. Dependencies are pinned to exact versions (Python packages by hash, container images by digest).
 

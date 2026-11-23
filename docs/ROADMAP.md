@@ -39,12 +39,13 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 19b | **Public demo mode** | Safe public access to a demo | Sign-up closed, a "Try the demo" button, no free-text incidents for the demo account, per-visitor limits | ✅ |
 | 19c | **Containers on ARM** | CI on more than one kind of processor | The containers are built and smoke-tested on ARM, like the free server, on every pull request (ADR-56) | ✅ |
 | 19d | **Try it yourself** | Dev containers, GitHub Codespaces, port forwarding | Anyone with a GitHub account opens a private, working copy from the README; a short demo video shows it (ADR-62) | ✅ (the video follows) |
-| 19e | **Finishing touches** | Consistent controls, filters in the address, writing for a reader | The sidebar's foot and the login button match the rest; Refresh confirms itself; the Overview's figures and types filter the incidents; a README for recruiters and engineers; an MIT licence; then a short video | 🟡 |
+| 19e | **Finishing touches** | Consistent controls, filters in the address, writing for a reader | The sidebar's foot and the login button match the rest; Refresh confirms itself; the Overview's figures and types filter the incidents; a README for recruiters and engineers; an MIT licence; then a short video | ✅ (the video follows) |
 | 19f | **Going live** | A real server, DNS, Let's Encrypt | The demo is reachable at its public address over HTTPS | ⏸ when a hosting account works (Oracle Cloud's card check and Azure for Students' sign-up both refused) |
 | 20a | **The new look** | Design tokens, self-hosted fonts, contrast, canvas animation | Every screen in one "signal" style (near-black on a blueprint grid, one soft indigo signal colour, editorial serif, icons with the labels); a simple centred login over a dotted globe (ADR-57) | ✅ |
 | 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | ✅ (two sections: how it investigates; two reports and a person decides) |
 | 20c | **Dashboard layout** | Navigation, information architecture, accessible tabs | A sidebar with Overview and Scenarios; each incident on its own page with Evidence / Reports / Actions tabs | ✅ |
 | 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, steps arriving like a feed, skeletons while loading, a branched menu and a lattice loader (ADR-61) | ✅ |
+| 21 | **Code cleanup** | Refactoring without changing behaviour | Simpler code in the dashboard, agent and gateway; every suite and the mutation checks still pass | 🟡 |
 
 ## Suggested pace (8 weeks)
 

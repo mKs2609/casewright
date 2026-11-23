@@ -1,6 +1,5 @@
 package com.securityanalyst.gateway.redteam;
 
-import java.net.URI;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -47,7 +46,7 @@ public class RedTeamController {
         var request = scenarios.incident(SCENARIO)
                 .orElseThrow(() -> new IllegalStateException("The red-team scenario is missing from the demo scenarios"));
         IncidentResponses.Detail created = incidents.submit(request, user, Incident.SOURCE_RED_TEAM);
-        return ResponseEntity.accepted().location(URI.create("/api/incidents/" + created.id())).body(created);
+        return IncidentResponses.accepted(created);
     }
 
     @GetMapping("/{id}")

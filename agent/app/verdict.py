@@ -76,12 +76,18 @@ def counterfactual(signals: list[Signal]) -> str:
     return f"The strongest finding is \"{label}\". Without it the risk would be {without} ({band(without)})."
 
 
-def cited_evidence(steps: list[StepEvent]) -> list[str]:
-    """The evidence items behind the findings that count (the strongest of each kind), in order."""
-    best: dict[str, tuple[int, str]] = {}
+def counted_findings(steps: list[StepEvent]) -> list[tuple[str, Signal]]:
+    """The findings that count (the strongest of each kind) with their evidence label,
+    strongest first; ties by kind, so the order is always the same."""
+    best: dict[str, tuple[str, Signal]] = {}
     for step in steps:
         for signal in step.signals:
-            if signal.id not in best or signal.weight > best[signal.id][0]:
-                best[signal.id] = (signal.weight, step.label)
-    labels = {label for _, label in best.values()}
+            if signal.id not in best or signal.weight > best[signal.id][1].weight:
+                best[signal.id] = (step.label, signal)
+    return sorted(best.values(), key=lambda pair: (-pair[1].weight, pair[1].id))
+
+
+def cited_evidence(steps: list[StepEvent]) -> list[str]:
+    """The evidence items behind the findings that count (the strongest of each kind), in order."""
+    labels = {label for label, _ in counted_findings(steps)}
     return sorted(labels, key=lambda label: int(label[1:]))

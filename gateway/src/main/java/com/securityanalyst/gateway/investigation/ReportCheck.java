@@ -42,10 +42,7 @@ final class ReportCheck {
 
         for (AgentEvent.ReportFinding finding : report.soc().findings()) {
             String key = finding.evidence() + "/" + finding.signal();
-            RecordedSignal signal = byKey.get(key);
-            if (signal == null) {
-                throw new AgentException("The SOC report names " + key + ", which is not a recorded finding");
-            }
+            RecordedSignal signal = recorded(byKey, key, "The SOC report");
             if (!signal.label().equals(finding.text()) || signal.weight() != finding.weight()
                     || !Objects.equals(signal.mitre(), finding.mitre())) {
                 throw new AgentException("The SOC report does not repeat " + key + " as it was recorded");
@@ -53,10 +50,7 @@ final class ReportCheck {
         }
         for (AgentEvent.ReportReason reason : report.plain().reasons()) {
             String key = reason.evidence() + "/" + reason.signal();
-            RecordedSignal signal = byKey.get(key);
-            if (signal == null) {
-                throw new AgentException("The plain report names " + key + ", which is not a recorded finding");
-            }
+            RecordedSignal signal = recorded(byKey, key, "The plain report");
             if (!signal.plain().equals(reason.text())) {
                 throw new AgentException("The plain report does not repeat " + key + " as it was recorded");
             }
@@ -92,5 +86,14 @@ final class ReportCheck {
         if (!"benign".equals(finalVerdict) && REASSURING.matcher(line).find()) {
             throw new AgentException("The AI summary contradicts the verdict");
         }
+    }
+
+    /** The recorded finding a report names (evidence/kind), or the report is refused. */
+    private static RecordedSignal recorded(Map<String, RecordedSignal> byKey, String key, String report) {
+        RecordedSignal signal = byKey.get(key);
+        if (signal == null) {
+            throw new AgentException(report + " names " + key + ", which is not a recorded finding");
+        }
+        return signal;
     }
 }

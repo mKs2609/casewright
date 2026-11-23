@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { KIND_WORDS, RED_TEAM, riskBand, SIMULATED, statusMeaning, verdictMeaning, when } from "../meaning";
 import type { Evidence, IncidentDetail } from "../types";
 import { CountUp } from "../motion";
-import { SignalChip, StatusChip } from "./Chips";
+import { SignalChips, StatusChip } from "./Chips";
 import { LatticeLoader } from "./LatticeLoader";
 
 function RiskMeter({ score }: { score: number }) {
@@ -84,13 +84,7 @@ function StepCard({ step, highlighted, arrived }: { step: Evidence; highlighted:
       </div>
       <Arguments args={step.args} />
       <p>{step.summary}</p>
-      {step.signals.length > 0 && (
-        <div className="chip-row">
-          {step.signals.map((signal) => (
-            <SignalChip key={signal.id + (signal.indicator ?? "")} signal={signal} />
-          ))}
-        </div>
-      )}
+      <SignalChips signals={step.signals} />
       <details>
         <summary>Raw evidence</summary>
         <pre>{JSON.stringify(step.result, null, 2)}</pre>

@@ -41,6 +41,7 @@ import com.securityanalyst.gateway.auth.AuthCookies;
 import com.securityanalyst.gateway.auth.Role;
 import com.securityanalyst.gateway.auth.User;
 import com.securityanalyst.gateway.auth.UserRepository;
+import com.securityanalyst.gateway.evidence.EvidenceService;
 import com.securityanalyst.gateway.identity.Baseline;
 import com.sun.net.httpserver.HttpServer;
 
@@ -178,6 +179,9 @@ class InvestigationTest extends PostgresIntegrationTest {
 
     @Autowired
     private Validator validator;
+
+    @Autowired
+    private EvidenceService evidenceService;
 
     @BeforeEach
     void reset() {
@@ -379,6 +383,11 @@ class InvestigationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.evidence[1].reason").value("This domain does not appear in the incident"))
                 .andExpect(jsonPath("$.evidence[1].result").doesNotExist())
                 .andExpect(jsonPath("$.evidence[2].signals").isEmpty());
+
+        // What reports and verdicts may cite, and what the score is recomputed from: the accepted items only.
+        assertThat(evidenceService.acceptedLabels(id.longValue())).containsExactlyInAnyOrder("E1", "E2");
+        assertThat(evidenceService.recordedSignals(id.longValue())).extracting(EvidenceService.RecordedSignal::evidence)
+                .containsExactly("E1");
     }
 
     @Test
