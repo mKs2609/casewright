@@ -3,24 +3,30 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-23
+**Last updated:** 2026-11-26
 
 ---
 
 ## Now
 
-### Step 21: Code cleanup (on `feature/code-cleanup`)
-Mohit asked for simpler code with no change in what the app does. One area at a time, each with its full test suite, and mutation checks on anything risky.
-- [x] Dashboard: every API call names its method (`get`, `post`) instead of a rule guessing it from the path and body; one `errorText` helper instead of the same line in five places; one `SignalChips` component instead of two copies; seven types no other file uses are no longer exported. Dashboard 142 tests pass; 2 mutation checks (a wrong method for logout, and for the login options), both caught
-- [x] Agent: "the strongest finding of each kind, with its evidence" was worked out twice (the report and the verdict's citations): now once, in `verdict.counted_findings`, which `cited_evidence` reuses; the tool box's accepted-call counter was always the number of steps, so it is gone; a reputation finding's score-and-tags text is built once. 657 agent tests pass, the evaluation report unchanged; 4 mutation checks, which first found two gaps the old code had too (which of two equally strong findings is cited; the tags in a reputation label), each now tested
-- [x] Gateway: the "202 Accepted, follow it at /api/incidents/{id}" reply written once (`IncidentResponses.accepted`) instead of in three controllers; `EvidenceService` reads "this incident's accepted evidence" and "an optional text field" in one place each; `ReportCheck` finds a report's recorded finding, or refuses the report, in one place. 364 gateway tests pass in both orders; 4 mutation checks: 3 caught, and one (refused calls counted as accepted evidence) that no outcome could show, since only E-labels can be cited and refused calls carry no findings, is now checked directly in `InvestigationTest`; one more (a report naming an unrecorded finding) is still refused by the next check, which compares the finding's words
-- [ ] All checks pass on GitHub
+### Step 22: Better detection, measured honestly (on `feature/better-detection`, ADR-63)
+The first held-out set's misses were already published, so it could not measure new fixes fairly. This step writes the test first, fixes second, and measures once.
+- [x] A second held-out set (40: 20 attacks, 20 harmless; emails, sign-ins, calls), written before any detector change, committed and pushed first (`278413a`)
+- [x] Real public data considered (the Nazario phishing corpus, the RBA login dataset, SpamAssassin): not used; reasons in ADR-63
+- [x] Fixes from the development and first held-out sets only: wider credential, bank-detail, payment and prompt-injection wording; five new findings (`SIG-PAYMENT-CHANGE`, `SIG-ADVANCE-FEE`, `SIG-TOO-GOOD`, `SIG-ENABLE-CONTENT`, `SIG-APP-LINK`). Each has a test that must fire and one that must not; every finding's plain wording is checked at grade 8 or below; 11 of 11 mutation checks caught
+- [x] Mohit's independent set (24, chosen by him and worded with ChatGPT), opened only after the fixes were frozen and copied in with names and numbers only
+- [x] Both fresh sets run once: 13 of 32 attacks caught, 6 of 32 false alarms. The fixes caught 8 more on the sets they came from, none more on the fresh sets, and added two false alarms. Mohit chose to keep the fixes and publish the result as it came out
+- [x] `docs/EVALUATION.md` regenerated (both "before" measurements recorded), README accuracy and test counts, ADR-63, `AGENTS.md`
+- [x] The withdrawn picomatch advisory's exception removed (ADR-60 update, `SECURITY.md`)
+- [x] 878 agent tests pass
+- [ ] All checks pass on GitHub (the dependency audit without the exception)
 - [ ] Merged
 
 ## Next
 
-### The demo video
-- [ ] A short video at the top of the README (Mohit records it, from a shot list)
+### Optional
+- A short demo video or GIF at the top of the README (Mohit decided it is not needed for now)
+- The next detection round: how evidence adds up in phone calls, measured on a new fresh set (ADR-63)
 
 ## Waiting
 
@@ -37,10 +43,11 @@ Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support li
 
 | # | Question | Needed by |
 |---|---|---|
-| 1 | Confirm the Proposed decisions in `DECISIONS.md` | Before the step each one affects |
+| - | None open: every decision in `DECISIONS.md` is Accepted | - |
 
 ## Done
 
+- **2026-11-24:** Step 21 (code cleanup) merged: PR #31.
 - **2026-11-23:** Step 19e (finishing touches, filters, the README, MIT) merged: PR #30.
 - **2026-11-22:** Step 19d (Try it yourself in GitHub Codespaces) merged: PR #29, after a real codespace run (the login fix for GitHub's rewritten Origin).
 - **2026-11-19:** Step 20d (design motion, with the React Bits branched menu and lattice loader) merged: PR #28. The final handbook (step 21) is dropped: the handbook stays Mohit's own notes.

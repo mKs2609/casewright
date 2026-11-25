@@ -3,7 +3,5 @@
 # passed. Add an entry only with a decision record and the owner's approval, for one advisory, for
 # at most 30 days, and only when no fixed version exists to upgrade to.
 
-[[IgnoredVulns]]
-id = "GHSA-fc5q-39xc-vjpf"
-ignoreUntil = 2026-12-18T00:00:00Z
-reason = "picomatch 4.0.7 (ReDoS on crafted extglob patterns), no fixed release yet. Used only by the dashboard's build and test tools (Vite, Vitest) on our own config patterns; never shipped to the browser or the server. Reviewed 2026-11-18."
+# No entries at the moment. The last one (GHSA-fc5q-39xc-vjpf, picomatch) was withdrawn by GitHub
+# on 2026-11-18 and removed on 2026-11-26.
