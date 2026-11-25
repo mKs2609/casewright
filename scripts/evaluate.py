@@ -1,4 +1,4 @@
-"""Runs the evaluation sets (step 18b, ADR-53) and rewrites docs/EVALUATION.md.
+"""Runs the evaluation sets (steps 18b and 22, ADR-53 and ADR-63) and rewrites docs/EVALUATION.md.
 
     agent\\.venv\\Scripts\\python.exe scripts\\evaluate.py           the rule engine (what CI checks)
     agent\\.venv\\Scripts\\python.exe scripts\\evaluate.py --model   also with the local AI model
@@ -23,6 +23,8 @@ os.environ["LLM_PROVIDER"] = "off"
 from app import config, reasoning  # noqa: E402
 from tests.evaluation import detection, false_alarms, report, run, run_all  # noqa: E402
 from tests.evaluation_heldout import HELD_OUT  # noqa: E402
+from tests.evaluation_heldout2 import HELD_OUT_2  # noqa: E402
+from tests.evaluation_independent import INDEPENDENT  # noqa: E402
 from tests.evaluation_set import DEVELOPMENT  # noqa: E402
 
 REPORT = ROOT / "docs" / "EVALUATION.md"
@@ -60,10 +62,13 @@ def model_run() -> dict:
     return {"model": settings.model, "date": datetime.now(UTC).date().isoformat(), "results": results}
 
 
-print("Running the rule engine on both sets ...", flush=True)
+print("Running the rule engine on every set ...", flush=True)
 development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
+held_out_2, independent = run_all(HELD_OUT_2), run_all(INDEPENDENT)
 show("Development set (rule engine)", development)
-show("Held-out set (rule engine)", held_out)
+show("First held-out set (rule engine)", held_out)
+show("Second held-out set (rule engine)", held_out_2)
+show("Independent set (rule engine)", independent)
 
 if WITH_MODEL:
     recorded = model_run()
@@ -71,5 +76,5 @@ if WITH_MODEL:
     print(f"\nRecorded in {MODEL_RUN.relative_to(ROOT)}")
 recorded = json.loads(MODEL_RUN.read_text(encoding="utf-8")) if MODEL_RUN.exists() else None
 
-REPORT.write_text(report(development, held_out, recorded), encoding="utf-8", newline="\n")
+REPORT.write_text(report(development, held_out, held_out_2, independent, recorded), encoding="utf-8", newline="\n")
 print(f"Wrote {REPORT.relative_to(ROOT)}")

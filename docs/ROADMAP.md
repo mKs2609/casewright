@@ -45,7 +45,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 20b | **Front page** | Scroll-driven sections, progressive enhancement | A scrolling front page before login: how it investigates, two reports, a human approves, measured accuracy, red-team results | ✅ (two sections: how it investigates; two reports and a person decides) |
 | 20c | **Dashboard layout** | Navigation, information architecture, accessible tabs | A sidebar with Overview and Scenarios; each incident on its own page with Evidence / Reports / Actions tabs | ✅ |
 | 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, steps arriving like a feed, skeletons while loading, a branched menu and a lattice loader (ADR-61) | ✅ |
-| 21 | **Code cleanup** | Refactoring without changing behaviour | Simpler code in the dashboard, agent and gateway; every suite and the mutation checks still pass | 🟡 |
+| 21 | **Code cleanup** | Refactoring without changing behaviour | Simpler code in the dashboard, agent and gateway; every suite and the mutation checks still pass | ✅ |
+| 22 | **Better detection** | Held-out discipline, independent test sets, overfitting | New detection rules from the seen sets, measured once on a set committed before them and on an independent set; the result published as it came out (ADR-63) | 🟡 |
 
 ## Suggested pace (8 weeks)
 
@@ -68,4 +69,4 @@ Uploading `.eml` files · a real threat-intel feed behind a flag · analyst feed
 
 Deployment is steps 19a to 19d above (decided with Mohit: a live demo on Oracle Cloud's free server, a DuckDNS name, no AI model on the server; ADR-54). After it: **design and UI/UX polish** (steps 20a to 20d, from Mohit's style references). Going live was then blocked from outside the project (Oracle Cloud's card check and Azure for Students' sign-up both refused), so step 19d became **Try it yourself**: an "Open in GitHub Codespaces" button and a demo video (ADR-62); then come finishing touches and a demo video (19e); going live is step 19f, whenever a hosting account works. The final handbook was dropped: the handbook stays Mohit's own notes.
 
-The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating).
+The evaluation (ADR-53) points to the biggest gap to close later: attacks phrased as calm requests with no tell-tale words; and, with the AI model on, too many false alarms (its verdicts need calibrating). Step 22 (ADR-63) tried more keyword rules: they helped only on the sets they came from, so the next round should change how evidence adds up (phone calls start with almost none), measured on a new fresh set.

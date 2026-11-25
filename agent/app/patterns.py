@@ -45,10 +45,10 @@ SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
      "It asks you to confirm your password or account details.", 25, "T1566.002",
      _rx(r"\b((verify|confirm|update|validate|re-?enter) (your )?(account|password|identity|login|credentials)"
          r"|(enter|provide|submit|share|send|type) (your |the )?(work |email |account )?(password|credentials|login details)"
-         r"|(sign|log) ?in with your [\w ]{0,25}password)\b")),
+         r"|(sign|log) ?in with your [\w ]{0,25}(password|credentials|login details))\b")),
     ("SIG-FINANCIAL-DETAILS", "Asks for card or bank details",
      "It asks for your card or bank details, which a real company would never need this way.", 25, "T1598",
-     _rx(r"\b(enter|submit|provide|share|send|confirm|update|give|tell|read)( me| us)? (your |the )?[\w ,]{0,30}?"
+     _rx(r"\b(enter|submit|provide|share|send|confirm|update|give|tell|read|need)( me| us)? (your |the )?[\w ,]{0,30}?"
          r"(card (number|details)|cvv|card pin|atm pin|bank account (number|details)|account number"
          r"|net ?banking (password|details))\b")),
     ("SIG-OTP-REQ", "Asks for a one-time code",
@@ -60,7 +60,7 @@ SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
          r"|(read|tell|give|send|share|forward) (me|us) (the |your |that |this )?([\w-]+ )?(code|otp|pin))\b")),
     ("SIG-PAYMENT", "Payment or gift-card pressure",
      "It pushes you to send money, gift cards or cryptocurrency.", 20, "T1657",
-     _rx(r"\b(gift ?cards?|wire transfer|bitcoin|crypto(currency)?|upi (id|pin))\b")),
+     _rx(r"\b(gift ?cards?|wire transfer|bitcoin|crypto(currency)?|upi (id|pin)|wallet address)\b")),
     ("SIG-IMPERSONATION", "Claims to be an authority (bank, IT, security, police)",
      "The sender claims to be a bank, a support team or an official to win your trust.", 15, "T1656",
      _rx(r"\b(this is|i am|i'm|from|with) (the |your )?[\w ,]{0,25}(bank|it department|it support|security team|"
@@ -76,6 +76,25 @@ SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
     ("SIG-REMOTE-TOOL", "Asks to install remote-access software",
      "It asks you to install software that lets a stranger control your computer.", 30, "T1219",
      _rx(r"\b(anydesk|teamviewer|quick ?support|remote access|screen ?share)\b")),
+    ("SIG-PAYMENT-CHANGE", "Asks to change where money is paid",
+     "It asks to send money to a new bank account. Criminals do this to steal salaries and payments.", 30, "T1657",
+     # "There is no change to our bank details" and "we will not change ..." say the opposite.
+     _rx(r"(?<!\bno )(?<!\bnot )(?<!\bnever )\b((change|update|switch|move)( \w+){0,3} (salary|bank|payment|payroll|deposit|beneficiary) (account|details)"
+         r"|(new|updated|changed|different) bank (account|details)|(moved|changed|switched) banks?)\b")),
+    ("SIG-ADVANCE-FEE", "Asks for a fee before something is released",
+     "It asks you to pay a fee first to get money, a parcel or a prize. This is a common scam.", 20, "T1657",
+     _rx(r"\b(processing|customs|clearance|release|activation|registration|handling) (fee|charge)s?\b")),
+    ("SIG-TOO-GOOD", "Promises guaranteed or unrealistic returns",
+     "It promises sure or very high profits. Real investments never promise that.", 30, "T1657",
+     _rx(r"\b(guaranteed (returns?|profits?|income|interest|\d+(\.\d+)? ?%)|(double|triple) your (money|savings|investment)"
+         r"|risk[- ]free (returns?|profits?|investment)|\d+(\.\d+)? ?% (every|per|a|each) (day|week|month))")),
+    ("SIG-ENABLE-CONTENT", "Asks to enable macros or content in a document",
+     "It asks you to switch on hidden features in a file. That is how harmful programs get in.", 30, "T1204.002",
+     _rx(r"\benable (content|macros?)\b")),
+    ("SIG-APP-LINK", "Asks to install an app from a link it sends",
+     "It asks you to install an app from a link it sends. Such apps can take your money or data.", 25, "T1204",
+     _rx(r"\b((send|sending|sent)( you)? a link to (download|install)"
+         r"|(download|install) (our|this|my|the) [\w ]{0,20}app (from|using|through|via) (this|the|my|our) link)\b")),
     ("SIG-AI-INJECTION", "Prompt-injection text aimed at an AI analyst",
      "The message hides instructions meant to trick our security checks. Genuine messages never do that.", 40, "AML.T0051",
      _rx(r"(ignore (all |any )?(the )?(previous|prior|above|earlier) (instructions|rules|prompts?)"
@@ -84,7 +103,10 @@ SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
          r"|system prompt"
          r"|you are now (a|an|in) "
          r"|classify (this|it) (email |message |incident )?as (safe|benign|legitimate|harmless)"
-         r"|pre-?approved by (the )?security team)")),
+         r"|pre-?approved by (the )?security team"
+         # Text that speaks to an AI reading the message ("AI assistant reading this inbox: ...").
+         r"|\b(ai|llm)\b[\w ]{0,20}\b(reading|processing|summari[sz]ing|reviewing) (this|these)\b"
+         r"|when you summari[sz]e this)")),
 ]
 
 # Requests that genuine messages mention only to say they never make them ("we will never ask

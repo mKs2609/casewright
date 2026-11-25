@@ -16,16 +16,17 @@ import pytest
 from app import config
 from app.indicators import extract_indicators
 from app.models import Incident
-from tests.evaluation import false_alarms, detection, report, run_all, wilson
+from tests.evaluation import STEP_22_NEW_FALSE_ALARMS, false_alarms, detection, report, run_all, wilson
 from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
+from tests.evaluation_independent import INDEPENDENT
 from tests.evaluation_set import DEVELOPMENT, SOURCES, Example
 from tests.scenarios import BASELINES, SCENARIOS
 
 ROOT = Path(__file__).resolve().parents[2]
 ALL = DEVELOPMENT + HELD_OUT
-# Checked for form here; not measured until the step-22 detector changes are finished (ADR-63).
-EVERY = ALL + HELD_OUT_2
+# The two step-22 sets: checked for form here; measured once, after the detector changes (ADR-63).
+EVERY = ALL + HELD_OUT_2 + INDEPENDENT
 
 # The gateway's own rules for each kind (EmailIncidentRequest, LoginIncidentRequest,
 # CallTranscriptIncidentRequest), so every example could be submitted through the API as it is.
@@ -44,7 +45,7 @@ def reserved_domain(domain: str) -> bool:
 
 
 def test_the_sets_have_the_planned_size_and_balance() -> None:
-    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40)):
+    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40), (INDEPENDENT, 24)):
         assert len(chosen) == size
         assert sum(e.label == "malicious" for e in chosen) == size // 2
         assert {e.label for e in chosen} == {"malicious", "benign"}
@@ -127,12 +128,13 @@ def test_the_rule_engine_is_never_measured_with_the_model_switched_on(monkeypatc
 
 def test_a_recorded_model_run_is_reported_per_set() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
+    fresh = run_all(HELD_OUT_2), run_all(INDEPENDENT)
     # A made-up run: the model flags exactly the attacks, and finishes all but one investigation.
     results = {e.name: {"flagged": e.label == "malicious", "verdict": "malicious" if e.label == "malicious" else "benign",
                         "risk": 0, "engine": "llm"} for e in ALL}
     results[HELD_OUT[0].name]["engine"] = "rules"
 
-    text = report(development, held_out, {"model": "test-model", "date": "2026-11-09", "results": results})
+    text = report(development, held_out, *fresh, {"model": "test-model", "date": "2026-11-09", "results": results})
 
     assert "Model `test-model`, run on 2026-11-09." in text
     assert "| Held-out | 20 of 20 (100%), range 84% to 100% | 0 of 20 (0%), range 0% to 16% | 39 of 40 |" in text
@@ -141,11 +143,18 @@ def test_a_recorded_model_run_is_reported_per_set() -> None:
 
 def test_the_published_report_matches_what_the_agent_does_today() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
+    held_out_2, independent = run_all(HELD_OUT_2), run_all(INDEPENDENT)
     model_file = ROOT / "testdata" / "evaluation-model-run.json"
     recorded = json.loads(model_file.read_text(encoding="utf-8")) if model_file.exists() else None
     published = (ROOT / "docs" / "EVALUATION.md").read_text(encoding="utf-8")
 
-    assert published == report(development, held_out, recorded), (
-        "The evaluation results changed (held-out: "
-        f"{detection(held_out).shown()} caught, {false_alarms(held_out).shown()} false alarms). "
+    assert published == report(development, held_out, held_out_2, independent, recorded), (
+        "The evaluation results changed (second held-out set: "
+        f"{detection(held_out_2).shown()} caught, {false_alarms(held_out_2).shown()} false alarms). "
         "Run scripts\\evaluate.py and commit docs/EVALUATION.md with this change.")
+
+
+def test_the_false_alarms_the_report_blames_on_step_22_are_still_false_alarms() -> None:
+    named = [e for e in HELD_OUT_2 + INDEPENDENT if e.name in STEP_22_NEW_FALSE_ALARMS]
+    assert len(named) == len(STEP_22_NEW_FALSE_ALARMS)
+    assert all(o.example.label == "benign" and o.flagged for o in run_all(named))
