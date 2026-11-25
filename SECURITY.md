@@ -46,7 +46,7 @@ Each item is ticked only when it is implemented **and** covered by a test.
 | 2026-11-08 | Jackson (`jackson-core`, `jackson-databind`), gateway | 3.1.5 | GHSA-7hhh-6rmp-j9qf, GHSA-p6pp-m3f8-5c89, GHSA-cxp5-3px4-pw24, GHSA-gx83-3vf8-gh7j, GHSA-q4xh-88c3-wmh7, GHSA-wjgm-6hv5-3cvf, GHSA-wv8q-qhhj-9h54 | High, moderate | Spring Boot 4.1.2 (Jackson 3.1.7) |
 | 2026-11-08 | certifi, agent | 2026.7.22 | GHSA-6q48-6c7w-9gw2 (PYSEC-2026-4320) | Critical | certifi 2026.10.18 |
 | 2026-11-14 | opentelemetry-api (through FastAPI), agent | 1.45.1 | GHSA-mf5v-w3w3-f6cg | Moderate | opentelemetry-api 1.45.2 |
-| 2026-11-18 | picomatch (through Vite and Vitest), dashboard build tools | 4.0.7 | GHSA-fc5q-39xc-vjpf | High | **No fixed release yet.** Accepted until 2026-12-18 in `.github/osv-scanner.toml` (ADR-60): used only at build and test time on our own config patterns, never shipped |
+| 2026-11-18 | picomatch (through Vite and Vitest), dashboard build tools | 4.0.7 | GHSA-fc5q-39xc-vjpf | High | **Withdrawn by GitHub on 2026-11-18** (not a vulnerability). Had been accepted until 2026-12-18 in `.github/osv-scanner.toml` (ADR-60); the entry was removed on 2026-11-26 |
 
 The first 13 were fixed before the audit became a required check; later ones are fixed by an upgrade, or, when no fixed release exists, accepted for at most 30 days with a reason and a decision record.
 
