@@ -11,9 +11,10 @@ in practice: a missed attack is closed, a false alarm takes someone's time.
 With 20 or 30 of each, one example is worth 3 to 5 percentage points, so each rate also gets a
 95% confidence interval (the Wilson score interval): the range the true rate probably lies in.
 
-Two sets (ADR-53): the development set (tests/evaluation_set.py), whose first run showed the
-gaps that were then fixed, and the held-out set (tests/evaluation_heldout.py), written after
-the fixes and run once. The held-out result is the honest one.
+The sets (ADR-53, ADR-63): the development set (tests/evaluation_set.py), whose first run showed
+the gaps that were then fixed, and held-out sets, each written and committed before a round of
+changes and run once after it. Once a set's mistakes are read to make changes it counts as seen;
+the newest held-out set (now tests/evaluation_heldout3.py, step 23) gives the honest number.
 """
 
 import math
@@ -28,6 +29,7 @@ from app.llm import ChatModel
 from app.models import CompleteEvent, InvestigateRequest, VerdictEvent
 from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
+from tests.evaluation_heldout3 import HELD_OUT_3
 from tests.evaluation_independent import INDEPENDENT
 from tests.evaluation_set import DEVELOPMENT, SOURCES, Example
 from tests.scenarios import BASELINES
@@ -182,6 +184,33 @@ STEP_22_CHANGES = [
 ]
 
 
+# The step-22 fresh sets' one honest run (2026-11-26), now history: step 23 was designed by
+# reading their mistakes (ADR-63).
+STEP_22_RESULT = {"held_out_2": (Rate(6, 20), Rate(4, 20)), "independent": (Rate(7, 12), Rate(2, 12))}
+STEP_22_SEEN_GAIN = 8   # its extra catches on the development and first held-out sets (same report)
+
+# Step 23 (ADR-64), measured on 2026-11-27 with the detectors from before its changes (main at
+# e7766b9), in the same run as the third held-out set's one run after them. Every set, and the
+# phone calls alone, as (attacks caught, false alarms).
+BEFORE_STEP_23 = {"development": (Rate(29, 30), Rate(4, 30)), "held_out": (Rate(18, 20), Rate(1, 20)),
+                  "held_out_2": (Rate(6, 20), Rate(4, 20)), "independent": (Rate(7, 12), Rate(2, 12)),
+                  "held_out_3": (Rate(3, 20), Rate(2, 20))}
+BEFORE_STEP_23_CALLS = {"development": (Rate(8, 8), Rate(0, 8)), "held_out": (Rate(5, 6), Rate(0, 6)),
+                        "held_out_2": (Rate(1, 6), Rate(0, 6)), "independent": (Rate(2, 5), Rate(0, 7)),
+                        "held_out_3": (Rate(0, 10), Rate(0, 10))}
+
+STEP_23_CHANGES = [
+    ("A request to send or move money", "New finding `SIG-SEND-MONEY` (weight 25): pay, send, transfer, deposit, "
+     "move or return money, an amount, a fee or a balance; \"send it back to this number\"; \"the payment goes "
+     "there\". Not when the money comes to you (\"we'll pay\", \"I will transfer\"), nor after \"never\", \"not\" "
+     "or \"don't\". A bare number is not an amount (\"send the report by 5\").", "held2-call-wrong-transfer"),
+    ("A stranger asking for something", "New finding `BASELINE-STRANGER-ASKS` (weight 30), from the baseline check: "
+     "the caller's number is unknown to the person and the caller's own lines ask for money, a code, a password, "
+     "card or bank details, a payment change, a fee, remote-access software or an app from a link. Either alone "
+     "stays low; together they cross the line. Only which kinds of request are recorded, never the caller's words.",
+     "held-call-hr-bank-details"),
+]
+
 # ------------------------------------------------------------------ the report
 
 def _target(rate: Rate, target: float, at_least: bool) -> str:
@@ -256,18 +285,27 @@ def _counts(examples: list[Example]) -> str:
             f"{sum(e.label == 'benign' for e in examples)} harmless")
 
 
-def _caught(outcomes: list[Outcome]) -> int:
-    return detection(outcomes).hits
+def _sum(rates: list[Rate]) -> Rate:
+    return Rate(sum(r.hits for r in rates), sum(r.total for r in rates))
 
 
 def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list[Outcome],
-           independent: list[Outcome], model_run: dict[str, Any] | None) -> str:
+           independent: list[Outcome], held_out_3: list[Outcome], model_run: dict[str, Any] | None) -> str:
     first, before = FIRST_RUN, BEFORE_STEP_22
-    fresh = held_out_2 + independent
+    step22 = STEP_22_RESULT
+    d_fresh22 = _sum([step22["held_out_2"][0], step22["independent"][0]])
+    f_fresh22 = _sum([step22["held_out_2"][1], step22["independent"][1]])
+    fresh_before = (Rate(before["held_out_2"][0].hits + before["independent"][0].hits, d_fresh22.total),
+                    Rate(before["held_out_2"][1].hits + before["independent"][1].hits, f_fresh22.total))
+    fresh = held_out_3
     d_fresh, f_fresh = detection(fresh), false_alarms(fresh)
-    fresh_before = (Rate(before["held_out_2"][0].hits + before["independent"][0].hits, d_fresh.total),
-                    Rate(before["held_out_2"][1].hits + before["independent"][1].hits, f_fresh.total))
-    seen_gain = (_caught(development) + _caught(held_out)) - (before["development"][0].hits + before["held_out"][0].hits)
+    b23, b23c = BEFORE_STEP_23, BEFORE_STEP_23_CALLS
+    seen_sets = {"development": development, "held_out": held_out, "held_out_2": held_out_2,
+                 "independent": independent}
+    seen = [o for outcomes in seen_sets.values() for o in outcomes]
+    seen_before = _sum([b23[k][0] for k in seen_sets]), _sum([b23[k][1] for k in seen_sets])
+    seen_calls_before = _sum([b23c[k][0] for k in seen_sets]), _sum([b23c[k][1] for k in seen_sets])
+    calls_now = detection(held_out_3, "call_transcript"), false_alarms(held_out_3, "call_transcript")
     lines = [
         "# Evaluation",
         "",
@@ -292,39 +330,64 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "",
         "| Measure | Result, and 95% range | PRD target |",
         "|---|---|---|",
-        *_rate_rows("**Fresh sets together** (the honest number)", d_fresh, f_fresh),
-        *_summary_rows("Second held-out set", held_out_2),
-        *_summary_rows("Independent set", independent),
+        *_rate_rows("**Third held-out set** (fresh: the honest number)", d_fresh, f_fresh),
+        *_rate_rows("Second held-out and independent sets, their one honest run (step 22)", d_fresh22, f_fresh22),
+        *_summary_rows("Second held-out set now", held_out_2),
+        *_summary_rows("Independent set now", independent),
         *_rate_rows("First held-out set, its one honest run (before step 22)", *before["held_out"]),
-        *_summary_rows("First held-out set now (fixed by looking at it)", held_out),
+        *_summary_rows("First held-out set now", held_out),
         *_summary_rows("Development set now", development),
         *_rate_rows("Development set, first run", first["detection"], first["false_alarms"]),
         "",
         f"**In plain words:** on {d_fresh.total} attacks and {f_fresh.total} harmless incidents it was never tuned on, "
-        f"the rule engine caught {d_fresh.hits} attacks and raised {f_fresh.hits} false alarms. The step-22 fixes "
-        f"caught {seen_gain} more attacks on the sets they were made from, but on the fresh sets they caught "
-        f"{d_fresh.hits - fresh_before[0].hits} more and added {f_fresh.hits - fresh_before[1].hits} false alarm(s) "
-        "(table below). Keyword rules catch the scams they were written for, and the fresh sets use different scams "
-        "on purpose. The misses are calm requests with no tell-tale words, and phone calls, which start with almost "
-        "no evidence: an unknown caller adds 5, so a single finding rarely reaches 30.",
+        f"the rule engine caught {d_fresh.hits} attacks and raised {f_fresh.hits} false alarms. Step 23 changed how a "
+        "phone call's evidence adds up: a caller the person does not know, asking for money, a code or private "
+        f"details, is now enough for a person to look. On the fresh set's calls it caught {calls_now[0].hits} of "
+        f"{calls_now[0].total} scams (before: {b23c['held_out_3'][0].hits}) with {calls_now[1].hits} false alarms "
+        f"(before: {b23c['held_out_3'][1].hits}). Every call it missed asks for something in words no rule knows "
+        "(\"read the three small numbers on the back\", \"press approve and enter your PIN\", \"release the money "
+        "to the account\"): the scoring now works once a request is recognised; recognising requests worded in new "
+        "ways is the open problem.",
+        "",
+        "### Did step 23 help on incidents it was not made from?",
+        "",
+        "| Third held-out set (run once) | Before step 23 | After step 23 |",
+        "|---|---|---|",
+        f"| All attacks caught | {b23['held_out_3'][0].hits} of {b23['held_out_3'][0].total} | {d_fresh.hits} of "
+        f"{d_fresh.total} |",
+        f"| All false alarms | {b23['held_out_3'][1].hits} of {b23['held_out_3'][1].total} | {f_fresh.hits} of "
+        f"{f_fresh.total} |",
+        f"| Phone calls: scams caught | {b23c['held_out_3'][0].hits} of {b23c['held_out_3'][0].total} | "
+        f"{calls_now[0].hits} of {calls_now[0].total} |",
+        f"| Phone calls: false alarms | {b23c['held_out_3'][1].hits} of {b23c['held_out_3'][1].total} | "
+        f"{calls_now[1].hits} of {calls_now[1].total} |",
+        "",
+        "Yes, with no new false alarms, though far less than on the sets it was designed from. On those seen sets it "
+        f"caught {detection(seen).hits - seen_before[0].hits} more attacks (phone calls: "
+        f"{seen_calls_before[0].hits} of {seen_calls_before[0].total} before, "
+        f"{sum(detection(o, 'call_transcript').hits for o in seen_sets.values())} of {seen_calls_before[0].total} "
+        f"after) and raised {false_alarms(seen).hits - seen_before[1].hits} more false alarms. The gap between the "
+        "two is why the fresh number is the one quoted.",
         "",
         "### Did the step-22 fixes help on incidents they were not made from?",
+        "",
+        "Step 22 added keyword rules and was measured on the second held-out and independent sets, run once "
+        "(2026-11-26):",
         "",
         "| Fresh set (run once) | Detectors before step 22 | After step 22 |",
         "|---|---|---|",
         *[f"| {title}: {what} | {old.hits} of {old.total} | {new.hits} of {new.total} |"
-          for title, key, now in (("Second held-out set", "held_out_2", held_out_2), ("Independent set", "independent",
-                                                                                      independent))
-          for what, old, new in (("attacks caught", before[key][0], detection(now)),
-                                 ("false alarms", before[key][1], false_alarms(now)))],
+          for title, key in (("Second held-out set", "held_out_2"), ("Independent set", "independent"))
+          for what, old, new in (("attacks caught", before[key][0], step22[key][0]),
+                                 ("false alarms", before[key][1], step22[key][1]))],
         "",
-        "No. The fixes are kept, because each describes a documented attack and two false alarms is little evidence "
-        "either way, but they were not proven on new data. The new false alarms:",
+        f"No: they caught {STEP_22_SEEN_GAIN} more attacks on the sets they were made from, but "
+        f"{d_fresh22.hits - fresh_before[0].hits} more on the fresh sets, and added "
+        f"{f_fresh22.hits - fresh_before[1].hits} false alarms. They are kept, because each describes a documented "
+        "attack, but they were not proven on new data. The new false alarms, still not fixed (a fix made after "
+        "reading them would need yet another fresh set to be measured on):",
         "",
         *[f"- `{name}`: {why}." for name, why in STEP_22_NEW_FALSE_ALARMS.items()],
-        "",
-        "They are not fixed here: fixing them after reading them would make these sets flattering too. A later fix "
-        "needs a fresh set to be measured on.",
         "",
         "## The sets",
         "",
@@ -334,12 +397,15 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "step-18b fixes and run once. Its mistakes were then read and fixed in step 22, so it is now a development "
         "set too.",
         f"- **Second held-out set**: {_counts(HELD_OUT_2)} (`agent/tests/evaluation_heldout2.py`). Written before "
-        "the step-22 fixes, committed and pushed before any of them, and run once after them. Different scams and "
-        "situations from both earlier sets.",
+        "the step-22 fixes, committed and pushed before any of them, and run once after them. Read for step 23, so "
+        "now seen.",
         f"- **Independent set**: {_counts(INDEPENDENT)}, emails and calls (`agent/tests/evaluation_independent.py`). "
         "The incidents were chosen by the project owner, who did not write the detectors, and worded with ChatGPT; "
         "nobody working on the detectors saw them until the step-22 fixes were frozen. Copied in with only the "
-        "rupee sign, reserved phone numbers and source labels added, then run once.",
+        "rupee sign, reserved phone numbers and source labels added, then run once. Read for step 23, so now seen.",
+        f"- **Third held-out set**: {_counts(HELD_OUT_3)} (`agent/tests/evaluation_heldout3.py`), half of them phone "
+        "calls. Written before the step-23 change, committed and pushed before any of it, and run once after it "
+        "was frozen. Different scams and situations from all earlier sets.",
         "- Every attack follows a pattern from a public source (below). Every name, address and number is a reserved "
         "example one. None is one of the six demo scenarios.",
         "- Every set includes hard cases on purpose, both ways: attacks with no obvious keyword, and harmless messages "
@@ -349,11 +415,15 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "",
         "### By kind of incident",
         "",
-        "Second held-out set:",
+        "Third held-out set:",
+        "",
+        *_by_kind(held_out_3),
+        "",
+        "Second held-out set now:",
         "",
         *_by_kind(held_out_2),
         "",
-        "Independent set (no sign-ins):",
+        "Independent set now (no sign-ins):",
         "",
         *[row for row in _by_kind(independent) if "Sign-in" not in row],
         "",
@@ -369,13 +439,19 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
           f"({first[kind][0].hits}) | {false_alarms(development, kind).hits} of {false_alarms(development, kind).total} "
           f"({first[kind][1].hits}) |" for kind, title in KINDS.items()],
         "",
-        "## What the second held-out set got wrong",
+        "## What the third held-out set got wrong",
         "",
-        *_wrong(held_out_2),
+        *_wrong(held_out_3),
         "",
-        "## What the independent set got wrong",
+        "## What step 23 changed",
         "",
-        *_wrong(independent),
+        "Made by looking only at the four seen sets (the development set, the first and second held-out sets and "
+        "the independent set). Agent only: the risk formula is unchanged, so the gateway, which recomputes every "
+        "score, needed no change (ADR-43, ADR-64).",
+        "",
+        "| Gap | Change | First seen in |",
+        "|---|---|---|",
+        *[f"| {gap} | {change} | `{seen_in}` |" for gap, change, seen_in in STEP_23_CHANGES],
         "",
         "## What step 22 changed",
         "",
@@ -384,14 +460,21 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "",
         "| Gap | Change | First seen in |",
         "|---|---|---|",
-        *[f"| {gap} | {change} | `{seen}` |" for gap, change, seen in STEP_22_CHANGES],
+        *[f"| {gap} | {change} | `{seen_in}` |" for gap, change, seen_in in STEP_22_CHANGES],
         "",
         "## What the seen sets still get wrong",
         "",
         "Left as they are on purpose: a fix would only fit these examples, or would weaken a check that catches real "
         "attacks (for example, lowering the weight of \"success after many failures\" would hide the account "
-        "takeover in `held-login-local-takeover`). `held-call-hr-bank-details` reaches risk 29, one below the line; "
-        "moving a weight to push one example over it would be tuning to the test.",
+        "takeover in `held-login-local-takeover`).",
+        "",
+        "Second held-out set:",
+        "",
+        *_wrong(held_out_2),
+        "",
+        "Independent set:",
+        "",
+        *_wrong(independent),
         "",
         "First held-out set:",
         "",
@@ -419,17 +502,17 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "",
         *_model_section(model_run, DEVELOPMENT + HELD_OUT),
         "",
-        "This recorded run covers the development and first held-out sets only, and predates step 22; the two fresh "
-        "sets have not been run with the model.",
+        "This recorded run covers the development and first held-out sets only, and predates steps 22 and 23; the "
+        "later sets have not been run with the model.",
         "",
         "## Limitations",
         "",
-        f"- **Small sets.** {sum(o.example.label == 'malicious' for o in development + held_out + fresh)} attacks and "
-        f"{sum(o.example.label == 'benign' for o in development + held_out + fresh)} harmless incidents in all, and "
-        f"only {d_fresh.total} of each in the fresh sets. The 95% ranges above are wide; a few more misses or "
+        f"- **Small sets.** {sum(o.example.label == 'malicious' for o in seen + fresh)} attacks and "
+        f"{sum(o.example.label == 'benign' for o in seen + fresh)} harmless incidents in all, and "
+        f"only {d_fresh.total} of each in the fresh set. The 95% ranges above are wide; a few more misses or "
         "catches would move the numbers noticeably.",
-        "- **The same author** wrote the detectors, the development set and both held-out sets. Writing each held-out "
-        "set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its "
+        "- **The same author** wrote the detectors, the development set and all three held-out sets. Writing each "
+        "held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its "
         "wording was written by an AI model, which tends to state warning signs more plainly than real attackers do.",
         "- **Synthetic text.** The examples follow published attack patterns, but they are not real messages: real "
         "attacks are messier, longer and in many languages (all of these are in English). Public collections of real "

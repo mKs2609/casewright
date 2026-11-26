@@ -5,7 +5,7 @@ import re
 import pytest
 
 from app.case import ToolRejected
-from app.patterns import HIDDEN, SIGNATURES, normalise, pattern_match
+from app.patterns import HIDDEN, SIGNATURES, asks, normalise, pattern_match
 from tests.conftest import make_case
 from tests.test_report import grade_level
 
@@ -97,6 +97,45 @@ def test_a_no_earlier_in_the_message_cannot_hide_a_bank_change() -> None:
     # Only "no", "not" or "never" directly before the change word counts, as for NEVER_ASKED.
     assert "SIG-PAYMENT-CHANGE" in ids(email("No worries about the delay. Please change my salary account to the one below."))
     assert "SIG-PAYMENT-CHANGE" in ids(email("This is not urgent, but update the payment details on file today."))
+
+
+# Added in step 23 (ADR-64): the request for money itself, whatever the story around it.
+@pytest.mark.parametrize("ask", [
+    "Pay Rs 12,000 today or we will send your photos to everyone.",
+    "Please send it back to this number now, I'm begging you.",
+    "Then you deposit Rs 2,000 to unlock the premium tasks.",
+    "Move the money to our temporary safe account.",
+    "Transfer your full balance to the account I give you.",
+    "Could you make sure today's payment goes there instead of the old one?",
+    "You must pay a verification deposit to close the case.",
+    "Send ₹ 5000 to this UPI ID.",
+    "Return the amount to my account by tonight.",
+])
+def test_a_request_to_send_money_is_recognised(ask: str) -> None:
+    assert "SIG-SEND-MONEY" in ids(email(ask))
+
+
+@pytest.mark.parametrize("ordinary", [
+    "We'll pay by wire transfer next week, as usual.",
+    "We'll pay the full amount on Friday, as agreed.",
+    "We’ll pay the full amount on Friday.",
+    "I'll send the money tonight.",
+    "I will transfer the amount tomorrow.",
+    "Don’t pay any fee to anyone who calls.",
+    "Never transfer money to anyone who calls you.",
+    "Don't pay any fee to apply for a job with us.",
+    "Please send the report by 5 pm.",
+    "If the item is faulty, send it back within 30 days.",
+    "Your salary of Rs 85,000 has been credited.",
+    "You can pay it through your normal purchase order process.",
+])
+def test_ordinary_talk_about_money_is_not_a_request_to_send_it(ordinary: str) -> None:
+    assert "SIG-SEND-MONEY" not in ids(email(ordinary))
+
+
+def test_asks_lists_only_requests_and_not_mere_mentions() -> None:
+    assert asks("Pay Rs 500 now and read me the OTP.") == ["SIG-OTP-REQ", "SIG-SEND-MONEY"]
+    assert asks("We accept gift cards and wire transfers.") == []      # a way to pay, not a request
 
 
 def test_every_finding_explains_itself_plainly() -> None:

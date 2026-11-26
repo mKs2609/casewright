@@ -46,7 +46,8 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 20c | **Dashboard layout** | Navigation, information architecture, accessible tabs | A sidebar with Overview and Scenarios; each incident on its own page with Evidence / Reports / Actions tabs | ✅ |
 | 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, steps arriving like a feed, skeletons while loading, a branched menu and a lattice loader (ADR-61) | ✅ |
 | 21 | **Code cleanup** | Refactoring without changing behaviour | Simpler code in the dashboard, agent and gateway; every suite and the mutation checks still pass | ✅ |
-| 22 | **Better detection** | Held-out discipline, independent test sets, overfitting | New detection rules from the seen sets, measured once on a set committed before them and on an independent set; the result published as it came out (ADR-63) | 🟡 |
+| 22 | **Better detection** | Held-out discipline, independent test sets, overfitting | New detection rules from the seen sets, measured once on a set committed before them and on an independent set; the result published as it came out (ADR-63) | ✅ |
+| 23 | **How evidence adds up** | Combining evidence, scoring design, measuring a change honestly | Calls (and other incidents) scored on how their findings combine, measured once on a third held-out set committed before the change | 🟡 |
 
 ## Suggested pace (8 weeks)
 

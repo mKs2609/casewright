@@ -95,6 +95,18 @@ SIGNATURES: list[tuple[str, str, str, int, str | None, re.Pattern[str]]] = [
      "It asks you to install an app from a link it sends. Such apps can take your money or data.", 25, "T1204",
      _rx(r"\b((send|sending|sent)( you)? a link to (download|install)"
          r"|(download|install) (our|this|my|the) [\w ]{0,20}app (from|using|through|via) (this|the|my|our) link)\b")),
+    ("SIG-SEND-MONEY", "Asks you to send or move money",
+     "It asks you to pay, send or move money. Scams almost always end with this.", 25, "T1657",
+     # The money must go from you: "we'll pay you", "I will transfer it" go the other way, and
+     # "never transfer money to ..." or "don't pay any fee" are warnings, not requests. An amount
+     # needs a currency (a bare number is often a time or a date: "send the report by 5").
+     _rx(r"(?<!\bwe )(?<!\bwe'll )(?<!\bwe’ll )(?<!\bi'll )(?<!\bi’ll )(?<!\bwill )"
+         r"(?<!\bnever )(?<!\bnot )(?<!n't )(?<!n’t )(?<!\bno )"
+         r"\b(pay|send|transfer|deposit|move|return)\b[\w ,'’-]{0,60}?"
+         r"(\brs\.? ?\d|₹ ?\d|\binr\b|\busd\b|\$ ?\d|\d[\d,]* (rupees|dollars|lakh|crore)\b|\bthe money\b"
+         r"|\b(your|the|full|whole) (balance|amount)\b|\bfees?\b|\bdeposit\b)"
+         r"|\b(send|transfer|return|pay) (it|that|the money|the amount) back to (this|my|our|the) (number|account|upi)\b"
+         r"|\bpayments? (goes|go|is sent|are sent|is made) (there|to (this|the new|our new|the following|the below))\b")),
     ("SIG-AI-INJECTION", "Prompt-injection text aimed at an AI analyst",
      "The message hides instructions meant to trick our security checks. Genuine messages never do that.", 40, "AML.T0051",
      _rx(r"(ignore (all |any )?(the )?(previous|prior|above|earlier) (instructions|rules|prompts?)"
@@ -124,6 +136,20 @@ def _first_request(sid: str, pattern: re.Pattern[str], text: str) -> re.Match[st
         if sid not in REQUESTS or not NEVER_ASKED.search(text[max(0, found.start() - 80):found.start()]):
             return found
     return None
+
+
+# Findings that mean "the other side wants you to do something": hand over money, a code, a
+# password or private details, or install something. A mention of a way to pay (gift cards, a
+# wire transfer, SIG-PAYMENT) is not one by itself: real suppliers say "we'll pay by wire transfer".
+ASKS = {"SIG-SEND-MONEY", "SIG-OTP-REQ", "SIG-CRED-REQ", "SIG-FINANCIAL-DETAILS", "SIG-PAYMENT-CHANGE",
+        "SIG-ADVANCE-FEE", "SIG-REMOTE-TOOL", "SIG-APP-LINK"}
+
+
+def asks(text: str) -> list[str]:
+    """The kinds of request made in this text (ids from ASKS), after normalising it."""
+    normal, _ = normalise(text)
+    return [sid for sid, _label, _plain, _weight, _mitre, pattern in SIGNATURES
+            if sid in ASKS and _first_request(sid, pattern, normal)]
 
 
 HIDDEN = ("SIG-HIDDEN-TEXT", "Contains invisible characters",

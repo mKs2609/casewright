@@ -56,7 +56,7 @@ def attack_type(kind: str, signals: list[Signal]) -> str:
     if "SIG-AI-INJECTION" in ids:
         return "prompt_injection"
     if kind == "call_transcript" and ids & {"SIG-OTP-REQ", "SIG-IMPERSONATION", "SIG-REMOTE-TOOL", "SIG-FINANCIAL-DETAILS",
-                                            "REP-MALICIOUS"}:
+                                            "REP-MALICIOUS", "BASELINE-STRANGER-ASKS"}:
         return "vishing"
     if kind == "email" and ids & {"LOOKALIKE-DOMAIN", "SIG-CRED-REQ", "SIG-FINANCIAL-DETAILS", "REP-MALICIOUS",
                                   "REPLY-TO-MISMATCH"}:

@@ -6,7 +6,10 @@ import pytest
 
 from app.baseline_check import baseline_check, distance_km, within_hours, CITY_COORDS
 from app.case import ToolRejected
+from app.patterns import ASKS, pattern_match
+from app.verdict import risk_score
 from tests.conftest import make_case
+from tests.test_report import grade_level
 
 
 def login(user: str = "arjun.mehta", when: str = "2026-10-19T05:00:00Z", ok: bool = True, country: str = "IN",
@@ -124,3 +127,80 @@ def test_another_account_in_the_batch_has_no_baseline_to_compare() -> None:
 def test_someone_outside_the_incident_cannot_be_checked() -> None:
     with pytest.raises(ToolRejected):
         check([login()], identity="ceo.person")
+
+
+# Step 23 (ADR-64): a stranger who asks for something is more than the sum of the two findings.
+
+def call_check(transcript: str, number: str = "+15555550142") -> tuple[str, dict, list]:
+    case = make_case("call_transcript", {"callerNumber": number, "transcript": transcript}, subject="sara.khan")
+    return baseline_check(case, {"identity": "sara.khan"})
+
+
+@pytest.mark.parametrize("ask", [
+    "Caller: Pay Rs 12,000 today or we will post your photos.",
+    "Caller: Please send it back to this number now.",
+    "Caller: Move the money to our safe account.",
+    "Caller: I just need your bank account number to update payroll.",
+    "Caller: Read me the six-digit code we sent.",
+    "Caller: Install AnyDesk so I can fix it.",
+    "Caller: You must pay a registration fee first.",
+])
+def test_a_stranger_who_asks_for_money_a_code_or_details_is_a_finding_of_its_own(ask: str) -> None:
+    _, result, signals = call_check(f"Caller: Hello.\nSara: Yes?\n{ask}")
+
+    assert ids(signals) == {"BASELINE-UNKNOWN-CALLER", "BASELINE-STRANGER-ASKS"}
+    assert result["callerAsksFor"]
+
+
+def test_a_known_caller_asking_the_same_raises_nothing() -> None:
+    assert call_check("Caller: Pay Rs 12,000 today.", number="+15555550100")[2] == []
+
+
+@pytest.mark.parametrize("ordinary", [
+    "Caller: Your parcel arrives tomorrow between 10 and 1.\nSara: Thanks.",
+    "Caller: Send the invoice to our accounts team and we'll pay by wire transfer next week.",
+    "Caller: There's nothing to do on this call. We will never ask for your PIN or OTP.",
+])
+def test_a_stranger_who_asks_for_nothing_is_only_an_unknown_number(ordinary: str) -> None:
+    _, result, signals = call_check(ordinary)
+
+    assert ids(signals) == {"BASELINE-UNKNOWN-CALLER"}
+    assert "callerAsksFor" not in result
+
+
+def test_what_the_person_says_back_is_not_a_request_made_to_them() -> None:
+    # Sara's own words would be a request if the caller said them; here they are a question back.
+    _, _, signals = call_check("Caller: Your profile is selected.\nSara: Should I pay Rs 1,499 now?\n"
+                               "Caller: No, there is no fee. We will email the details.")
+
+    assert ids(signals) == {"BASELINE-UNKNOWN-CALLER"}
+
+
+def test_a_transcript_without_speaker_names_is_read_whole() -> None:
+    assert "BASELINE-STRANGER-ASKS" in ids(call_check("hello madam please pay Rs 9,400 to release the bonus")[2])
+
+
+def test_the_callers_words_never_reach_the_evidence() -> None:
+    # The transcript is attacker-written: only which kinds of request were found is recorded.
+    _, result, signals = call_check("Caller: Transfer Rs 4,711 to account 99887766 at Quickpay now.")
+
+    recorded = json.dumps(result) + " ".join(s.label + s.plain for s in signals)
+    assert "4,711" not in recorded and "99887766" not in recorded and "Quickpay" not in recorded
+    assert set(result["callerAsksFor"]) <= ASKS
+
+
+@pytest.mark.parametrize("ask", [
+    # Each raises exactly one other finding (25), which with the unknown number alone stays at 29.
+    "Caller: I am sending you a link to install the helper app.",
+    "Caller: I need your bank account number to confirm.",
+])
+def test_one_request_from_a_stranger_is_enough_for_a_person_to_look(ask: str) -> None:
+    case = make_case("call_transcript", {"callerNumber": "+15555550142", "transcript": ask}, subject="sara.khan")
+    signals = pattern_match(case, {"target": "all"})[2] + baseline_check(case, {"identity": "sara.khan"})[2]
+
+    assert risk_score(signals) >= 30
+
+
+def test_the_new_finding_explains_itself_plainly() -> None:
+    plain = next(s.plain for s in call_check("Caller: Pay Rs 500 now.")[2] if s.id == "BASELINE-STRANGER-ASKS")
+    assert grade_level(plain) <= 8

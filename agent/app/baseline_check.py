@@ -9,6 +9,7 @@ import math
 from datetime import UTC, datetime
 from typing import Any
 
+from app import patterns
 from app.case import Case, ToolRejected, ToolResult, short, strongest_per_id
 from app.models import Signal
 
@@ -101,6 +102,7 @@ def baseline_check(case: Case, args: dict[str, str]) -> ToolResult:
 
     deviations: list[str] = []
     signals: list[Signal] = []
+    asked: list[str] = []
     payload = case.incident.payload
     if case.incident.kind == "login":
         _check_logins(case, identity, deviations, signals)
@@ -125,6 +127,27 @@ def baseline_check(case: Case, args: dict[str, str]) -> ToolResult:
             signals.append(Signal(
                 id="BASELINE-UNKNOWN-CALLER", label=f"{caller} is not a number {identity} knows",
                 plain="The call came from a number this person doesn't know.", weight=5, indicator=caller))
+            # On its own an unknown number means little, and so does a request heard in a call from
+            # someone the person knows. Together they are how phone scams work (ADR-64).
+            asked = patterns.asks(callers_words(str(payload.get("transcript", ""))))
+            if asked:
+                deviations.append("a caller this person doesn't know asks for money, a code or private details")
+                signals.append(Signal(
+                    id="BASELINE-STRANGER-ASKS",
+                    label=f"A caller {identity} doesn't know asks for money, a code or private details",
+                    plain="Someone you don't know asked you on the phone for money, a code or private details. "
+                          "Most phone scams work this way.",
+                    weight=30, mitre="T1566.004", indicator=caller))
 
     result: dict[str, Any] = {"identity": identity, "deviations": deviations[:20]}
+    if asked:
+        # Only which kinds of request (ids made by code), never the caller's words.
+        result["callerAsksFor"] = asked
     return f"{identity}: {len(deviations)} deviation(s) from normal behaviour", result, strongest_per_id(signals)
+
+
+def callers_words(transcript: str) -> str:
+    """The caller's lines, when the transcript names its speakers ("Caller: ..."); otherwise all
+    of it. What the person said back ("I won't pay to apply") is not a request made to them."""
+    lines = [line for line in transcript.splitlines() if line.strip().lower().startswith("caller:")]
+    return "\n".join(lines) if lines else transcript
