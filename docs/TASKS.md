@@ -9,24 +9,22 @@ Updated at the start and end of every step.
 
 ## Now
 
-### Step 22: Better detection, measured honestly (on `feature/better-detection`, ADR-63)
-The first held-out set's misses were already published, so it could not measure new fixes fairly. This step writes the test first, fixes second, and measures once.
-- [x] A second held-out set (40: 20 attacks, 20 harmless; emails, sign-ins, calls), written before any detector change, committed and pushed first (`278413a`)
-- [x] Real public data considered (the Nazario phishing corpus, the RBA login dataset, SpamAssassin): not used; reasons in ADR-63
-- [x] Fixes from the development and first held-out sets only: wider credential, bank-detail, payment and prompt-injection wording; five new findings (`SIG-PAYMENT-CHANGE`, `SIG-ADVANCE-FEE`, `SIG-TOO-GOOD`, `SIG-ENABLE-CONTENT`, `SIG-APP-LINK`). Each has a test that must fire and one that must not; every finding's plain wording is checked at grade 8 or below; 11 of 11 mutation checks caught
-- [x] Mohit's independent set (24, chosen by him and worded with ChatGPT), opened only after the fixes were frozen and copied in with names and numbers only
-- [x] Both fresh sets run once: 13 of 32 attacks caught, 6 of 32 false alarms. The fixes caught 8 more on the sets they came from, none more on the fresh sets, and added two false alarms. Mohit chose to keep the fixes and publish the result as it came out
-- [x] `docs/EVALUATION.md` regenerated (both "before" measurements recorded), README accuracy and test counts, ADR-63, `AGENTS.md`
-- [x] The withdrawn picomatch advisory's exception removed (ADR-60 update, `SECURITY.md`)
-- [x] 878 agent tests pass
-- [ ] All checks pass on GitHub (the dependency audit without the exception)
+### Step 23: How evidence adds up (on `feature/evidence-scoring`, ADR-63)
+Step 22 showed that more keyword rules did not help on fresh incidents. Calls are the weak spot: an unknown caller starts at 5 risk, so one clear finding (a fee before a job, a request for bank details) stays under the line of 30. This step changes how evidence combines instead, measured the same way as step 22.
+- [x] A third held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
+- [ ] Committed and pushed before any scoring change (Mohit)
+- [ ] Optional: hand-written examples from Mohit, kept unseen until the change is frozen
+- [ ] The design, from the seen sets only (all 164): whether it needs a new formula (agent and gateway together, ADR-43) or only new findings and weights (agent only); told to Mohit before it is built
+- [ ] Built, with tests that must fire and must not, and mutation checks
+- [ ] The fresh set(s) run once; the result published as it comes out
+- [ ] `docs/EVALUATION.md` regenerated, README, decision record, `AGENTS.md`
+- [ ] All checks pass on GitHub
 - [ ] Merged
 
 ## Next
 
 ### Optional
 - A short demo video or GIF at the top of the README (Mohit decided it is not needed for now)
-- The next detection round: how evidence adds up in phone calls, measured on a new fresh set (ADR-63)
 
 ## Waiting
 
@@ -47,6 +45,7 @@ Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support li
 
 ## Done
 
+- **2026-11-26:** Step 22 (better detection, measured honestly) merged: PR #32, with every check passing (the dependency audit without the picomatch exception). On the fresh sets: 13 of 32 attacks caught, 6 of 32 false alarms.
 - **2026-11-24:** Step 21 (code cleanup) merged: PR #31.
 - **2026-11-23:** Step 19e (finishing touches, filters, the README, MIT) merged: PR #30.
 - **2026-11-22:** Step 19d (Try it yourself in GitHub Codespaces) merged: PR #29, after a real codespace run (the login fix for GitHub's rewritten Origin).
