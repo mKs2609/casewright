@@ -65,6 +65,7 @@ def test_the_bands(score: int, band: str) -> None:
     ("login", ["SUCCESS-AFTER-FAILURES"], "account_takeover"),
     ("email", ["SIG-AI-INJECTION", "LOOKALIKE-DOMAIN"], "prompt_injection"),
     ("call_transcript", ["SIG-OTP-REQ"], "vishing"),
+    ("call_transcript", ["BASELINE-UNKNOWN-CALLER", "BASELINE-STRANGER-ASKS", "SIG-SEND-MONEY"], "vishing"),
     ("email", ["LOOKALIKE-DOMAIN"], "phishing"),
     ("email", ["BASELINE-NEW-SENDER"], "other"),
     ("email", [], "none"),
