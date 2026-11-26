@@ -12,12 +12,13 @@ Updated at the start and end of every step.
 ### Step 23: How evidence adds up (on `feature/evidence-scoring`, ADR-63)
 Step 22 showed that more keyword rules did not help on fresh incidents. Calls are the weak spot: an unknown caller starts at 5 risk, so one clear finding (a fee before a job, a request for bank details) stays under the line of 30. This step changes how evidence combines instead, measured the same way as step 22.
 - [x] A third held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
-- [ ] Committed and pushed before any scoring change (Mohit)
-- [ ] Optional: hand-written examples from Mohit, kept unseen until the change is frozen
-- [ ] The design, from the seen sets only (all 164): whether it needs a new formula (agent and gateway together, ADR-43) or only new findings and weights (agent only); told to Mohit before it is built
-- [ ] Built, with tests that must fire and must not, and mutation checks
-- [ ] The fresh set(s) run once; the result published as it comes out
-- [ ] `docs/EVALUATION.md` regenerated, README, decision record, `AGENTS.md`
+- [x] Committed and pushed before any scoring change (Mohit)
+- [ ] Optional: hand-written examples from Mohit (can still be added; they would be run once, as a further fresh set)
+- [x] The design, from the seen sets only (all 164), approved by Mohit before it was built: agent only, no formula change. A new finding for a request to send money (`SIG-SEND-MONEY`), and a combination finding when an unknown caller's own lines ask for something (`BASELINE-STRANGER-ASKS`, ADR-64)
+- [x] Built, with tests that must fire and must not; 14 of 14 mutation checks caught; 1038 agent tests pass
+- [x] The third held-out set run once: 8 of 20 attacks caught (3 before), 2 of 20 false alarms (2 before); phone scams 3 of 10 (0 before), no false alarm on calls. The seven missed calls ask in words no rule knows
+- [x] `docs/EVALUATION.md` regenerated (before numbers recorded), README, ADR-64, `AGENTS.md`
+- [x] A real run through the dashboard's session (gateway, agent and database): the "wrong transfer" scam scored 50 and went to review (5 before); a harmless "we'll pay by wire transfer" call scored 24 and was closed; the evidence records only which kinds of request, not the caller's words
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
