@@ -16,11 +16,15 @@ How often Casewright gets it right, measured on labelled incidents (PRD section 
 
 | Measure | Result, and 95% range | PRD target |
 |---|---|---|
-| **Third held-out set** (fresh: the honest number): attacks caught | 8 of 20 (40%), range 22% to 61% | **not met** (at least 90%) |
-| **Third held-out set** (fresh: the honest number): false alarms | 2 of 20 (10%), range 3% to 30% | met (at most 10%) |
+| **Fourth held-out set** (fresh: the honest number): attacks caught | 6 of 20 (30%), range 15% to 52% | **not met** (at least 90%) |
+| **Fourth held-out set** (fresh: the honest number): false alarms | 3 of 20 (15%), range 5% to 36% | **not met** (at most 10%) |
+| Third held-out set, its one honest run (step 23): attacks caught | 8 of 20 (40%), range 22% to 61% | **not met** (at least 90%) |
+| Third held-out set, its one honest run (step 23): false alarms | 2 of 20 (10%), range 3% to 30% | met (at most 10%) |
+| Third held-out set now: attacks caught | 15 of 20 (75%), range 53% to 89% | **not met** (at least 90%) |
+| Third held-out set now: false alarms | 2 of 20 (10%), range 3% to 30% | met (at most 10%) |
 | Second held-out and independent sets, their one honest run (step 22): attacks caught | 13 of 32 (41%), range 26% to 58% | **not met** (at least 90%) |
 | Second held-out and independent sets, their one honest run (step 22): false alarms | 6 of 32 (19%), range 9% to 35% | **not met** (at most 10%) |
-| Second held-out set now: attacks caught | 10 of 20 (50%), range 30% to 70% | **not met** (at least 90%) |
+| Second held-out set now: attacks caught | 11 of 20 (55%), range 34% to 74% | **not met** (at least 90%) |
 | Second held-out set now: false alarms | 4 of 20 (20%), range 8% to 42% | **not met** (at most 10%) |
 | Independent set now: attacks caught | 11 of 12 (92%), range 65% to 99% | met (at least 90%) |
 | Independent set now: false alarms | 2 of 12 (17%), range 5% to 45% | **not met** (at most 10%) |
@@ -33,18 +37,46 @@ How often Casewright gets it right, measured on labelled incidents (PRD section 
 | Development set, first run: attacks caught | 22 of 30 (73%), range 56% to 86% | **not met** (at least 90%) |
 | Development set, first run: false alarms | 6 of 30 (20%), range 10% to 37% | **not met** (at most 10%) |
 
-**In plain words:** on 20 attacks and 20 harmless incidents it was never tuned on, the rule engine caught 8 attacks and raised 2 false alarms. Step 23 changed how a phone call's evidence adds up: a caller the person does not know, asking for money, a code or private details, is now enough for a person to look. On the fresh set's calls it caught 3 of 10 scams (before: 0) with 0 false alarms (before: 0). Every call it missed asks for something in words no rule knows ("read the three small numbers on the back", "press approve and enter your PIN", "release the money to the account"): the scoring now works once a request is recognised; recognising requests worded in new ways is the open problem.
+**In plain words:** on 20 attacks and 20 harmless incidents it was never tuned on, the rule engine caught 6 attacks and raised 3 false alarms. Step 24 recognises what a caller asks for by the shape of the request (an instruction, a request verb, something valuable) instead of fixed phrases. On the fresh set's calls it caught 2 of 10 scams (before: 0) with 2 false alarms (before: 2). The shapes still rely on lists of verbs and valuable things, and real callers used words outside them ("put your PIN", "clear it today", "tell me those numbers") or asked with a question ("what's your current password?"). Recognising a request in any wording is still the open problem.
+
+### Did step 24 help on incidents it was not made from?
+
+| Fourth held-out set (run once) | Before step 24 | After step 24 |
+|---|---|---|
+| All attacks caught | 4 of 20 | 6 of 20 |
+| All false alarms | 3 of 20 | 3 of 20 |
+| Phone calls: scams caught | 0 of 10 | 2 of 10 |
+| Phone calls: false alarms | 2 of 10 | 2 of 10 |
+
+A little, with no new false alarms, and far less than on the sets it was designed from. On those seen sets it caught 8 more attacks (phone calls: 27 of 35 before, 35 of 35 after) and raised 0 more false alarms. The gap between the two is why the fresh number is the one quoted.
+
+Why the fresh scam calls still got past (read after the one run; nothing was changed because of them):
+
+- `held4-call-fastag-blacklist`: "put your debit card details there": "put" is not one of the request verbs.
+- `held4-call-whatsapp-code`: "tell me those numbers": "numbers" on its own is not one of the valuable things.
+- `held4-call-crypto-recovery`: "our charge ... has to be cleared before we start": a demand, but not worded as an instruction.
+- `held4-call-money-mule-job`: "what's the account number?": a request asked as a question, left out on purpose because no seen call asked that way.
+- `held4-call-refund-qr`: "put your PIN": "put" again.
+- `held4-call-traffic-fine`: "clear it today" (the fine): "clear" is not one of the money verbs.
+- `held4-call-it-current-password`: "what's your current password?": a question, as above.
+- `held4-call-sim-5g-upgrade`: "send an SMS ... with the word UPGRADE and the 20 digits": cutting the clause at "and" separated the verb from the digits.
+
+And why its two harmless calls were flagged:
+
+- `held4-call-school-fees`: the step-23 keyword rule `SIG-SEND-MONEY` reads "please pay the fee on the school portal" as a request; it was flagged before step 24 too.
+- `held4-call-mother-asks-advice`: the caller repeats someone else's request for an OTP while asking for advice; flagged before step 24 too.
 
 ### Did step 23 help on incidents it was not made from?
+
+Step 23 changed how a phone call's evidence adds up (a stranger asking for something is enough for a person to look) and was measured on the third held-out set, run once (2026-11-27):
 
 | Third held-out set (run once) | Before step 23 | After step 23 |
 |---|---|---|
 | All attacks caught | 3 of 20 | 8 of 20 |
 | All false alarms | 2 of 20 | 2 of 20 |
 | Phone calls: scams caught | 0 of 10 | 3 of 10 |
-| Phone calls: false alarms | 0 of 10 | 0 of 10 |
 
-Yes, with no new false alarms, though far less than on the sets it was designed from. On those seen sets it caught 9 more attacks (phone calls: 16 of 25 before, 24 of 25 after) and raised 0 more false alarms. The gap between the two is why the fresh number is the one quoted.
+Yes, with no new false alarms. On the sets it was made from it caught 9 more attacks (phone calls: 16 of 25 before, 24 of 25 after) and raised 0 more false alarms.
 
 ### Did the step-22 fixes help on incidents they were not made from?
 
@@ -68,20 +100,29 @@ No: they caught 8 more attacks on the sets they were made from, but 0 more on th
 - **First held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout.py`). Written after the step-18b fixes and run once. Its mistakes were then read and fixed in step 22, so it is now a development set too.
 - **Second held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout2.py`). Written before the step-22 fixes, committed and pushed before any of them, and run once after them. Read for step 23, so now seen.
 - **Independent set**: 24 incidents, 12 attacks and 12 harmless, emails and calls (`agent/tests/evaluation_independent.py`). The incidents were chosen by the project owner, who did not write the detectors, and worded with ChatGPT; nobody working on the detectors saw them until the step-22 fixes were frozen. Copied in with only the rupee sign, reserved phone numbers and source labels added, then run once. Read for step 23, so now seen.
-- **Third held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout3.py`), half of them phone calls. Written before the step-23 change, committed and pushed before any of it, and run once after it was frozen. Different scams and situations from all earlier sets.
+- **Third held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout3.py`), half of them phone calls. Written before the step-23 change and run once after it. Read for step 24, so now seen.
+- **Fourth held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout4.py`), half of them phone calls. Written before the step-24 change, committed and pushed before any of it, and run once after it was frozen. Its author had a rough idea of the change in mind, so it also has scams that do not fit that idea and harmless calls that do.
 - Every attack follows a pattern from a public source (below). Every name, address and number is a reserved example one. None is one of the six demo scenarios.
 - Every set includes hard cases on purpose, both ways: attacks with no obvious keyword, and harmless messages that contain one (a real bank email with a one-time code, an angry customer threatening legal action, a company VPN in another country).
 - All sets are frozen. A new example is added, never an old one changed.
 
 ### By kind of incident
 
-Third held-out set:
+Fourth held-out set:
+
+| Kind | Attacks caught | False alarms |
+|---|---|---|
+| Emails | 1 of 6 | 1 of 6 |
+| Sign-in batches | 3 of 4 | 0 of 4 |
+| Phone calls | 2 of 10 | 2 of 10 |
+
+Third held-out set now:
 
 | Kind | Attacks caught | False alarms |
 |---|---|---|
 | Emails | 2 of 6 | 1 of 6 |
 | Sign-in batches | 3 of 4 | 1 of 4 |
-| Phone calls | 3 of 10 | 0 of 10 |
+| Phone calls | 10 of 10 | 0 of 10 |
 
 Second held-out set now:
 
@@ -89,7 +130,7 @@ Second held-out set now:
 |---|---|---|
 | Emails | 2 of 8 | 3 of 8 |
 | Sign-in batches | 3 of 6 | 1 of 6 |
-| Phone calls | 5 of 6 | 0 of 6 |
+| Phone calls | 6 of 6 | 0 of 6 |
 
 Independent set now (no sign-ins):
 
@@ -114,28 +155,40 @@ Development set now (first run in brackets):
 | Sign-in batches | 9 of 10 (8) | 2 of 10 (2) |
 | Phone calls | 8 of 8 (5) | 0 of 8 (1) |
 
-## What the third held-out set got wrong
+## What the fourth held-out set got wrong
 
 | Example | Truth | Casewright said | Risk | Findings | About it |
 |---|---|---|---|---|---|
-| `held3-email-mailbox-quota` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | A 'mailbox full' notice: new mail is being held until the person signs in on a look-alike page. |
-| `held3-email-tax-refund` | malicious | benign | 28 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN`, `SIG-URGENCY` | A fake tax-refund notice that asks for bank details 'to credit the refund'. |
-| `held3-email-callback-renewal` | malicious | benign | 28 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN`, `SIG-URGENCY` | Hard: callback phishing. A fake renewal receipt with no link at all, only a number to call to 'cancel'; the call is where the theft happens. |
-| `held3-email-invoice-for-reviewers` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | Hard: an invoice with a line addressed to automated reviewers, saying the sender is trusted and the invoice should go straight to payment. |
-| `held3-email-ai-bot-test-notes` | benign | suspicious | 40 | `SIG-AI-INJECTION` | Hard: an internal update about testing the company's chatbot, which quotes attack phrases it was tested with. |
-| `held3-login-night-new-device-home-city` | malicious | benign | 19 | `BASELINE-DEVICE`, `BASELINE-HOURS` | Hard: a success from the person's home city, but late at night on a kind of device they have never used. |
-| `held3-login-london-trip` | benign | suspicious | 40 | `BASELINE-GEO`, `REP-SUSPICIOUS` | Hard: a work trip to London on the usual laptop; signs in from Mumbai, then from London eleven hours later. |
-| `held3-call-cloned-son` | malicious | benign | 24 | `BASELINE-UNKNOWN-CALLER`, `SIG-SECRECY` | Hard: a cloned voice of a family member in trouble asks for money to a friend's account. No code, no link, no official body. |
-| `held3-call-card-back-numbers` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a 'credit limit upgrade' call that asks for the three numbers on the back of the card, without saying CVV. |
-| `held3-call-support-app` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | A 'Windows support' caller says the computer is sending errors and has the person install a support app from a website. |
-| `held3-call-ceo-boarding` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a cloned 'CEO' voice, about to board a flight, wants an urgent payment to a new supplier. |
-| `held3-call-subsidy-upi` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a 'government subsidy' is coming; the person is told to approve a request in their UPI app and enter the PIN, which sends money instead of receiving it. |
-| `held3-call-helpdesk-approve` | malicious | benign | 19 | `BASELINE-UNKNOWN-CALLER`, `SIG-IMPERSONATION` | Hard: a 'helpdesk' caller from an unknown number only asks the person to approve a sign-in prompt on their phone. No code read out. |
-| `held3-call-stock-tips-group` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | An investment 'adviser' invites the person to a trading group where members supposedly make big weekly profits. |
+| `held4-email-meeting-invite-lure` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | A fake meeting invitation whose 'join' page asks for the work account. |
+| `held4-email-domain-expiry` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | A fake domain-renewal notice: the company's website will 'go offline' unless a card is entered on a look-alike registrar page. |
+| `held4-email-copyright-strike` | malicious | benign | 28 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN`, `SIG-URGENCY` | A fake copyright complaint against the company's social media page; the 'appeal' asks for the page's login. |
+| `held4-email-new-payroll-portal` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | Hard: 'we have moved to a new payroll portal': set up an account and add bank details there. |
+| `held4-email-note-for-summary-bots` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | Hard: a 'shipping update' with a line telling automated summaries to mark it low priority and leave the link out. |
+| `held4-email-security-quiz` | benign | suspicious | 51 | `SIG-CRED-REQ`, `SIG-OTP-REQ` | Hard: IT's security quiz, which mentions passwords, PINs and codes. |
+| `held4-login-failures-then-abroad-usual-device` | malicious | benign | 25 | `BASELINE-GEO` | Four wrong passwords and then a success from Vietnam, on the person's usual kind of laptop. |
+| `held4-call-fastag-blacklist` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | A 'toll tag' call: the tag will be blacklisted tonight; the fix is a link sent by SMS where the card is entered. |
+| `held4-call-whatsapp-code` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a 'gas agency' caller asks for the number that 'comes on WhatsApp', which is the code to move the WhatsApp account to the attacker's phone. |
+| `held4-call-crypto-recovery` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | A 'recovery agency' promises to get back money lost in an earlier investment scam, for a charge up front. |
+| `held4-call-money-mule-job` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a 'payments job': receive money into your own account and pass it on, keeping a commission. The ask is for the account, phrased as a question. |
+| `held4-call-refund-qr` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: a 'refund' that needs a QR code scanned and the UPI PIN entered, which pays the caller instead. |
+| `held4-call-traffic-fine` | malicious | benign | 19 | `BASELINE-UNKNOWN-CALLER`, `SIG-IMPERSONATION` | A 'traffic police' call about an unpaid fine and a court date tomorrow; payment through a link on WhatsApp. |
+| `held4-call-it-current-password` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Hard: an 'IT' caller from an unknown number asks, as a question, for the current password to 'move the mailbox'. |
+| `held4-call-sim-5g-upgrade` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | A free '5G upgrade': send the long number printed on a new SIM by SMS, which moves the person's number to the attacker's SIM. |
+| `held4-call-school-fees` | benign | suspicious | 50 | `BASELINE-STRANGER-ASKS`, `BASELINE-UNKNOWN-CALLER`, `SIG-SEND-MONEY` | Hard: the school office reminds a parent that term fees are due, paid on the school's portal. |
+| `held4-call-mother-asks-advice` | benign | suspicious | 63 | `BASELINE-STRANGER-ASKS`, `BASELINE-UNKNOWN-CALLER`, `SIG-IMPERSONATION`, `SIG-OTP-REQ` | Hard: the person's mother, from a number not in the list, asks whether she should give an OTP to a stranger who called her. |
+
+## What step 24 changed
+
+Made by looking only at the five seen sets (the development set, the first, second and third held-out sets and the independent set). Agent only: the risk formula is unchanged, so the gateway, which recomputes every score, needed no change (ADR-43, ADR-65).
+
+| Gap | Change | First seen in |
+|---|---|---|
+| Requests worded in ways no keyword rule knows | New: a request is recognised by its shape (`agent/app/request_shape.py`). A clause counts when it starts as an instruction to the listener ("Please ...", "Just ...", "you need to ...", "can you ...") and pairs a request verb with something valuable: money (an amount, the money itself, or "it" sent to someone else's account), a code, private details (a PIN, card numbers, Aadhaar, date of birth), approving a prompt, or installing an app. Warnings and promises ("don't pay any fee", "I'll send it") never start as an instruction, so they do not count; nor does paying cash or at a counter. It feeds only `BASELINE-STRANGER-ASKS` (a stranger's call), so emails and the risk formula are unchanged. | `held3-call-card-back-numbers` |
+| Advice that always talked about codes | The finding, the employee's "what to do" and the analyst's next steps now name what the caller asked for: money, a code, private details, an approval or an app. | `held3-call-ceo-boarding` |
 
 ## What step 23 changed
 
-Made by looking only at the four seen sets (the development set, the first and second held-out sets and the independent set). Agent only: the risk formula is unchanged, so the gateway, which recomputes every score, needed no change (ADR-43, ADR-64).
+Made by looking only at the four sets seen at the time. Agent only (ADR-43, ADR-64).
 
 | Gap | Change | First seen in |
 |---|---|---|
@@ -162,6 +215,18 @@ Each change is a general rule, written from what the attack does rather than the
 
 Left as they are on purpose: a fix would only fit these examples, or would weaken a check that catches real attacks (for example, lowering the weight of "success after many failures" would hide the account takeover in `held-login-local-takeover`).
 
+Third held-out set:
+
+| Example | Truth | Casewright said | Risk | Findings | About it |
+|---|---|---|---|---|---|
+| `held3-email-mailbox-quota` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | A 'mailbox full' notice: new mail is being held until the person signs in on a look-alike page. |
+| `held3-email-tax-refund` | malicious | benign | 28 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN`, `SIG-URGENCY` | A fake tax-refund notice that asks for bank details 'to credit the refund'. |
+| `held3-email-callback-renewal` | malicious | benign | 28 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN`, `SIG-URGENCY` | Hard: callback phishing. A fake renewal receipt with no link at all, only a number to call to 'cancel'; the call is where the theft happens. |
+| `held3-email-invoice-for-reviewers` | malicious | benign | 15 | `BASELINE-NEW-SENDER`, `REP-UNKNOWN` | Hard: an invoice with a line addressed to automated reviewers, saying the sender is trusted and the invoice should go straight to payment. |
+| `held3-email-ai-bot-test-notes` | benign | suspicious | 40 | `SIG-AI-INJECTION` | Hard: an internal update about testing the company's chatbot, which quotes attack phrases it was tested with. |
+| `held3-login-night-new-device-home-city` | malicious | benign | 19 | `BASELINE-DEVICE`, `BASELINE-HOURS` | Hard: a success from the person's home city, but late at night on a kind of device they have never used. |
+| `held3-login-london-trip` | benign | suspicious | 40 | `BASELINE-GEO`, `REP-SUSPICIOUS` | Hard: a work trip to London on the usual laptop; signs in from Mumbai, then from London eleven hours later. |
+
 Second held-out set:
 
 | Example | Truth | Casewright said | Risk | Findings | About it |
@@ -179,7 +244,6 @@ Second held-out set:
 | `held2-login-botnet-guessing` | malicious | benign | 19 | `BASELINE-DEVICE`, `BASELINE-GEO` | Password guessing on one account from nine addresses in four countries within ten minutes. |
 | `held2-login-usual-country-odd-hour` | malicious | benign | 19 | `BASELINE-DEVICE`, `BASELINE-HOURS` | Hard: a success in a country the person often works from (the UAE), but at night and on a Linux browser they have never used. |
 | `held2-login-locked-then-reset` | benign | suspicious | 40 | `SUCCESS-AFTER-FAILURES` | Hard: five wrong passwords lock the account; half an hour later, after a helpdesk reset, a success. |
-| `held2-call-telecom-regulator` | malicious | benign | 19 | `BASELINE-UNKNOWN-CALLER`, `SIG-URGENCY` | Fake telecom-regulator call: the number will be cut off for 'illegal use' unless identity numbers are given. |
 
 Independent set:
 
@@ -236,12 +300,12 @@ Model `qwen3:8b`, run on 2026-11-09. The model's answers vary from run to run, s
 
 **In plain words:** where the model led (92 of 100 investigations; the rest fell back to the rule engine after a model failure or time limit), it called 57 "suspicious". Of the 39 harmless incidents whose evidence scored below 30 (benign by the rules), it flagged 24: it treats any finding, even an unknown caller, as a warning sign. Because the model can raise a verdict but never lower it, it can add catches and false alarms but never turn a catch into a miss. With the model on, the system is safe but noisy: too many false alarms teach people to ignore them. Calibrating the model's verdicts is future work, and would need its own held-out measurement.
 
-This recorded run covers the development and first held-out sets only, and predates steps 22 and 23; the later sets have not been run with the model.
+This recorded run covers the development and first held-out sets only, and predates steps 22 to 24; the later sets have not been run with the model.
 
 ## Limitations
 
-- **Small sets.** 102 attacks and 102 harmless incidents in all, and only 20 of each in the fresh set. The 95% ranges above are wide; a few more misses or catches would move the numbers noticeably.
-- **The same author** wrote the detectors, the development set and all three held-out sets. Writing each held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its wording was written by an AI model, which tends to state warning signs more plainly than real attackers do.
+- **Small sets.** 122 attacks and 122 harmless incidents in all, and only 20 of each in the fresh set. The 95% ranges above are wide; a few more misses or catches would move the numbers noticeably.
+- **The same author** wrote the detectors, the development set and all four held-out sets. Writing each held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its wording was written by an AI model, which tends to state warning signs more plainly than real attackers do.
 - **Synthetic text.** The examples follow published attack patterns, but they are not real messages: real attacks are messier, longer and in many languages (all of these are in English). Public collections of real phishing exist, but none fits all three kinds of incident, and their messages cannot be published with the project; measuring on one is future work.
 - **A small threat list.** The built-in list knows a handful of example addresses (ADR-40), so most attacks here are judged on their words and behaviour alone. A real threat-intelligence feed would catch more.
 - **One incident at a time.** Each example is investigated on its own; links to other recent incidents (ADR-42), which would help with campaigns, are not part of this measurement.

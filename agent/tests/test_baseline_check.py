@@ -6,7 +6,8 @@ import pytest
 
 from app.baseline_check import baseline_check, distance_km, within_hours, CITY_COORDS
 from app.case import ToolRejected
-from app.patterns import ASKS, pattern_match
+from app.patterns import pattern_match
+from app.request_shape import KINDS, describe
 from app.verdict import risk_score
 from tests.conftest import make_case
 from tests.test_report import grade_level
@@ -186,7 +187,50 @@ def test_the_callers_words_never_reach_the_evidence() -> None:
 
     recorded = json.dumps(result) + " ".join(s.label + s.plain for s in signals)
     assert "4,711" not in recorded and "99887766" not in recorded and "Quickpay" not in recorded
-    assert set(result["callerAsksFor"]) <= ASKS
+    assert result["callerAsksFor"] == ["money"]
+
+
+# Step 24 (ADR-65): requests recognised by their shape, and findings that say what was asked.
+
+@pytest.mark.parametrize(("ask", "kinds"), [
+    ("Caller: Please release Rs 6,50,000 to the account I send you.", ["money"]),
+    ("Caller: Just tap approve so I can finish the move.", ["approval"]),
+    ("Caller: Download the support app and give me the ID it shows.", ["code", "install"]),
+    ("Caller: For verification just read the 16 digits on the front.", ["details"]),
+])
+def test_a_stranger_asking_in_new_words_is_recognised_by_the_shape(ask: str, kinds: list[str]) -> None:
+    _, result, signals = call_check(ask)
+
+    assert result["callerAsksFor"] == kinds
+    assert "BASELINE-STRANGER-ASKS" in ids(signals)
+
+
+def test_the_finding_says_what_was_asked() -> None:
+    _, result, signals = call_check("Caller: Just press approve and enter your PIN.")
+    found = next(s for s in signals if s.id == "BASELINE-STRANGER-ASKS")
+
+    assert found.label == "A caller sara.khan doesn't know asks them to give private details " \
+                          "and approve something on their phone"
+    assert found.plain.startswith("Someone you don't know asked you on the phone to give private details "
+                                  "and approve something on your phone.")
+    assert result["deviations"][-1].endswith("asks them to give private details and approve something on their phone")
+
+
+def test_a_known_caller_asking_in_new_words_still_raises_nothing() -> None:
+    assert call_check("Caller: Just tap approve.", number="+15555550100")[2] == []
+
+
+def test_the_callers_own_account_and_paying_in_person_are_not_requests() -> None:
+    _, result, _ = call_check("Caller: Your share is Rs 850. Just send it to my UPI whenever.\n"
+                              "Caller: The recharge desk is downstairs, you can top up Rs 499 at the counter.")
+    assert "callerAsksFor" not in result
+
+
+@pytest.mark.parametrize("kinds", [[k] for k in KINDS] + [list(KINDS)])
+def test_every_wording_of_the_finding_explains_itself_plainly(kinds: list[str]) -> None:
+    plain = f"Someone you don't know asked you on the phone to {describe(kinds, to_you=True)}. " \
+            "Most phone scams work this way."
+    assert grade_level(plain) <= 8, plain
 
 
 @pytest.mark.parametrize("ask", [

@@ -141,8 +141,10 @@ def _first_request(sid: str, pattern: re.Pattern[str], text: str) -> re.Match[st
 # Findings that mean "the other side wants you to do something": hand over money, a code, a
 # password or private details, or install something. A mention of a way to pay (gift cards, a
 # wire transfer, SIG-PAYMENT) is not one by itself: real suppliers say "we'll pay by wire transfer".
-ASKS = {"SIG-SEND-MONEY", "SIG-OTP-REQ", "SIG-CRED-REQ", "SIG-FINANCIAL-DETAILS", "SIG-PAYMENT-CHANGE",
-        "SIG-ADVANCE-FEE", "SIG-REMOTE-TOOL", "SIG-APP-LINK"}
+# Each maps to the kind of request it is (the kinds in `request_shape.KINDS`).
+ASKS = {"SIG-SEND-MONEY": "money", "SIG-PAYMENT-CHANGE": "money", "SIG-ADVANCE-FEE": "money",
+        "SIG-OTP-REQ": "code", "SIG-CRED-REQ": "details", "SIG-FINANCIAL-DETAILS": "details",
+        "SIG-REMOTE-TOOL": "install", "SIG-APP-LINK": "install"}
 
 
 def asks(text: str) -> list[str]:

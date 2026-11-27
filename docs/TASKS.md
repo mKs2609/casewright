@@ -9,17 +9,18 @@ Updated at the start and end of every step.
 
 ## Now
 
-### Step 24: Recognising what a caller asks for (on `feature/request-recognition`, ADR-63)
+### Step 24: Recognising what a caller asks for (on `feature/request-recognition`, ADR-65)
 Step 23 made a stranger's request count for enough, but only when a rule recognises the request. All seven fresh scam calls it missed asked in words no rule knows ("read the three small numbers on the back", "press approve and enter your PIN"). This step recognises the shape of a request instead of its wording, measured the same way.
 - [x] A fourth held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
-- [ ] Committed and pushed before any change (Mohit)
-- [ ] Optional: hand-written examples from Mohit, kept unseen until the change is frozen
-- [ ] The design, from the seen sets only (all 204, including the third held-out set), told to Mohit before it is built; measured with the rule engine, so CI checks it
-- [ ] The "What to do" advice for phone scams matches what the caller asked for (today it always talks about one-time codes)
-- [ ] Built, with tests that must fire and must not, and mutation checks
-- [ ] The fresh set(s) run once; the result published as it comes out
-- [ ] `docs/EVALUATION.md` regenerated, README, decision record, `AGENTS.md`
-- [ ] A real run
+- [x] Committed and pushed before any change (Mohit)
+- [x] Optional: hand-written examples from Mohit, kept unseen until the change is frozen (10 calls, sent after the freeze)
+- [ ] Mohit's 10 calls (a fifth held-out set) committed and pushed, then run once; the result published as it comes out
+- [x] The design, from the seen sets only (all 204, including the third held-out set), told to Mohit before it is built; measured with the rule engine, so CI checks it
+- [x] The "What to do" advice for phone scams matches what the caller asked for (it always talked about one-time codes)
+- [x] Built, with tests that must fire and must not, and mutation checks (28 of 28 caught)
+- [x] The fresh set run once; the result published as it came out: phone scams 0 to 2 of 10, no new false alarm (8 more on the seen sets)
+- [x] `docs/EVALUATION.md` regenerated, README, decision record (ADR-65), `AGENTS.md`
+- [x] A real run (the scam-call demo: the finding and the advice name a code and an app, the gateway accepted the report)
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
