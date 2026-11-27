@@ -47,7 +47,9 @@ Status: ✅ committed · 🟡 built, waiting for review/commit · ⬜ not starte
 | 20d | **Design motion** | Motion that explains change, reduced motion | Count-ups, steps arriving like a feed, skeletons while loading, a branched menu and a lattice loader (ADR-61) | ✅ |
 | 21 | **Code cleanup** | Refactoring without changing behaviour | Simpler code in the dashboard, agent and gateway; every suite and the mutation checks still pass | ✅ |
 | 22 | **Better detection** | Held-out discipline, independent test sets, overfitting | New detection rules from the seen sets, measured once on a set committed before them and on an independent set; the result published as it came out (ADR-63) | ✅ |
-| 23 | **How evidence adds up** | Combining evidence, scoring design, measuring a change honestly | Calls (and other incidents) scored on how their findings combine, measured once on a third held-out set committed before the change | 🟡 |
+| 23 | **How evidence adds up** | Combining evidence, scoring design, measuring a change honestly | Calls (and other incidents) scored on how their findings combine, measured once on a third held-out set committed before the change | ✅ |
+| 24 | **Recognising requests** | Generalising beyond keywords, matching advice to the attack | A request recognised by its shape (the caller tells you to do something with something valuable), and advice that fits the request; measured once on a fourth held-out set | 🟡 |
+| 25 | **Analyst feedback** | Ground truth from real decisions | An analyst marks each verdict right or wrong; the gateway records it and can report agreement | ⬜ |
 
 ## Suggested pace (8 weeks)
 

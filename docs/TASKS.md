@@ -3,26 +3,30 @@
 The working board. [`ROADMAP.md`](ROADMAP.md) is the long-term plan; this file tracks what is happening **now**.
 Updated at the start and end of every step.
 
-**Last updated:** 2026-11-26
+**Last updated:** 2026-11-28
 
 ---
 
 ## Now
 
-### Step 23: How evidence adds up (on `feature/evidence-scoring`, ADR-63)
-Step 22 showed that more keyword rules did not help on fresh incidents. Calls are the weak spot: an unknown caller starts at 5 risk, so one clear finding (a fee before a job, a request for bank details) stays under the line of 30. This step changes how evidence combines instead, measured the same way as step 22.
-- [x] A third held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
-- [x] Committed and pushed before any scoring change (Mohit)
-- [ ] Optional: hand-written examples from Mohit (can still be added; they would be run once, as a further fresh set)
-- [x] The design, from the seen sets only (all 164), approved by Mohit before it was built: agent only, no formula change. A new finding for a request to send money (`SIG-SEND-MONEY`), and a combination finding when an unknown caller's own lines ask for something (`BASELINE-STRANGER-ASKS`, ADR-64)
-- [x] Built, with tests that must fire and must not; 14 of 14 mutation checks caught; 1038 agent tests pass
-- [x] The third held-out set run once: 8 of 20 attacks caught (3 before), 2 of 20 false alarms (2 before); phone scams 3 of 10 (0 before), no false alarm on calls. The seven missed calls ask in words no rule knows
-- [x] `docs/EVALUATION.md` regenerated (before numbers recorded), README, ADR-64, `AGENTS.md`
-- [x] A real run through the dashboard's session (gateway, agent and database): the "wrong transfer" scam scored 50 and went to review (5 before); a harmless "we'll pay by wire transfer" call scored 24 and was closed; the evidence records only which kinds of request, not the caller's words
+### Step 24: Recognising what a caller asks for (on `feature/request-recognition`, ADR-63)
+Step 23 made a stranger's request count for enough, but only when a rule recognises the request. All seven fresh scam calls it missed asked in words no rule knows ("read the three small numbers on the back", "press approve and enter your PIN"). This step recognises the shape of a request instead of its wording, measured the same way.
+- [x] A fourth held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
+- [ ] Committed and pushed before any change (Mohit)
+- [ ] Optional: hand-written examples from Mohit, kept unseen until the change is frozen
+- [ ] The design, from the seen sets only (all 204, including the third held-out set), told to Mohit before it is built; measured with the rule engine, so CI checks it
+- [ ] The "What to do" advice for phone scams matches what the caller asked for (today it always talks about one-time codes)
+- [ ] Built, with tests that must fire and must not, and mutation checks
+- [ ] The fresh set(s) run once; the result published as it comes out
+- [ ] `docs/EVALUATION.md` regenerated, README, decision record, `AGENTS.md`
+- [ ] A real run
 - [ ] All checks pass on GitHub
 - [ ] Merged
 
 ## Next
+
+### Step 25: Analyst feedback
+An analyst marks each verdict right or wrong, so accuracy can one day be measured on real decisions instead of made-up examples. Gateway (a migration, an API, audit entries) and dashboard.
 
 ### Optional
 - A short demo video or GIF at the top of the README (Mohit decided it is not needed for now)
@@ -46,6 +50,7 @@ Oracle Cloud's free ARM server (ADR-56), or Azure for Students if its support li
 
 ## Done
 
+- **2026-11-27:** Step 23 (how evidence adds up) merged: PR #33, with every check passing. On the third held-out set: 8 of 20 attacks caught (3 before), 2 of 20 false alarms; phone scams 3 of 10 (0 before).
 - **2026-11-26:** Step 22 (better detection, measured honestly) merged: PR #32, with every check passing (the dependency audit without the picomatch exception). On the fresh sets: 13 of 32 attacks caught, 6 of 32 false alarms.
 - **2026-11-24:** Step 21 (code cleanup) merged: PR #31.
 - **2026-11-23:** Step 19e (finishing touches, filters, the README, MIT) merged: PR #30.

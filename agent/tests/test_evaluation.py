@@ -20,6 +20,7 @@ from tests.evaluation import STEP_22_NEW_FALSE_ALARMS, false_alarms, detection, 
 from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
 from tests.evaluation_heldout3 import HELD_OUT_3
+from tests.evaluation_heldout4 import HELD_OUT_4
 from tests.evaluation_independent import INDEPENDENT
 from tests.evaluation_set import DEVELOPMENT, SOURCES, Example
 from tests.scenarios import BASELINES, SCENARIOS
@@ -28,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ALL = DEVELOPMENT + HELD_OUT
 # The later sets: checked for form here; each measured once, after the changes it was written
 # before (ADR-63), and reported in docs/EVALUATION.md.
-EVERY = ALL + HELD_OUT_2 + INDEPENDENT + HELD_OUT_3
+EVERY = ALL + HELD_OUT_2 + INDEPENDENT + HELD_OUT_3 + HELD_OUT_4
 
 # The gateway's own rules for each kind (EmailIncidentRequest, LoginIncidentRequest,
 # CallTranscriptIncidentRequest), so every example could be submitted through the API as it is.
@@ -47,7 +48,7 @@ def reserved_domain(domain: str) -> bool:
 
 
 def test_the_sets_have_the_planned_size_and_balance() -> None:
-    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40), (INDEPENDENT, 24), (HELD_OUT_3, 40)):
+    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40), (INDEPENDENT, 24), (HELD_OUT_3, 40), (HELD_OUT_4, 40)):
         assert len(chosen) == size
         assert sum(e.label == "malicious" for e in chosen) == size // 2
         assert {e.label for e in chosen} == {"malicious", "benign"}
