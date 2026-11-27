@@ -107,6 +107,62 @@ def test_the_headlines_match_the_verdict() -> None:
     assert stuffing.plain.headline == "Someone is trying to break into accounts."
 
 
+# Step 24 (ADR-65): the advice for a phone scam follows what the caller asked for.
+
+def call(transcript: str) -> ReportEvent:
+    request = InvestigateRequest.model_validate({
+        "incident": {"id": 71, "kind": "call_transcript", "subjectIdentity": "arjun.mehta",
+                     "payload": {"callerNumber": "+15555550142", "transcript": transcript}},
+        "baseline": BASELINES["arjun.mehta"]})
+    return reports(list(investigate(request, model=None)))
+
+
+def test_a_caller_who_wants_money_gets_advice_about_money_not_codes() -> None:
+    event = call("Caller: This is the bank fraud department. Please release Rs 40,000 to the safe account now.")
+
+    assert event.plain.what_to_do == [
+        "Hang up on calls like this, and call back on a number you already know.",
+        "Do not send or move money because someone asked on a call.",
+        "If you already did what the caller asked, tell the help desk straight away."]
+    assert event.soc.next_steps[-1] == "Check whether a payment was made and ask the bank to stop it."
+    assert not any("code" in line for line in event.plain.what_to_do + event.soc.next_steps)
+
+
+def test_each_kind_of_request_gets_its_own_line_in_a_fixed_order() -> None:
+    event = reports(run("vishing_call"))  # a code and remote access
+
+    assert event.plain.what_to_do[1:3] == ["Never read out a code that was sent to your phone.",
+                                           "Do not install apps or give anyone access to your phone or computer."]
+    assert event.soc.next_steps[2:] == ["Check whether a code was shared and reset the account if so.",
+                                        "Check the employee's device for remote-access software."]
+
+
+def test_without_a_known_request_the_advice_stays_general() -> None:
+    assert report.vishing_advice([]) == (report.WHAT_TO_DO["vishing"], report.NEXT_STEPS["vishing"])
+
+
+def test_at_most_three_kinds_are_named_so_the_advice_stays_short() -> None:
+    to_do, next_steps = report.vishing_advice(list(report.request_shape.KINDS))
+
+    assert len(to_do) == 5 and len(next_steps) == 5
+    assert to_do[1:4] == [report.VISHING_TO_DO[k] for k in ("money", "code", "details")]
+
+
+def test_the_requests_are_read_from_the_findings_and_the_stranger_record_only() -> None:
+    steps = [e for e in run("vishing_call") if isinstance(e, StepEvent)]
+    # A made-up kind in a record is ignored; only the known kinds count, in their fixed order.
+    baseline = next(s for s in steps if s.tool == "baseline_check")
+    tampered = baseline.model_copy(update={"result": {**baseline.result, "callerAsksFor": ["money", "rm -rf", 7]}})
+
+    assert report.asked_kinds([tampered, *(s for s in steps if s is not baseline)]) == ["money", "code", "install"]
+
+
+@pytest.mark.parametrize("kind", list(report.VISHING_TO_DO))
+def test_every_line_of_phone_advice_reads_at_grade_8_or_below(kind: str) -> None:
+    to_do, _ = report.vishing_advice([kind])
+    assert grade_level(" ".join(to_do)) <= 8, to_do
+
+
 def test_a_benign_incident_says_so_plainly() -> None:
     event = reports(run("normal_login"))
 

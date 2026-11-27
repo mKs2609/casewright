@@ -9,7 +9,7 @@ import math
 from datetime import UTC, datetime
 from typing import Any
 
-from app import patterns
+from app import request_shape
 from app.case import Case, ToolRejected, ToolResult, short, strongest_per_id
 from app.models import Signal
 
@@ -129,19 +129,20 @@ def baseline_check(case: Case, args: dict[str, str]) -> ToolResult:
                 plain="The call came from a number this person doesn't know.", weight=5, indicator=caller))
             # On its own an unknown number means little, and so does a request heard in a call from
             # someone the person knows. Together they are how phone scams work (ADR-64).
-            asked = patterns.asks(callers_words(str(payload.get("transcript", ""))))
+            # What is asked is recognised by the shape of the request, not only by keywords (ADR-65).
+            asked = request_shape.asked_for(callers_words(str(payload.get("transcript", ""))))
             if asked:
-                deviations.append("a caller this person doesn't know asks for money, a code or private details")
+                deviations.append(f"a caller this person doesn't know asks them to {request_shape.describe(asked)}")
                 signals.append(Signal(
                     id="BASELINE-STRANGER-ASKS",
-                    label=f"A caller {identity} doesn't know asks for money, a code or private details",
-                    plain="Someone you don't know asked you on the phone for money, a code or private details. "
-                          "Most phone scams work this way.",
+                    label=f"A caller {identity} doesn't know asks them to {request_shape.describe(asked)}",
+                    plain=f"Someone you don't know asked you on the phone to "
+                          f"{request_shape.describe(asked, to_you=True)}. Most phone scams work this way.",
                     weight=30, mitre="T1566.004", indicator=caller))
 
     result: dict[str, Any] = {"identity": identity, "deviations": deviations[:20]}
     if asked:
-        # Only which kinds of request (ids made by code), never the caller's words.
+        # Only which kinds of request (fixed words from request_shape.KINDS), never the caller's words.
         result["callerAsksFor"] = asked
     return f"{identity}: {len(deviations)} deviation(s) from normal behaviour", result, strongest_per_id(signals)
 

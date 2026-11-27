@@ -109,10 +109,10 @@ Around them sit the usual web defences: Argon2 password hashes, short-lived toke
 | Suite | Tests | Covers, among other things |
 |---|---|---|
 | Gateway (Java) | 364 | Approvals (roles, two at once, expiry, deciding your own account), the action policy, the audit chain catching edited, removed or forged entries, refusing malformed agent events, auth, rate limits and headers |
-| Agent (Python) | 1038 | The six demo scenarios with and without the AI, the 204-incident evaluation, and a red-team suite where a scripted hijacked model tries every trick and is refused or overruled |
+| Agent (Python) | 1269 | The six demo scenarios with and without the AI, the 254-incident evaluation, and a red-team suite where a scripted hijacked model tries every trick and is refused or overruled |
 | Dashboard (TypeScript) | 142 | Hostile markup in every incident field staying text, no links built from incident data, roles, session renewal, the live feed, the filters, accessible tabs, design tokens only |
 
-**Tests of the tests.** New code is checked by breaking it on purpose, one change at a time (for example removing the role check on approvals, or the tool allow-list itself), and confirming a named test fails. The latest change, how a phone call's evidence adds up: 14 of 14 caught.
+**Tests of the tests.** New code is checked by breaking it on purpose, one change at a time (for example removing the role check on approvals, or the tool allow-list itself), and confirming a named test fails. The latest change, recognising what a caller asks for: 28 of 28 caught.
 
 **Security in CI.** A dependency audit, a scan of the whole git history for secrets and static analysis run on every pull request and every week; any finding fails the build. Dependencies are pinned to exact versions (Python packages by hash, container images by digest).
 
@@ -124,15 +124,16 @@ Around them sit the usual web defences: Argon2 password hashes, short-lived toke
 
 | Set | Attacks caught | False alarms | Target |
 |---|---|---|---|
-| **Third held-out set** (40, committed before the change: the honest number) | **8 of 20 (40%)** | **2 of 20 (10%)** | caught ≥ 90%, false alarms ≤ 10% |
-| Its phone calls alone (before the change: 0 of 10 caught) | 3 of 10 | 0 of 10 | |
-| The previous round's fresh sets, their one honest run | 13 of 32 (41%) | 6 of 32 (19%) | |
-| Earlier sets the changes were made from (164) | 69 of 82 (84%) | 11 of 82 (13%) | flattering, by design |
+| **Fourth held-out set** (40, committed before the change: the honest number) | **6 of 20 (30%)** | **3 of 20 (15%)** | caught ≥ 90%, false alarms ≤ 10% |
+| Its phone calls alone (before the change: 0 of 10 caught) | 2 of 10 | 2 of 10 | |
+| 10 calls written by the project owner after the change (before it: 3 of 5 caught) | 3 of 5 | 0 of 5 | |
+| The previous round's fresh set, its one honest run | 8 of 20 (40%) | 2 of 20 (10%) | |
+| Earlier sets the changes were made from (204) | 85 of 102 (83%) | 13 of 102 (13%) | flattering, by design |
 | First held-out set, with the local AI model (one recorded run) | 20 of 20 (100%) | 13 of 20 (65%) | |
 
-The latest change made a stranger asking for money, a code or private details count for more than the two findings apart. On the fresh set it caught 5 more attacks (3 of them phone scams, up from none) with no new false alarm; the calls it still misses ask in words no rule knows. The round before added keyword rules that caught nothing more on fresh sets; both results are published as they came out, not tuned away. The AI model catches every attack it was tested on but flags most harmless incidents too. Neither meets both targets yet. Every miss, the 95% ranges and the method are in [EVALUATION.md](docs/EVALUATION.md); CI fails if those published numbers stop matching what the agent does.
+The latest change recognises what a caller asks for by the shape of the request (an instruction, a request verb, something valuable) rather than fixed phrases, and the advice now matches the request. On the fresh set it caught 2 more phone scams with no new false alarm, against 8 more on the sets it was made from, and none more on 10 calls the project owner wrote: callers used verbs outside its lists or asked with a question. The round before made a stranger's request count for more (5 more caught on its fresh set); the one before that added keyword rules that caught nothing more. Every result is published as it came out, not tuned away. The AI model catches every attack it was tested on but flags most harmless incidents too. Neither meets both targets yet. Every miss, the 95% ranges and the method are in [EVALUATION.md](docs/EVALUATION.md); CI fails if those published numbers stop matching what the agent does.
 
-**Decisions on record.** 64 design decisions are written down with their reasons, alternatives and trade-offs in [DECISIONS.md](docs/DECISIONS.md).
+**Decisions on record.** 65 design decisions are written down with their reasons, alternatives and trade-offs in [DECISIONS.md](docs/DECISIONS.md).
 
 ## Limitations
 

@@ -16,10 +16,14 @@ import pytest
 from app import config
 from app.indicators import extract_indicators
 from app.models import Incident
-from tests.evaluation import STEP_22_NEW_FALSE_ALARMS, false_alarms, detection, report, run_all, wilson
+from tests.evaluation import (STEP_22_NEW_FALSE_ALARMS, STEP_24_FRESH_FALSE_ALARMS, STEP_24_FRESH_MISSES,
+                              STEP_24_OWNER_MISSES,
+                              false_alarms, detection, report, run_all, wilson)
 from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
 from tests.evaluation_heldout3 import HELD_OUT_3
+from tests.evaluation_heldout4 import HELD_OUT_4
+from tests.evaluation_heldout5 import HELD_OUT_5
 from tests.evaluation_independent import INDEPENDENT
 from tests.evaluation_set import DEVELOPMENT, SOURCES, Example
 from tests.scenarios import BASELINES, SCENARIOS
@@ -28,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ALL = DEVELOPMENT + HELD_OUT
 # The later sets: checked for form here; each measured once, after the changes it was written
 # before (ADR-63), and reported in docs/EVALUATION.md.
-EVERY = ALL + HELD_OUT_2 + INDEPENDENT + HELD_OUT_3
+EVERY = ALL + HELD_OUT_2 + INDEPENDENT + HELD_OUT_3 + HELD_OUT_4 + HELD_OUT_5
 
 # The gateway's own rules for each kind (EmailIncidentRequest, LoginIncidentRequest,
 # CallTranscriptIncidentRequest), so every example could be submitted through the API as it is.
@@ -47,7 +51,8 @@ def reserved_domain(domain: str) -> bool:
 
 
 def test_the_sets_have_the_planned_size_and_balance() -> None:
-    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40), (INDEPENDENT, 24), (HELD_OUT_3, 40)):
+    for chosen, size in ((DEVELOPMENT, 60), (HELD_OUT, 40), (HELD_OUT_2, 40), (INDEPENDENT, 24), (HELD_OUT_3, 40), (HELD_OUT_4, 40),
+                           (HELD_OUT_5, 10)):
         assert len(chosen) == size
         assert sum(e.label == "malicious" for e in chosen) == size // 2
         assert {e.label for e in chosen} == {"malicious", "benign"}
@@ -130,7 +135,8 @@ def test_the_rule_engine_is_never_measured_with_the_model_switched_on(monkeypatc
 
 def test_a_recorded_model_run_is_reported_per_set() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
-    later = run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3)
+    later = (run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3), run_all(HELD_OUT_4),
+             run_all(HELD_OUT_5))
     # A made-up run: the model flags exactly the attacks, and finishes all but one investigation.
     results = {e.name: {"flagged": e.label == "malicious", "verdict": "malicious" if e.label == "malicious" else "benign",
                         "risk": 0, "engine": "llm"} for e in ALL}
@@ -146,13 +152,15 @@ def test_a_recorded_model_run_is_reported_per_set() -> None:
 def test_the_published_report_matches_what_the_agent_does_today() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
     held_out_2, independent, held_out_3 = run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3)
+    held_out_4, held_out_5 = run_all(HELD_OUT_4), run_all(HELD_OUT_5)
     model_file = ROOT / "testdata" / "evaluation-model-run.json"
     recorded = json.loads(model_file.read_text(encoding="utf-8")) if model_file.exists() else None
     published = (ROOT / "docs" / "EVALUATION.md").read_text(encoding="utf-8")
 
-    assert published == report(development, held_out, held_out_2, independent, held_out_3, recorded), (
-        "The evaluation results changed (third held-out set: "
-        f"{detection(held_out_3).shown()} caught, {false_alarms(held_out_3).shown()} false alarms). "
+    assert published == report(development, held_out, held_out_2, independent, held_out_3, held_out_4,
+                               held_out_5, recorded), (
+        "The evaluation results changed (fourth held-out set: "
+        f"{detection(held_out_4).shown()} caught, {false_alarms(held_out_4).shown()} false alarms). "
         "Run scripts\\evaluate.py and commit docs/EVALUATION.md with this change.")
 
 
@@ -160,3 +168,17 @@ def test_the_false_alarms_the_report_blames_on_step_22_are_still_false_alarms() 
     named = [e for e in HELD_OUT_2 + INDEPENDENT if e.name in STEP_22_NEW_FALSE_ALARMS]
     assert len(named) == len(STEP_22_NEW_FALSE_ALARMS)
     assert all(o.example.label == "benign" and o.flagged for o in run_all(named))
+
+
+def test_the_report_explains_exactly_the_fourth_sets_phone_mistakes() -> None:
+    calls = run_all([e for e in HELD_OUT_4 if e.kind == "call_transcript"])
+
+    assert {o.example.name for o in calls if o.example.label == "malicious" and not o.flagged} == set(STEP_24_FRESH_MISSES)
+    assert {o.example.name for o in calls if o.example.label == "benign" and o.flagged} == set(STEP_24_FRESH_FALSE_ALARMS)
+
+
+def test_the_report_explains_exactly_the_scams_the_owners_calls_missed() -> None:
+    calls = run_all(HELD_OUT_5)
+
+    assert {o.example.name for o in calls if o.example.label == "malicious" and not o.flagged} == set(STEP_24_OWNER_MISSES)
+    assert not any(o.flagged for o in calls if o.example.label == "benign")
