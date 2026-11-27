@@ -31,6 +31,7 @@ from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
 from tests.evaluation_heldout3 import HELD_OUT_3
 from tests.evaluation_heldout4 import HELD_OUT_4
+from tests.evaluation_heldout5 import HELD_OUT_5
 from tests.evaluation_independent import INDEPENDENT
 from tests.evaluation_set import DEVELOPMENT, SOURCES, Example
 from tests.scenarios import BASELINES
@@ -264,6 +265,16 @@ STEP_24_FRESH_FALSE_ALARMS = {
                                      "flagged before step 24 too",
 }
 
+# The project owner's own 10 calls (the fifth held-out set), written after the step-24 change was
+# frozen and run once (2026-11-28), with the detectors from before step 24 and after it.
+BEFORE_STEP_24_OWNER = (Rate(3, 5), Rate(0, 5))
+STEP_24_OWNER_MISSES = {
+    "held5-call-yono-mpin": "\"can we get you mpin\": asked as a question, and \"mpin\" is one word, so the "
+                            "\"pin\" rule does not see it",
+    "held5-call-electricity-link": "\"please click the payment link i am sending you\": clicking a link is not one "
+                                   "of the shapes (installing needs \"download\" or \"install\" and an app)",
+}
+
 # ------------------------------------------------------------------ the report
 
 def _target(rate: Rate, target: float, at_least: bool) -> str:
@@ -343,7 +354,7 @@ def _sum(rates: list[Rate]) -> Rate:
 
 
 def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list[Outcome],
-           independent: list[Outcome], held_out_3: list[Outcome], held_out_4: list[Outcome],
+           independent: list[Outcome], held_out_3: list[Outcome], held_out_4: list[Outcome], held_out_5: list[Outcome],
            model_run: dict[str, Any] | None) -> str:
     first, before = FIRST_RUN, BEFORE_STEP_22
     step22 = STEP_22_RESULT
@@ -387,6 +398,7 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "| Measure | Result, and 95% range | PRD target |",
         "|---|---|---|",
         *_rate_rows("**Fourth held-out set** (fresh: the honest number)", d_fresh, f_fresh),
+        *_summary_rows("**The project owner's 10 calls** (fresh, written by someone else)", held_out_5),
         *_rate_rows("Third held-out set, its one honest run (step 23)", *STEP_23_RESULT),
         *_summary_rows("Third held-out set now", held_out_3),
         *_rate_rows("Second held-out and independent sets, their one honest run (step 22)", d_fresh22, f_fresh22),
@@ -433,6 +445,23 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "And why its two harmless calls were flagged:",
         "",
         *[f"- `{name}`: {why}." for name, why in STEP_24_FRESH_FALSE_ALARMS.items()],
+        "",
+        "#### On the project owner's own calls",
+        "",
+        "Ten calls written by the project owner after the change was frozen, without seeing the code or the design, "
+        "and run once:",
+        "",
+        "| The project owner's calls (run once) | Before step 24 | After step 24 |",
+        "|---|---|---|",
+        f"| Scams caught | {BEFORE_STEP_24_OWNER[0].hits} of {BEFORE_STEP_24_OWNER[0].total} | "
+        f"{detection(held_out_5).hits} of {detection(held_out_5).total} |",
+        f"| False alarms | {BEFORE_STEP_24_OWNER[1].hits} of {BEFORE_STEP_24_OWNER[1].total} | "
+        f"{false_alarms(held_out_5).hits} of {false_alarms(held_out_5).total} |",
+        "",
+        "No difference: the scams it catches were already caught by the step-23 rules (a request for an OTP, \"pay "
+        "1500 rupees\"), and the two it misses fall outside the new shapes:",
+        "",
+        *[f"- `{name}`: {why}." for name, why in STEP_24_OWNER_MISSES.items()],
         "",
         "### Did step 23 help on incidents it was not made from?",
         "",
@@ -494,6 +523,10 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "calls. Written before the step-24 change, committed and pushed before any of it, and run once after it was "
         "frozen. Its author had a rough idea of the change in mind, so it also has scams that do not fit that idea "
         "and harmless calls that do.",
+        f"- **The project owner's calls**: {_counts(HELD_OUT_5)}, all phone calls "
+        "(`agent/tests/evaluation_heldout5.py`). Written by the project owner, who did not write the detectors, after "
+        "the step-24 change was frozen and without seeing it; copied in as written, with only reserved numbers, the "
+        "three example people and sources added; committed and pushed, then run once.",
         "- Every attack follows a pattern from a public source (below). Every name, address and number is a reserved "
         "example one. None is one of the six demo scenarios.",
         "- Every set includes hard cases on purpose, both ways: attacks with no obvious keyword, and harmless messages "
@@ -534,6 +567,10 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "## What the fourth held-out set got wrong",
         "",
         *_wrong(held_out_4),
+        "",
+        "## What the project owner's calls got wrong",
+        "",
+        *_wrong(held_out_5),
         "",
         "## What step 24 changed",
         "",
@@ -611,13 +648,14 @@ def report(development: list[Outcome], held_out: list[Outcome], held_out_2: list
         "",
         "## Limitations",
         "",
-        f"- **Small sets.** {sum(o.example.label == 'malicious' for o in seen + fresh)} attacks and "
-        f"{sum(o.example.label == 'benign' for o in seen + fresh)} harmless incidents in all, and "
+        f"- **Small sets.** {sum(o.example.label == 'malicious' for o in seen + fresh + held_out_5)} attacks and "
+        f"{sum(o.example.label == 'benign' for o in seen + fresh + held_out_5)} harmless incidents in all, and "
         f"only {d_fresh.total} of each in the fresh set. The 95% ranges above are wide; a few more misses or "
         "catches would move the numbers noticeably.",
         "- **The same author** wrote the detectors, the development set and all four held-out sets. Writing each "
         "held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its "
-        "wording was written by an AI model, which tends to state warning signs more plainly than real attackers do.",
+        "wording was written by an AI model, which tends to state warning signs more plainly than real attackers do. "
+        "The project owner's 10 calls remove it too, but 10 is very few.",
         "- **Synthetic text.** The examples follow published attack patterns, but they are not real messages: real "
         "attacks are messier, longer and in many languages (all of these are in English). Public collections of real "
         "phishing exist, but none fits all three kinds of incident, and their messages cannot be published with the "

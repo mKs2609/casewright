@@ -17,6 +17,7 @@ from app import config
 from app.indicators import extract_indicators
 from app.models import Incident
 from tests.evaluation import (STEP_22_NEW_FALSE_ALARMS, STEP_24_FRESH_FALSE_ALARMS, STEP_24_FRESH_MISSES,
+                              STEP_24_OWNER_MISSES,
                               false_alarms, detection, report, run_all, wilson)
 from tests.evaluation_heldout import HELD_OUT
 from tests.evaluation_heldout2 import HELD_OUT_2
@@ -134,7 +135,8 @@ def test_the_rule_engine_is_never_measured_with_the_model_switched_on(monkeypatc
 
 def test_a_recorded_model_run_is_reported_per_set() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
-    later = run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3), run_all(HELD_OUT_4)
+    later = (run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3), run_all(HELD_OUT_4),
+             run_all(HELD_OUT_5))
     # A made-up run: the model flags exactly the attacks, and finishes all but one investigation.
     results = {e.name: {"flagged": e.label == "malicious", "verdict": "malicious" if e.label == "malicious" else "benign",
                         "risk": 0, "engine": "llm"} for e in ALL}
@@ -150,13 +152,13 @@ def test_a_recorded_model_run_is_reported_per_set() -> None:
 def test_the_published_report_matches_what_the_agent_does_today() -> None:
     development, held_out = run_all(DEVELOPMENT), run_all(HELD_OUT)
     held_out_2, independent, held_out_3 = run_all(HELD_OUT_2), run_all(INDEPENDENT), run_all(HELD_OUT_3)
-    held_out_4 = run_all(HELD_OUT_4)
+    held_out_4, held_out_5 = run_all(HELD_OUT_4), run_all(HELD_OUT_5)
     model_file = ROOT / "testdata" / "evaluation-model-run.json"
     recorded = json.loads(model_file.read_text(encoding="utf-8")) if model_file.exists() else None
     published = (ROOT / "docs" / "EVALUATION.md").read_text(encoding="utf-8")
 
     assert published == report(development, held_out, held_out_2, independent, held_out_3, held_out_4,
-                               recorded), (
+                               held_out_5, recorded), (
         "The evaluation results changed (fourth held-out set: "
         f"{detection(held_out_4).shown()} caught, {false_alarms(held_out_4).shown()} false alarms). "
         "Run scripts\\evaluate.py and commit docs/EVALUATION.md with this change.")
@@ -173,3 +175,10 @@ def test_the_report_explains_exactly_the_fourth_sets_phone_mistakes() -> None:
 
     assert {o.example.name for o in calls if o.example.label == "malicious" and not o.flagged} == set(STEP_24_FRESH_MISSES)
     assert {o.example.name for o in calls if o.example.label == "benign" and o.flagged} == set(STEP_24_FRESH_FALSE_ALARMS)
+
+
+def test_the_report_explains_exactly_the_scams_the_owners_calls_missed() -> None:
+    calls = run_all(HELD_OUT_5)
+
+    assert {o.example.name for o in calls if o.example.label == "malicious" and not o.flagged} == set(STEP_24_OWNER_MISSES)
+    assert not any(o.flagged for o in calls if o.example.label == "benign")

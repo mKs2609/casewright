@@ -18,6 +18,8 @@ How often Casewright gets it right, measured on labelled incidents (PRD section 
 |---|---|---|
 | **Fourth held-out set** (fresh: the honest number): attacks caught | 6 of 20 (30%), range 15% to 52% | **not met** (at least 90%) |
 | **Fourth held-out set** (fresh: the honest number): false alarms | 3 of 20 (15%), range 5% to 36% | **not met** (at most 10%) |
+| **The project owner's 10 calls** (fresh, written by someone else): attacks caught | 3 of 5 (60%), range 23% to 88% | **not met** (at least 90%) |
+| **The project owner's 10 calls** (fresh, written by someone else): false alarms | 0 of 5 (0%), range 0% to 43% | met (at most 10%) |
 | Third held-out set, its one honest run (step 23): attacks caught | 8 of 20 (40%), range 22% to 61% | **not met** (at least 90%) |
 | Third held-out set, its one honest run (step 23): false alarms | 2 of 20 (10%), range 3% to 30% | met (at most 10%) |
 | Third held-out set now: attacks caught | 15 of 20 (75%), range 53% to 89% | **not met** (at least 90%) |
@@ -66,6 +68,20 @@ And why its two harmless calls were flagged:
 - `held4-call-school-fees`: the step-23 keyword rule `SIG-SEND-MONEY` reads "please pay the fee on the school portal" as a request; it was flagged before step 24 too.
 - `held4-call-mother-asks-advice`: the caller repeats someone else's request for an OTP while asking for advice; flagged before step 24 too.
 
+#### On the project owner's own calls
+
+Ten calls written by the project owner after the change was frozen, without seeing the code or the design, and run once:
+
+| The project owner's calls (run once) | Before step 24 | After step 24 |
+|---|---|---|
+| Scams caught | 3 of 5 | 3 of 5 |
+| False alarms | 0 of 5 | 0 of 5 |
+
+No difference: the scams it catches were already caught by the step-23 rules (a request for an OTP, "pay 1500 rupees"), and the two it misses fall outside the new shapes:
+
+- `held5-call-yono-mpin`: "can we get you mpin": asked as a question, and "mpin" is one word, so the "pin" rule does not see it.
+- `held5-call-electricity-link`: "please click the payment link i am sending you": clicking a link is not one of the shapes (installing needs "download" or "install" and an app).
+
 ### Did step 23 help on incidents it was not made from?
 
 Step 23 changed how a phone call's evidence adds up (a stranger asking for something is enough for a person to look) and was measured on the third held-out set, run once (2026-11-27):
@@ -102,6 +118,7 @@ No: they caught 8 more attacks on the sets they were made from, but 0 more on th
 - **Independent set**: 24 incidents, 12 attacks and 12 harmless, emails and calls (`agent/tests/evaluation_independent.py`). The incidents were chosen by the project owner, who did not write the detectors, and worded with ChatGPT; nobody working on the detectors saw them until the step-22 fixes were frozen. Copied in with only the rupee sign, reserved phone numbers and source labels added, then run once. Read for step 23, so now seen.
 - **Third held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout3.py`), half of them phone calls. Written before the step-23 change and run once after it. Read for step 24, so now seen.
 - **Fourth held-out set**: 40 incidents, 20 attacks and 20 harmless (`agent/tests/evaluation_heldout4.py`), half of them phone calls. Written before the step-24 change, committed and pushed before any of it, and run once after it was frozen. Its author had a rough idea of the change in mind, so it also has scams that do not fit that idea and harmless calls that do.
+- **The project owner's calls**: 10 incidents, 5 attacks and 5 harmless, all phone calls (`agent/tests/evaluation_heldout5.py`). Written by the project owner, who did not write the detectors, after the step-24 change was frozen and without seeing it; copied in as written, with only reserved numbers, the three example people and sources added; committed and pushed, then run once.
 - Every attack follows a pattern from a public source (below). Every name, address and number is a reserved example one. None is one of the six demo scenarios.
 - Every set includes hard cases on purpose, both ways: attacks with no obvious keyword, and harmless messages that contain one (a real bank email with a one-time code, an angry customer threatening legal action, a company VPN in another country).
 - All sets are frozen. A new example is added, never an old one changed.
@@ -176,6 +193,13 @@ Development set now (first run in brackets):
 | `held4-call-sim-5g-upgrade` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | A free '5G upgrade': send the long number printed on a new SIM by SMS, which moves the person's number to the attacker's SIM. |
 | `held4-call-school-fees` | benign | suspicious | 50 | `BASELINE-STRANGER-ASKS`, `BASELINE-UNKNOWN-CALLER`, `SIG-SEND-MONEY` | Hard: the school office reminds a parent that term fees are due, paid on the school's portal. |
 | `held4-call-mother-asks-advice` | benign | suspicious | 63 | `BASELINE-STRANGER-ASKS`, `BASELINE-UNKNOWN-CALLER`, `SIG-IMPERSONATION`, `SIG-OTP-REQ` | Hard: the person's mother, from a number not in the list, asks whether she should give an OTP to a stranger who called her. |
+
+## What the project owner's calls got wrong
+
+| Example | Truth | Casewright said | Risk | Findings | About it |
+|---|---|---|---|---|---|
+| `held5-call-yono-mpin` | malicious | benign | 5 | `BASELINE-UNKNOWN-CALLER` | Written by the project owner. Asks for the banking app's MPIN, promising double the money. |
+| `held5-call-electricity-link` | malicious | benign | 19 | `BASELINE-UNKNOWN-CALLER`, `SIG-URGENCY` | Written by the project owner. A fake electricity disconnection that pushes a payment link. |
 
 ## What step 24 changed
 
@@ -304,8 +328,8 @@ This recorded run covers the development and first held-out sets only, and preda
 
 ## Limitations
 
-- **Small sets.** 122 attacks and 122 harmless incidents in all, and only 20 of each in the fresh set. The 95% ranges above are wide; a few more misses or catches would move the numbers noticeably.
-- **The same author** wrote the detectors, the development set and all four held-out sets. Writing each held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its wording was written by an AI model, which tends to state warning signs more plainly than real attackers do.
+- **Small sets.** 127 attacks and 127 harmless incidents in all, and only 20 of each in the fresh set. The 95% ranges above are wide; a few more misses or catches would move the numbers noticeably.
+- **The same author** wrote the detectors, the development set and all four held-out sets. Writing each held-out set before the fixes it measures reduces this; the independent set removes it for 24 incidents, but its wording was written by an AI model, which tends to state warning signs more plainly than real attackers do. The project owner's 10 calls remove it too, but 10 is very few.
 - **Synthetic text.** The examples follow published attack patterns, but they are not real messages: real attacks are messier, longer and in many languages (all of these are in English). Public collections of real phishing exist, but none fits all three kinds of incident, and their messages cannot be published with the project; measuring on one is future work.
 - **A small threat list.** The built-in list knows a handful of example addresses (ADR-40), so most attacks here are judged on their words and behaviour alone. A real threat-intelligence feed would catch more.
 - **One incident at a time.** Each example is investigated on its own; links to other recent incidents (ADR-42), which would help with campaigns, are not part of this measurement.

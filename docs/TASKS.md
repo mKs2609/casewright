@@ -14,7 +14,7 @@ Step 23 made a stranger's request count for enough, but only when a rule recogni
 - [x] A fourth held-out set (40: 20 attacks, 20 harmless; half of it phone calls), written before any change and checked for form only; the agent has not been run on it
 - [x] Committed and pushed before any change (Mohit)
 - [x] Optional: hand-written examples from Mohit, kept unseen until the change is frozen (10 calls, sent after the freeze)
-- [ ] Mohit's 10 calls (a fifth held-out set) committed and pushed, then run once; the result published as it comes out
+- [x] Mohit's 10 calls (a fifth held-out set) committed and pushed, then run once; the result published as it came out: 3 of 5 scams caught, no false alarm, the same as before the change
 - [x] The design, from the seen sets only (all 204, including the third held-out set), told to Mohit before it is built; measured with the rule engine, so CI checks it
 - [x] The "What to do" advice for phone scams matches what the caller asked for (it always talked about one-time codes)
 - [x] Built, with tests that must fire and must not, and mutation checks (28 of 28 caught)
